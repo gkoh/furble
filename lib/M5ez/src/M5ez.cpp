@@ -456,8 +456,6 @@ void ezCanvas::_putString(String text) {
 
 String ezButtons::_btn_a_s, ezButtons::_btn_a_l;
 String ezButtons::_btn_b_s, ezButtons::_btn_b_l;
-String ezButtons::_btn_c_s, ezButtons::_btn_c_l;
-String ezButtons::_btn_ab, ezButtons::_btn_bc, ezButtons::_btn_ac;
 bool ezButtons::_key_release_wait;
 bool ezButtons::_lower_button_row, ezButtons::_upper_button_row;  
 
@@ -469,19 +467,12 @@ void ezButtons::show(String buttons) {
 	ez.chopString(buttons, "#", buttonVector, true);
 	switch (buttonVector.size()) {
 		case 1:
-			_drawButtons("", "", buttons, "", "", "", "", "", "");
+			_drawButtons("", "", buttons, "");
 			break;
+                case 2:
 		case 3:
 			// Three elements, so shortpress only
-			_drawButtons(buttonVector[0], "", buttonVector[1], "", buttonVector[2], "", "", "", "");
-			break;
-		case 6:
-			// Six elements, so all buttons long and short
-			_drawButtons(buttonVector[0], buttonVector[1], buttonVector[2], buttonVector[3], buttonVector[4], buttonVector[5], "", "", "");
-			break;
-		case 9:
-			// Nine elements, so all buttons long and short plus the top row of three multi-keys
-			_drawButtons(buttonVector[0], buttonVector[1], buttonVector[2], buttonVector[3], buttonVector[4], buttonVector[5], buttonVector[6], buttonVector[7], buttonVector[8]);
+			_drawButtons(buttonVector[0], "", buttonVector[1], "");
 			break;
 	}
 }
@@ -490,18 +481,17 @@ void ezButtons::clear(bool wipe /* = true */) {
 	if (wipe && (_lower_button_row  || _upper_button_row)) {
 		m5.lcd.fillRect(0, ez.canvas.bottom() + 1, TFT_H - ez.canvas.bottom() - 1, TFT_W, ez.screen.background());
 	}
-	_btn_a_s = _btn_a_l = _btn_b_s = _btn_b_l = _btn_c_s = _btn_c_l = "";
-	_btn_ab = _btn_bc = _btn_ac = "";
+	_btn_a_s = _btn_a_l = _btn_b_s = _btn_b_l = "";
 	_lower_button_row = false;
 	_upper_button_row = false;
 	ez.canvas.bottom(TFT_H - 1);
 }
 
-void ezButtons::_drawButtons(String btn_a_s, String btn_a_l, String btn_b_s, String btn_b_l, String btn_c_s, String btn_c_l, String btn_ab, String btn_bc, String btn_ac) {
+void ezButtons::_drawButtons(String btn_a_s, String btn_a_l, String btn_b_s, String btn_b_l) {
 	int16_t btnwidth = int16_t( (TFT_W - 4 * ez.theme->button_gap ) / 3);
 
 	// See if any buttons are used on the bottom row
-	if (btn_a_s != "" || btn_a_l != "" || btn_b_s != "" || btn_b_l != "" || btn_c_s != "" || btn_c_l != "") {
+	if (btn_a_s != "" || btn_a_l != "" || btn_b_s != "" || btn_b_l != "") {
 		if (!_lower_button_row) {
 			// If the lower button row wasn't there before, clear the area first
 			m5.lcd.fillRect(0, TFT_H - ez.theme->button_height - ez.theme->button_gap, TFT_W, ez.theme->button_height + ez.theme->button_gap, ez.screen.background());
@@ -517,55 +507,14 @@ void ezButtons::_drawButtons(String btn_a_s, String btn_a_l, String btn_b_s, Str
 			_btn_b_s = btn_b_s;
 			_btn_b_l = btn_b_l;		
 		}
-		if (_btn_c_s != btn_c_s || _btn_c_l != btn_c_l) {
-			_drawButton(1, ez.rightOf(btn_c_s, "|", true), ez.rightOf(btn_c_l, "|", true), 2 * btnwidth + 3 * ez.theme->button_gap, btnwidth);
-			_btn_c_s = btn_c_s;
-			_btn_c_l = btn_c_l;		
-		}
 		_lower_button_row = true;
 	} else {
 		if (_lower_button_row) {
 			// If there was a lower button row before and it's now gone, clear the area
 			m5.lcd.fillRect(0, TFT_H - ez.theme->button_height - ez.theme->button_gap, TFT_W, ez.theme->button_height + ez.theme->button_gap, ez.screen.background());
-			_btn_a_s = _btn_a_l = _btn_b_s = _btn_b_l = _btn_c_s = _btn_c_l = "";
+			_btn_a_s = _btn_a_l = _btn_b_s = _btn_b_l = "";
 			_lower_button_row = false;
 		}
-	}
-	//Now check if there are multi-buttons used (top row)
-	if (btn_ab != "" || btn_bc != "" || btn_ac != "") {
-		if (!_upper_button_row) {
-			// If the upper button row wasn't there before, clear the area first
-			m5.lcd.fillRect(0, TFT_H - 2 * (ez.theme->button_height + ez.theme->button_gap), TFT_W, ez.theme->button_height + ez.theme->button_gap, ez.screen.background());
-		}
-		// Then draw the buttons
-		if (_btn_ab != btn_ab) {
-			_drawButton(2, ez.rightOf(btn_ab, "|", true), "", ez.theme->button_gap + (btnwidth / 2), btnwidth);
-			_btn_ab = btn_ab;
-		}
-		if (_btn_bc != btn_bc) {
-			_drawButton(2, ez.rightOf(btn_bc, "|", true), "", (2 * ez.theme->button_gap) + btnwidth + (btnwidth / 2), btnwidth);
-			_btn_bc = btn_bc;
-		}
-		if (_btn_ac != btn_ac) {
-			// Two halves of the same button
-
-			// ugly in code, prettier on the screen: making the buttons square on the screen edges to signal wrap-around
-			m5.lcd.fillRect(0, TFT_H - 2 * ez.theme->button_height - ez.theme->button_gap, btnwidth / 4, ez.theme->button_height, ez.theme->button_bgcolor_t);
-			m5.lcd.fillRect(TFT_W - (btnwidth / 4), TFT_H - 2 * ez.theme->button_height - ez.theme->button_gap, btnwidth / 4, ez.theme->button_height, ez.theme->button_bgcolor_t);
-
-			_drawButton(2, ez.rightOf(btn_ac, "|", true), "", (3 * ez.theme->button_gap) + (2 * btnwidth) + (btnwidth / 2), (btnwidth / 2));
-			_drawButton(2, ez.rightOf(btn_ac, "|", true), "", 0, (btnwidth / 2));
-
-			_btn_ac = btn_ac;
-		}
-		_upper_button_row = true;
-	} else {
-		if (_upper_button_row) {
-			// If there was an upper button row before and it's now gone, clear the area
-			m5.lcd.fillRect(0, TFT_H - 2 * (ez.theme->button_height + ez.theme->button_gap), TFT_W, ez.theme->button_height + ez.theme->button_gap, ez.screen.background());
-			_btn_ab = _btn_bc = _btn_ac = "";
-			_upper_button_row = false;
-		}			
 	}
 
 	uint8_t button_rows = _upper_button_row ? 2 : (_lower_button_row ? 1 : 0);
@@ -611,7 +560,7 @@ void ezButtons::_drawButtonString(String text, int16_t x, int16_t y, uint16_t co
 	} else {
 		m5.lcd.setTextColor(color);
 		m5.lcd.setTextDatum(datum);
-		m5.lcd.drawString(text, x, y);
+		m5.lcd.drawString(text, x, y+1);
 	}
 }
 
@@ -625,19 +574,6 @@ String ezButtons::poll() {
 	ez.yield();
 
 	if (!_key_release_wait) {
-		if (_btn_ab != "" && m5.BtnA.isPressed() && m5.BtnB.isPressed() ) {
-			keystr = ez.leftOf(_btn_ab, "|", true);
-			_key_release_wait = true;
-		}
-		if (_btn_bc != "" && m5.BtnB.isPressed() && m5.BtnC.isPressed() ) {
-			keystr = ez.leftOf(_btn_bc, "|", true);
-			_key_release_wait = true;
-		}
-		if (_btn_ac != "" && m5.BtnA.isPressed() && m5.BtnC.isPressed() ) {
-			keystr = ez.leftOf(_btn_ac, "|", true);
-			_key_release_wait = true;
-		}
-
 		if (_btn_a_l != "" && m5.BtnA.pressedFor(ez.theme->longpress_time) ) {
 			keystr = ez.leftOf(_btn_a_l, "|", true);
 			_key_release_wait = true;
@@ -653,17 +589,9 @@ String ezButtons::poll() {
 		if (_btn_b_s != "" && m5.BtnB.wasReleased() ) {
 			keystr = ez.leftOf(_btn_b_s, "|", true);
 		}
-
-		if (_btn_c_l != "" && m5.BtnC.pressedFor(ez.theme->longpress_time) ) {
-			keystr = ez.leftOf(_btn_c_l, "|", true);
-			_key_release_wait = true;
-		}
-		if (_btn_c_s != "" && m5.BtnC.wasReleased() ) {
-			keystr = ez.leftOf(_btn_c_s, "|", true);
-		}
 	}
 
-	if (m5.BtnA.isReleased() && m5.BtnB.isReleased() && m5.BtnC.isReleased() ) {
+	if (m5.BtnA.isReleased() && m5.BtnB.isReleased()) {
 		_key_release_wait = false;
 	}		
 
@@ -757,7 +685,9 @@ void ezSettings::defaults() {
 		_brightness = prefs.getUChar("brightness", 128);
 		_inactivity = prefs.getUChar("inactivity", NEVER);
 		prefs.end();
-		m5.lcd.setBrightness(_brightness);
+#if 1
+		m5.Axp.ScreenBreath(_brightness);
+#endif
 	}
 
 	void ezBacklight::menu() {
@@ -780,7 +710,7 @@ void ezSettings::defaults() {
 							if (b == "left" && _brightness > 16) _brightness -= 16;
 							if (_brightness == 239) _brightness = 240;
 							bl.value((float)(_brightness / 2.55));
-							m5.lcd.setBrightness(_brightness);
+							m5.Axp.ScreenBreath(_brightness);
 							if (b == "ok") break;
 						}
 					}
@@ -853,14 +783,14 @@ void ezSettings::defaults() {
 		if (!_backlight_off && _inactivity) {
 			if (millis() > _last_activity + 30000 * _inactivity) {
 				_backlight_off = true;
-				m5.lcd.setBrightness(0);
+				m5.Axp.ScreenBreath(0);
 				while (true) {
-					if (m5.BtnA.wasPressed() || m5.BtnB.wasPressed() || m5.BtnC.wasPressed()) break;
+					if (m5.BtnA.wasPressed() || m5.BtnB.wasPressed()) break;
 					ez.yield();
 					delay(10);
 				}
 				ez.buttons.releaseWait();	// Make sure the key pressed to wake display gets ignored
-				m5.lcd.setBrightness(_brightness);
+				m5.Axp.ScreenBreath(_brightness);
 				activity();
 				_backlight_off = false;
 			}
@@ -2141,6 +2071,7 @@ long  M5ez::_text_cursor_millis;
 
 void M5ez::begin() {
 	m5.begin();
+        m5.lcd.setRotation(3);
 	ezTheme::begin();
 	ez.screen.begin();
 	ez.settings.begin();
@@ -2700,7 +2631,13 @@ void M5ez::setFont(const GFXfont* font) {
 	m5.lcd.setTextSize(size);
 }
 
-int16_t M5ez::fontHeight() { return m5.lcd.fontHeight(m5.lcd.textfont); }
+int16_t M5ez::fontHeight() {
+#if 0
+  return m5.lcd.fontHeight(m5.lcd.textfont);
+#else
+  return 11;
+#endif
+}
 
 String M5ez::version() { return M5EZ_VERSION; } 
 
@@ -2948,7 +2885,7 @@ void ezMenu::_drawItem(int16_t n, String text, bool selected) {
 	}
 	text = ez.clipString(text, TFT_W - ez.theme->menu_lmargin - 2 * ez.theme->menu_item_hmargin - ez.theme->menu_rmargin);
 	m5.lcd.fillRoundRect(ez.theme->menu_lmargin, top_item_h + n * _per_item_h, TFT_W - ez.theme->menu_lmargin - ez.theme->menu_rmargin, _per_item_h, ez.theme->menu_item_radius, fill_color);
-	m5.lcd.drawString(ez.leftOf(text, "\t"), ez.theme->menu_lmargin + ez.theme->menu_item_hmargin, top_item_h + _per_item_h / 2 + n * _per_item_h - 2);
+	m5.lcd.drawString(ez.leftOf(text, "\t"), ez.theme->menu_lmargin + ez.theme->menu_item_hmargin, top_item_h + _per_item_h / 2 + n * _per_item_h + 1);
 	if (text.indexOf("\t") != -1) {
 		m5.lcd.setTextDatum(CR_DATUM);
 		m5.lcd.drawString(ez.rightOf(text, "\t"),  TFT_W - ez.theme->menu_rmargin - ez.theme->menu_item_hmargin, top_item_h + _per_item_h / 2 + n * _per_item_h - 2);
@@ -3037,12 +2974,14 @@ int16_t ezMenu::_runImagesOnce() {
 }
 
 void ezMenu::_drawImage(MenuItem_t &item) {
+#if 0
 	if (item.image) {
 		m5.lcd.drawJpg((uint8_t *)item.image, (sizeof(item.image) / sizeof(item.image[0])), 0, ez.canvas.top() + _img_from_top, TFT_W, ez.canvas.height() - _img_from_top);
 	}
 	if (item.fs) {
 		m5.lcd.drawJpgFile(*(item.fs), item.path.c_str(), 0, ez.canvas.top() + _img_from_top, TFT_W, ez.canvas.height() - _img_from_top);
 	}
+#endif
 }
 
 void ezMenu::_drawCaption() {

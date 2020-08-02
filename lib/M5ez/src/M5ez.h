@@ -5,13 +5,13 @@
 
 
 // Comment out the line below to disable WPS.
-#define M5EZ_WPS
+#undef M5EZ_WPS
 
 // Turn this off to compile without WiFi (no) OTA updates, no clock)
-#define M5EZ_WIFI
+#undef M5EZ_WIFI
 
 // Turn this off if you don't have a battery attached
-#define M5EZ_BATTERY
+#undef M5EZ_BATTERY
 
 // Turn this off to compile without BLE (Bluetooth Low Energy)
 // #define M5EZ_BLE
@@ -23,26 +23,26 @@
 // #define M5EZ_WIFI_DEBUG
 
 // Determines whether the backlight is settable
-#define M5EZ_BACKLIGHT
+#undef M5EZ_BACKLIGHT
 
 // Compile in ezTime and create a settings menu for clock display
-#define M5EZ_CLOCK
+#undef M5EZ_CLOCK
 
 // FACES settings menu
-#define M5EZ_FACES
+#undef M5EZ_FACES
 
 #include <vector>			// std::vector
 #ifdef M5EZ_WIFI
 	#include <WiFi.h>			// WiFiEvent_t, system_event_info_t
 #endif
-#include <M5Stack.h>		// GFXfont*
+#include <M5StickC.h>		// GFXfont*
 #ifdef M5EZ_CLOCK
 	#include <ezTime.h>			// events, on-screen clock
 #endif
 // Special fake font pointers to access the older non FreeFonts in a unified way.
 // Only valid if passed to ez.setFont
 // (Note that these need to be specified without the & in front, unlike the FreeFonts)
-#define mono6x8				(GFXfont*) 1
+#define hzk16				(GFXfont*) 1
 #define sans16				(GFXfont*) 2
 #define sans26				(GFXfont*) 4
 #define numonly48			(GFXfont*) 6
@@ -59,8 +59,8 @@
 
 #define NO_COLOR			TFT_TRANSPARENT
 
-#define TFT_W		320
-#define TFT_H		240
+#define TFT_W		160
+#define TFT_H		80
 
 struct line_t {
 	int16_t position;
@@ -85,26 +85,26 @@ class ezTheme {
 		String name = "Default";								// Change this when making theme
 		uint16_t background = 0xEF7D;
 		uint16_t foreground = TFT_BLACK;
-		uint8_t header_height = 23;
-		const GFXfont* header_font = &FreeSansBold9pt7b;
+		uint8_t header_height = 12;
+		const GFXfont* header_font = hzk16;
 		uint8_t header_hmargin = 5;
 		uint8_t header_tmargin = 3;
 		uint16_t header_bgcolor = TFT_BLUE;
 		uint16_t header_fgcolor = TFT_WHITE;					
 
-		const GFXfont* print_font = mono6x8;					
+		const GFXfont* print_font = hzk16;
 		uint16_t print_color = foreground;					
 		
-		const GFXfont* clock_font = mono12x16;
+		const GFXfont* clock_font = hzk16;
 
 		uint16_t longpress_time = 250;							//milliseconds
 
-		uint8_t button_height = 19;								
-		const GFXfont* button_font = &FreeSans9pt7b;			
+		uint8_t button_height = 11;
+		const GFXfont* button_font = hzk16;
 		uint8_t button_tmargin = 1;								
 		uint8_t button_hmargin = 5;								
 		uint8_t button_gap = 3;									
-		uint8_t button_radius = 8;								
+		uint8_t button_radius = 3;
 		uint16_t button_bgcolor_b = TFT_BLUE;					
 		uint16_t button_bgcolor_t = TFT_PURPLE;					
 		uint16_t button_fgcolor = TFT_WHITE;					
@@ -113,29 +113,29 @@ class ezTheme {
 		uint8_t input_top = 50;									// pixels below ez.canvas.top()
 		uint8_t input_hmargin = 10;								// The distance between text box and edge of screen
 		uint8_t input_vmargin = 10;								// Vertical margin _inside_ the text box
-		const GFXfont* input_font = &FreeMonoBold12pt7b;		
-		const GFXfont* input_keylock_font = &FreeSansBold9pt7b;
+		const GFXfont* input_font = hzk16;
+		const GFXfont* input_keylock_font = hzk16;
 		uint16_t input_bgcolor = TFT_BLACK;						
 		uint16_t input_fgcolor = TFT_GREEN;						
 		uint16_t input_cursor_blink = 500;						// milliseconds
 		uint8_t input_faces_btns = 18;							
 
-		const GFXfont* tb_font = &FreeSans9pt7b;				
+		const GFXfont* tb_font = hzk16;
 		uint16_t tb_color = foreground;							
 		uint8_t tb_hmargin = 5;
 
-		uint8_t menu_lmargin = 20;								
+		uint8_t menu_lmargin = 10;
 		uint8_t menu_rmargin = 10;
 		uint8_t menu_arrows_lmargin = 5;							
 		uint16_t menu_item_color = foreground;					
 		uint16_t menu_sel_bgcolor = foreground;					
 		uint16_t menu_sel_fgcolor = background;					
-		const GFXfont* menu_big_font = &FreeSans12pt7b;			
-		const GFXfont* menu_small_font = &FreeSans9pt7b;		
+		const GFXfont* menu_big_font = hzk16;
+		const GFXfont* menu_small_font = hzk16;
 		uint8_t menu_item_hmargin = 10;							
-		uint8_t menu_item_radius = 8;
+		uint8_t menu_item_radius = 3;
 
-		const GFXfont* msg_font = &FreeSans12pt7b;				
+		const GFXfont* msg_font = hzk16;
 		uint16_t msg_color = foreground;						
 		uint8_t msg_hmargin = 20;								
 
@@ -297,11 +297,9 @@ class ezButtons {
 	private:
 		static String _btn_a_s, _btn_a_l;
 		static String _btn_b_s, _btn_b_l;
-		static String _btn_c_s, _btn_c_l;
-		static String _btn_ab, _btn_bc, _btn_ac;
 		static bool _key_release_wait;
 		static bool _lower_button_row, _upper_button_row;
-		static void _drawButtons(String btn_a_s, String btn_a_l, String btn_b_s, String btn_b_l, String btn_c_s, String btn_c_l, String btn_ab, String btn_bc, String btn_ac);
+		static void _drawButtons(String btn_a_s, String btn_a_l, String btn_b_s, String btn_b_l);
 		static void _drawButton(int16_t row, String text_s, String text_l, int16_t x, int16_t w);
 		static void _drawButtonString(String text, int16_t x, int16_t y, uint16_t color, int16_t datum);
 	//
