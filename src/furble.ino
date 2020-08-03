@@ -4,7 +4,7 @@
 
 #define FURBLE_STR "furble"
 
-Preferences preferences;
+static Preferences preferences;
 
 const size_t FUJI_XT30_TOKEN_LEN = 7;
 const uint8_t FUJI_XT30_ID_0 = 0xd8;
@@ -13,22 +13,18 @@ const uint8_t FUJI_XT30_TYPE_TOKEN = 0x02;
 
 const uint32_t SCAN_DURATION = 10;
 
-typedef struct _pair_token_t {
-  uint8_t data[4];
-} pair_token_t;
+#define TOKEN_LEN (4)
 
 typedef struct _xt30_t {
-  char name[64];
-  uint64_t address;
-  uint8_t type;
-  pair_token_t token;
+  char name[64];    /** Human readabled device name. */
+  uint64_t address; /** Device MAC address. */
+  uint8_t type;     /** Address type. */
+  uint8_t token[TOKEN_LEN]; /** Pairing token. */
 } xt30_t;
 
-static xt30_t x = { 0 };
+static NimBLEScan* pScan = nullptr;
 
-NimBLEScan* pScan = nullptr;
-
-static std::vector<NimBLEAdvertisedDevice *> scan_list;
+static std::vector<xt30_t> connect_list;
 
 const char *FUJI_XT30_SVC_PAIR_UUID = "91f1de68-dff6-466e-8b65-ff13b0f16fb8";
 const char *FUJI_XT30_CHR_PAIR_UUID = "aba356eb-9633-4e60-b73f-f52516dbd671";
@@ -52,74 +48,107 @@ const uint8_t FUJI_XT30_SHUTTER_PRESS[2] = {0x02, 0x00};
 const uint8_t FUJI_XT30_SHUTTER_RELEASE[2] = {0x00, 0x00};
 
 /**
+ * Add AdvertisedDevice to connection list.
+ */
+static void addAdvertisedDevice(NimBLEAdvertisedDevice *pDevice) {
+  Serial.println(pDevice->toString().c_str());
+  xt30_t x = { 0 };
+  const char *data = pDevice->getManufacturerData().data();
+  strcpy(&x.name[0], pDevice->getName().c_str());
+  x.address = (uint64_t)pDevice->getAddress();
+  x.type = pDevice->getAddressType();
+  x.token[0] = data[3];
+  x.token[1] = data[4];
+  x.token[2] = data[5];
+  x.token[3] = data[6];
+
+  connect_list.push_back(x);
+}
+
+/**
+ * Add saved connection to connection list.
+ */
+static void addSavedDevice(void) {
+  preferences.begin(FURBLE_STR, true);
+  size_t len = preferences.getBytesLength("XT30");
+  if (len == sizeof(xt30_t)) {
+    xt30_t x = { 0 };
+    preferences.getBytes("XT30", &x, len);
+    connect_list.push_back(x);
+    Serial.println("Retrieve connection");
+    print_connection(&x);
+  }
+
+  preferences.end();
+}
+
+/**
  * Determine if the advertised BLE device is a Fujifilm X-T30.
  */
 static bool is_fuji_xt30(NimBLEAdvertisedDevice *pDevice) {
-  if (pDevice->haveManufacturerData() && pDevice->getManufacturerData().length()
-      == FUJI_XT30_TOKEN_LEN) {
+  if (pDevice->haveManufacturerData() &&
+        pDevice->getManufacturerData().length() == FUJI_XT30_TOKEN_LEN) {
     const char *data = pDevice->getManufacturerData().data();
-    if (data[0] == FUJI_XT30_ID_0 && data[1] == FUJI_XT30_ID_1 && data[2] ==
-        FUJI_XT30_TYPE_TOKEN) {
+    if (data[0] == FUJI_XT30_ID_0 &&
+        data[1] == FUJI_XT30_ID_1 &&
+        data[2] == FUJI_XT30_TYPE_TOKEN) {
       return true;
     }
   }
   return false;
 }
 
-class ClientCallBack: public NimBLEClientCallbacks {
+class ClientCallback: public NimBLEClientCallbacks {
   void onDisconnect(NimBLEClient* pClient) {
     Serial.println("Disconnected!");
   }
 };
 
-static ClientCallBack clientCB;
+static ClientCallback clientCB;
 
-class AdvertisedCallBack: public NimBLEAdvertisedDeviceCallbacks {
+class AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
   void onResult(NimBLEAdvertisedDevice *pDevice) {
+    ez.msgBox("Scanning",
+              "Found ... " + String(connect_list.size()), "", false);
     if (is_fuji_xt30(pDevice)) {
-        Serial.println(pDevice->toString().c_str());
-        scan_list.push_back(pDevice);
+      addAdvertisedDevice(pDevice);
     }
-    ez.msgBox("Scanning", "Found ... " + String(scan_list.size()), "", false);
   }
 };
 
 /**
  * Connect to Fujifilm X-T30.
  */
-static NimBLEClient *connect_fuji_xt30(const NimBLEAddress &address,
-                                       uint8_t type,
-                                       const pair_token_t *token) {
+static bool connect_fuji_xt30(NimBLEClient *pClient, const xt30_t *target) {
   ezProgressBar progress_bar(FURBLE_STR, "Connecting ...", "");
   progress_bar.value(10.0f);
 
-  NimBLEClient *pClient = NimBLEDevice::createClient();
   NimBLERemoteService *pSvc = nullptr;
   NimBLERemoteCharacteristic *pChr = nullptr;
 
-  pClient->setClientCallbacks(&clientCB, false);
-
   Serial.println("Connecting");
-  if (!pClient->connect(address, type)) goto fail;
+  if (!pClient->connect(NimBLEAddress(target->address), target->type))
+    return false;
 
   Serial.println("Connected");
   progress_bar.value(20.0f);
   pSvc = pClient->getService(FUJI_XT30_SVC_PAIR_UUID);
-  if (pSvc == nullptr) goto fail;
+  if (pSvc == nullptr) return false;
 
   Serial.println("Pairing");
   pChr = pSvc->getCharacteristic(FUJI_XT30_CHR_PAIR_UUID);
-  if (pChr == nullptr) goto fail;
+  if (pChr == nullptr) return false;
 
-  if (!pChr->canWrite()) goto fail;
-  if (!pChr->writeValue(&token->data[0], sizeof(pair_token_t))) goto fail;
+  if (!pChr->canWrite()) return false;
+  if (!pChr->writeValue(&target->token[0], TOKEN_LEN))
+    return false;
   Serial.println("Paired!");
   progress_bar.value(30.0f);
 
   Serial.println("Identifying");
   pChr = pSvc->getCharacteristic(FUJI_XT30_CHR_IDEN_UUID);
-  if (!pChr->canWrite()) goto fail;
-  if (!pChr->writeValue(FURBLE_STR)) goto fail;
+  if (!pChr->canWrite()) return false;
+  if (!pChr->writeValue(FURBLE_STR)) return false;
   Serial.println("Identified!");
   progress_bar.value(40.0f);
 
@@ -142,11 +171,7 @@ static NimBLEClient *connect_fuji_xt30(const NimBLEAddress &address,
 
   progress_bar.value(100.0f);
 
-  return pClient;
-
-fail:
-  NimBLEDevice::deleteClient(pClient);
-  return nullptr;
+  return true;
 }
 
 void remote_control_fuji_xt30(NimBLEClient *pClient) {
@@ -182,7 +207,7 @@ void remote_control_fuji_xt30(NimBLEClient *pClient) {
   digitalWrite(M5_LED, HIGH);
 }
 
-static void print_connection(xt30_t *c) {
+static void print_connection(const xt30_t *c) {
   Serial.print("Name: ");
   Serial.println(c->name);
   Serial.print("Address: ");
@@ -191,39 +216,15 @@ static void print_connection(xt30_t *c) {
   Serial.println(c->type);
 }
 
-static void save_connection(NimBLEAdvertisedDevice *pDevice,
-                            const pair_token_t *token) {
-
-  strcpy(&x.name[0], pDevice->getName().c_str());
-  x.address = (uint64_t)pDevice->getAddress();
-  x.type = pDevice->getAddressType();
-  memcpy(&x.token, token, sizeof(pair_token_t));
+static void save_connection(const xt30_t *x) {
 
   preferences.begin(FURBLE_STR, false);
-  preferences.putBytes("XT30", &x, sizeof(x));
+  preferences.putBytes("XT30", x, sizeof(x));
   preferences.end();
 
   Serial.println("Saved connection");
-  print_connection(&x);
+  print_connection(x);
 }
-
-static bool get_connection(void) {
-  bool valid = false;
-
-  preferences.begin(FURBLE_STR, true);
-  size_t len = preferences.getBytesLength("XT30");
-  valid = (len == sizeof(xt30_t));
-
-  if (valid) {
-    preferences.getBytes("XT30", &x, len);
-    Serial.println("Retrieve connection");
-    print_connection(&x);
-  }
-
-  preferences.end();
-
-  return valid;
-};
 
 void setup() {
   Serial.begin(115200);
@@ -234,66 +235,58 @@ void setup() {
   NimBLEDevice::init(FURBLE_STR);
 
   pScan = NimBLEDevice::getScan();
-  pScan->setAdvertisedDeviceCallbacks(new AdvertisedCallBack());
+  pScan->setAdvertisedDeviceCallbacks(new AdvertisedCallback());
   pScan->setActiveScan(true);
   pScan->setInterval(6553);
   pScan->setWindow(6553);
 }
 
-static void menu_scan(void) {
-  scan_list.clear();
+/**
+ * Scan for devices, then present connection menu.
+ */
+static void do_scan(void) {
+  connect_list.clear();
   pScan->clearResults();
   ez.msgBox("Scanning", "Found ... ", "", false);
   pScan->start(SCAN_DURATION, false);
-  ezMenu scanmenu(FURBLE_STR " - Scan Results");
-  scanmenu.buttons("OK#down");
-  for (int i = 0; i < scan_list.size(); i++) {
-    NimBLEAdvertisedDevice *pDevice = scan_list[i];
-    scanmenu.addItem(pDevice->getName().c_str());
-  }
-  scanmenu.addItem("Back");
-  scanmenu.runOnce();
-  int16_t i = scanmenu.pick();
-  NimBLEAdvertisedDevice *pDevice = scan_list[i-1];
-
-  const char *data = pDevice->getManufacturerData().data();
-  const pair_token_t token = { {data[3], data[4], data[5], data[6] } };
-  NimBLEClient *pClient = connect_fuji_xt30(pDevice->getAddress(),
-                                            pDevice->getAddressType(),
-                                            &token);
-  if (pClient != nullptr) {
-    save_connection(pDevice, &token);
-    remote_control_fuji_xt30(pClient);
-  }
+  menu_connect(true);
 }
 
-static void mainmenu_scan(void) {
-  ezMenu submenu(FURBLE_STR " - Scan");
-  submenu.buttons("OK#down");
-  submenu.addItem("Scan and Connect", menu_scan);
-  submenu.addItem("Back");
-  submenu.downOnLast("first");
-  submenu.run();
+/**
+ * Retrieve saved devices, then present connection menu.
+ */
+static void do_saved(void) {
+  connect_list.clear();
+  addSavedDevice();
+  menu_connect(false);
 }
 
-static void connect_saved(void) {
-  NimBLEClient *pClient =
-    connect_fuji_xt30(NimBLEAddress(x.address), x.type, &x.token);
-  if (pClient != nullptr) {
-    remote_control_fuji_xt30(pClient);
-  }
-}
-
-static void mainmenu_connect(void) {
+static void menu_connect(bool save) {
   ezMenu submenu(FURBLE_STR " - Connect");
   submenu.buttons("OK#down");
 
-  if (get_connection()) {
-    submenu.addItem(x.name, connect_saved);
+  for (int i = 0; i < connect_list.size(); i++) {
+    xt30_t *pTarget = &connect_list[i];
+    submenu.addItem(pTarget->name);
   }
   submenu.addItem("Back");
   submenu.downOnLast("first");
-  submenu.run();
+  submenu.runOnce();
+
+  int16_t i = submenu.pick();
+  xt30_t *pTarget = &connect_list[i-1];
+
+  NimBLEClient *pClient = NimBLEDevice::createClient();
+  pClient->setClientCallbacks(&clientCB, false);
+  if (connect_fuji_xt30(pClient, pTarget)) {
+    if (save) {
+      save_connection(pTarget);
+    }
+    remote_control_fuji_xt30(pClient);
+  }
+
+  // Finished, disconnect and destroy.
+  NimBLEDevice::deleteClient(pClient);
 }
 
 static void mainmenu_poweroff(void) {
@@ -303,8 +296,8 @@ static void mainmenu_poweroff(void) {
 void loop() {
   ezMenu mainmenu(FURBLE_STR);
   mainmenu.buttons("OK#down");
-  mainmenu.addItem("Connect", mainmenu_connect);
-  mainmenu.addItem("Scan", mainmenu_scan);
+  mainmenu.addItem("Connect", do_saved);
+  mainmenu.addItem("Scan", do_scan);
   mainmenu.addItem("Power Off", mainmenu_poweroff);
   mainmenu.downOnLast("first");
   mainmenu.run();
