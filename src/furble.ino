@@ -34,11 +34,11 @@ static bool is_fuji_xt30(NimBLEAdvertisedDevice *pDevice) {
 
 class AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
   void onResult(NimBLEAdvertisedDevice *pDevice) {
-    ez.msgBox("Scanning",
-              "Found ... " + String(connect_list.size()), "", false);
     if (is_fuji_xt30(pDevice)) {
       connect_list.push_back(new Furble::FujifilmXT30(pDevice));
     }
+    ez.msgBox("Scanning",
+              "Found ... " + String(connect_list.size()), "", false);
   }
 };
 
@@ -113,6 +113,7 @@ static void menu_connect(bool save) {
   submenu.addItem("Back");
   submenu.downOnLast("first");
   int16_t i = submenu.runOnce();
+  if (i == 0) return;
 
   Furble::Device *device = connect_list[i-1];
 
@@ -139,8 +140,8 @@ static void menu_delete() {
   submenu.downOnLast("first");
 
   int16_t i = submenu.runOnce();
-  Furble::Device *device = connect_list[i-1];
-  device->remove();
+  if (i == 0) return;
+  devices[i-1]->remove();
 }
 
 static void mainmenu_poweroff(void) {

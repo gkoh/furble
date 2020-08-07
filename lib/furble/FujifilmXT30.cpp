@@ -104,7 +104,7 @@ bool FujifilmXT30::connect(NimBLEClient *pClient,
 
   if (!pChr->canWrite()) return false;
   print_token(m_Token);
-  if (!pChr->writeValue(&m_Token[0], XT30_TOKEN_LEN))
+  if (!pChr->writeValue(m_Token, XT30_TOKEN_LEN))
     return false;
   Serial.println("Paired!");
   progress_bar.value(30.0f);
@@ -166,6 +166,7 @@ void FujifilmXT30::print(void)
 
 void FujifilmXT30::disconnect(void)
 {
+  m_Client->disconnect();
 }
 
 device_type_t FujifilmXT30::getDeviceType(void) {

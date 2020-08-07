@@ -13,7 +13,7 @@ typedef struct {
   device_type_t type;
 } index_entry_t;
 
-static void save_index(std::vector<index_entry_t> index) {
+static void save_index(std::vector<index_entry_t> &index) {
   m_Prefs.putBytes(FURBLE_PREF_INDEX,
                    index.data(),
                    sizeof(index[0]) * index.size());
@@ -37,11 +37,12 @@ static std::vector<index_entry_t> load_index(void) {
   return index;
 }
 
-static void add_index(std::vector<index_entry_t> index,
+static void add_index(std::vector<index_entry_t> &index,
                       index_entry_t &entry) {
   bool exists = false;
   for (size_t i = 0; i < index.size(); i++) {
     if (strcmp(index[i].name, entry.name) == 0) {
+      Serial.println("Overwriting existing entry");
       index[i] = entry;
       exists = true;
       break;
@@ -49,6 +50,7 @@ static void add_index(std::vector<index_entry_t> index,
   }
 
   if (!exists) {
+    Serial.println("Adding new entry");
     index.push_back(entry);
   }
 }
@@ -69,7 +71,10 @@ void Device::save(void) {
 
   // Store the entry and the index
   m_Prefs.putBytes(entry.name, dbuffer, dbytes);
+  Serial.println("Saved " + String(entry.name));
   save_index(index);
+  Serial.print("Index entries: ");
+  Serial.println(index.size());
 
   m_Prefs.end();
 }
@@ -84,6 +89,8 @@ void Device::remove(void) {
   size_t i = 0;
   for (i = 0; i < index.size(); i++) {
     if (strcmp(index[i].name, entry.name) == 0) {
+      Serial.print("Deleting: ");
+      Serial.println(entry.name);
       break;
     }
   }
@@ -96,7 +103,7 @@ void Device::remove(void) {
   m_Prefs.end();
 }
 
-void Device::loadDevices(std::vector<Furble::Device*>device_list) {
+void Device::loadDevices(std::vector<Furble::Device*>&device_list) {
   m_Prefs.begin(FURBLE_STR, true);
   std::vector<index_entry_t> index = load_index();
   for (size_t i = 0; i < index.size(); i++) {

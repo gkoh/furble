@@ -21,13 +21,14 @@ class Device {
   public:
     virtual const char *getName(void)=0;
     virtual bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar)=0;
+    virtual void disconnect(void)=0;
     virtual void shutterPress(void)=0;
     virtual void shutterRelease(void)=0;
 
     void save(void);
     void remove(void);
 
-    static void loadDevices(std::vector<Furble::Device *>device_list);
+    static void loadDevices(std::vector<Furble::Device *>&device_list);
 
   protected:
     NimBLEAddress m_Address = NimBLEAddress("");
@@ -61,14 +62,6 @@ class FujifilmXT30: public Device {
     NimBLEClient *m_Client;
     std::string m_Name;
     uint8_t m_Token[XT30_TOKEN_LEN] = {0};
-};
-
-class NVS {
-  public:
-    std::vector<Furble::Device>loadDevices(void);
-    bool saveDevice(Furble::Device &device);
-
-  private:
 };
 
 }
