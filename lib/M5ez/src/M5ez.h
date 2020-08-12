@@ -124,9 +124,9 @@ class ezTheme {
 		uint16_t tb_color = foreground;							
 		uint8_t tb_hmargin = 5;
 
-		uint8_t menu_lmargin = 10;
+		uint8_t menu_lmargin = 15;
 		uint8_t menu_rmargin = 10;
-		uint8_t menu_arrows_lmargin = 5;							
+		uint8_t menu_arrows_lmargin = 4;
 		uint16_t menu_item_color = foreground;					
 		uint16_t menu_sel_bgcolor = foreground;					
 		uint16_t menu_sel_fgcolor = background;					

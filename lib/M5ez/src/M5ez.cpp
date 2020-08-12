@@ -3071,7 +3071,7 @@ void ezMenu::_Arrows() {
 		fill_color = ez.screen.background();
 	}
 	static uint8_t l = ez.theme->menu_arrows_lmargin;
-	m5.lcd.fillTriangle(l, top + 25, l + 10, top + 25, l + 5, top + 10, fill_color);
+	m5.lcd.fillTriangle(l, top + 17, l + 6, top + 17, l + 3, top + 5, fill_color);
 
 	// Down arrow
 	if (_items.size() > _offset + _items_per_screen) {
@@ -3079,7 +3079,7 @@ void ezMenu::_Arrows() {
 	} else {
 		fill_color = ez.screen.background();
 	}
-	m5.lcd.fillTriangle(l, top + height - 25, l + 10, top + height - 25, l + 5, top + height - 10, fill_color);		
+	m5.lcd.fillTriangle(l, top + height - 17, l + 6, top + height - 17, l + 3, top + height - 5, fill_color);
 }
 
 bool ezMenu::_sortWrapper(MenuItem_t& item1, MenuItem_t& item2) {
