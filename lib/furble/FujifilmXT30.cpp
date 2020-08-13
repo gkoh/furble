@@ -6,8 +6,6 @@
 
 #include "Furble.h"
 
-#define MAX_NAME 64
-
 typedef struct _xt30_t {
   char name[MAX_NAME];    /** Human readable device name. */
   uint64_t address; /** Device MAC address. */
@@ -73,6 +71,27 @@ FujifilmXT30::~FujifilmXT30(void)
 {
   NimBLEDevice::deleteClient(m_Client);
   m_Client = nullptr;
+}
+
+const size_t FUJI_XT30_ADV_TOKEN_LEN = 7;
+const uint8_t FUJI_XT30_ID_0 = 0xd8;
+const uint8_t FUJI_XT30_ID_1 = 0x04;
+const uint8_t FUJI_XT30_TYPE_TOKEN = 0x02;
+
+/**
+ * Determine if the advertised BLE device is a Fujifilm X-T30.
+ */
+bool FujifilmXT30::matches(NimBLEAdvertisedDevice *pDevice) {
+  if (pDevice->haveManufacturerData() &&
+      pDevice->getManufacturerData().length() == FUJI_XT30_ADV_TOKEN_LEN) {
+    const char *data = pDevice->getManufacturerData().data();
+    if (data[0] == FUJI_XT30_ID_0 &&
+        data[1] == FUJI_XT30_ID_1 &&
+        data[2] == FUJI_XT30_TYPE_TOKEN) {
+      return true;
+    }
+  }
+  return false;
 }
 
 const char *FujifilmXT30::getName(void) {

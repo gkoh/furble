@@ -1,3 +1,4 @@
+#include <NimBLEAdvertisedDevice.h>
 #include <Preferences.h>
 
 #include "Furble.h"
@@ -117,6 +118,10 @@ void Device::loadDevices(std::vector<Furble::Device*>&device_list) {
     switch (index[i].type) {
       case FURBLE_FUJIFILM_XT30:
         device_list.push_back(new FujifilmXT30(dbuffer, dbytes));
+        break;
+      case FURBLE_CANON_EOS_M6:
+        device_list.push_back(new CanonEOSM6(dbuffer, dbytes));
+        break;
     }
   }
   m_Prefs.end();
@@ -124,6 +129,22 @@ void Device::loadDevices(std::vector<Furble::Device*>&device_list) {
 
 void Device::fillSaveName(char *name) {
   snprintf(name, 16, "%08llX", (uint64_t)m_Address);
+}
+
+void Device::match(NimBLEAdvertisedDevice *pDevice, std::vector<Furble::Device *> &list) {
+  if (FujifilmXT30::matches(pDevice)) {
+    list.push_back(new Furble::FujifilmXT30(pDevice));
+  } else if (CanonEOSM6::matches(pDevice)) {
+    list.push_back(new Furble::CanonEOSM6(pDevice));
+  }
+}
+
+void Device::getUUID128(uuid128_t *uuid) {
+  uint64_t chip_id = ESP.getEfuseMac();
+  randomSeed(chip_id);
+  for (size_t i = 0; i < UUID128_AS_32_LEN; i ++) {
+    uuid->uint32[i] = random(INT32_MAX);
+  }
 }
 
 }

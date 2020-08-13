@@ -16,27 +16,9 @@ static NimBLEScan* pScan = nullptr;
 
 static std::vector<Furble::Device *> connect_list;
 
-/**
- * Determine if the advertised BLE device is a Fujifilm X-T30.
- */
-static bool is_fuji_xt30(NimBLEAdvertisedDevice *pDevice) {
-  if (pDevice->haveManufacturerData() &&
-        pDevice->getManufacturerData().length() == FUJI_XT30_TOKEN_LEN) {
-    const char *data = pDevice->getManufacturerData().data();
-    if (data[0] == FUJI_XT30_ID_0 &&
-        data[1] == FUJI_XT30_ID_1 &&
-        data[2] == FUJI_XT30_TYPE_TOKEN) {
-      return true;
-    }
-  }
-  return false;
-}
-
 class AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
   void onResult(NimBLEAdvertisedDevice *pDevice) {
-    if (is_fuji_xt30(pDevice)) {
-      connect_list.push_back(new Furble::FujifilmXT30(pDevice));
-    }
+    Furble::Device::match(pDevice, connect_list);
     ez.msgBox("Scanning",
               "Found ... " + String(connect_list.size()), "", false);
   }
