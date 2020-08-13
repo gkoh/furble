@@ -27,11 +27,13 @@ static std::vector<index_entry_t> load_index(void) {
   if (bytes > 0 && (bytes % sizeof(index_entry_t) == 0)) {
     uint8_t buffer[bytes] = { 0 };
     size_t count = bytes / sizeof(index_entry_t);
+    Serial.println("Index entries: " + String(count));
     m_Prefs.getBytes(FURBLE_PREF_INDEX, buffer, bytes);
     index_entry_t *entry = (index_entry_t *)buffer;
 
     for (int i = 0; i < count; i++) {
-      index.push_back(*entry);
+      Serial.println("Loading index entry: " + String(entry[i].name));
+      index.push_back(entry[i]);
     }
   }
 
@@ -42,6 +44,7 @@ static void add_index(std::vector<index_entry_t> &index,
                       index_entry_t &entry) {
   bool exists = false;
   for (size_t i = 0; i < index.size(); i++) {
+    Serial.println("[" + String(i) + "] " + String(index[i].name) + " : " + String(entry.name));
     if (strcmp(index[i].name, entry.name) == 0) {
       Serial.println("Overwriting existing entry");
       index[i] = entry;
@@ -139,11 +142,22 @@ void Device::match(NimBLEAdvertisedDevice *pDevice, std::vector<Furble::Device *
   }
 }
 
+/**
+ * Generate a 32-bit PRNG.
+ */
+static uint32_t xorshift(uint32_t x) {
+  /* Algorithm "xor" from p. 4 of Marsaglia, "Xorshift RNGs" */
+  x ^= x << 13;
+  x ^= x << 17;
+  x ^= x << 5;
+  return x;
+}
+
 void Device::getUUID128(uuid128_t *uuid) {
-  uint64_t chip_id = ESP.getEfuseMac();
-  randomSeed(chip_id);
+  uint32_t chip_id = (uint32_t)ESP.getEfuseMac();
   for (size_t i = 0; i < UUID128_AS_32_LEN; i ++) {
-    uuid->uint32[i] = random(INT32_MAX);
+    chip_id = xorshift(chip_id);
+    uuid->uint32[i] = chip_id;
   }
 }
 
