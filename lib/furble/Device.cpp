@@ -1,3 +1,4 @@
+#include <host/ble_gap.h>
 #include <NimBLEAdvertisedDevice.h>
 #include <Preferences.h>
 
@@ -59,6 +60,10 @@ static void add_index(std::vector<index_entry_t> &index,
   }
 }
 
+const char *Device::getName(void) {
+  return m_Name.c_str();
+}
+
 void Device::save(void) {
   m_Prefs.begin(FURBLE_STR, false);
   std::vector<index_entry_t> index = load_index();
@@ -100,6 +105,14 @@ void Device::remove(void) {
   }
 
   index.erase(index.begin() + i);
+
+  // Delete the pairing information in NVS.
+  {
+    ble_addr_t peerAddr;
+    memcpy(&peerAddr.val, m_Address.getNative(), 6);
+    peerAddr.type = m_Address.getType();
+    ble_gap_unpair(&peerAddr);
+  }
 
   m_Prefs.remove(entry.name);
   save_index(index);

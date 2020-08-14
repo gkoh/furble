@@ -13,6 +13,24 @@ typedef struct _eosm6_t {
   uuid128_t uuid; /** Our UUID. */
 } eosm6_t;
 
+static const char *CANON_EOSM6_SVC_IDEN_UUID = "00010000-0000-1000-0000-d8492fffa821";
+/** 0xf108 */
+static const char *CANON_EOSM6_CHR_NAME_UUID = "00010006-0000-1000-0000-d8492fffa821";
+/** 0xf104 */
+static const char *CANON_EOSM6_CHR_IDEN_UUID = "0001000a-0000-1000-0000-d8492fffa821";
+
+static const char *CANON_EOSM6_SVC_UNK0_UUID = "00020000-0000-1000-0000-d8492fffa821";
+/** 0xf204 */
+static const char *CANON_EOSM6_CHR_UNK0_UUID = "00020002-0000-1000-0000-d8492fffa821";
+
+static const char *CANON_EOSM6_SVC_UNK1_UUID = "00030000-0000-1000-0000-d8492fffa821";
+/** 0xf307 */
+static const char *CANON_EOSM6_CHR_UNK1_UUID = "00030010-0000-1000-0000-d8492fffa821";
+
+static const char *CANON_EOSM6_SVC_SHUTTER_UUID = "00030000-0000-1000-0000-d8492fffa821";
+/** 0xf311 */
+static const char *CANON_EOSM6_CHR_SHUTTER_UUID = "00030030-0000-1000-0000-d8492fffa821";
+
 namespace Furble {
 
 CanonEOSM6::CanonEOSM6(const void *data, size_t len) {
@@ -25,7 +43,6 @@ CanonEOSM6::CanonEOSM6(const void *data, size_t len) {
 }
 
 CanonEOSM6::CanonEOSM6(NimBLEAdvertisedDevice *pDevice) {
-  //const char *data = pDevice->getManufacturerData().data();
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
   Serial.println("Name = " + String(m_Name.c_str()));
@@ -42,14 +59,57 @@ CanonEOSM6::~CanonEOSM6(void)
 const size_t CANON_EOS_M6_ADV_DATA_LEN = 21;
 const uint8_t CANON_EOS_M6_ID_0 = 0xa9;
 const uint8_t CANON_EOS_M6_ID_1 = 0x01;
+const uint8_t CANON_EOS_M6_XX_2 = 0x01;
+const uint8_t CANON_EOS_M6_XX_3 = 0xc5;
+const uint8_t CANON_EOS_M6_XX_4 = 0x32;
 
 bool CanonEOSM6::matches(NimBLEAdvertisedDevice *pDevice) {
+  if (pDevice->haveManufacturerData() &&
+      pDevice->getManufacturerData().length() == CANON_EOS_M6_ADV_DATA_LEN) {
+    const char *data = pDevice->getManufacturerData().data();
+    if (data[0] == CANON_EOS_M6_ID_0 &&
+        data[1] == CANON_EOS_M6_ID_1 &&
+        data[2] == CANON_EOS_M6_XX_2 &&
+        data[3] == CANON_EOS_M6_XX_3 &&
+        data[4] == CANON_EOS_M6_XX_4) {
+      // All remaining bits should be zero.
+      uint8_t zero = 0;
+      for (size_t i = 5; i < CANON_EOS_M6_ADV_DATA_LEN; i++) {
+        zero |= data[i];
+      }
+      return (zero == 0);
+    }
+  }
   return false;
 }
 
+static bool write_value(NimBLEClient *pClient,
+                        const char *serviceUUID,
+                        const char *characteristicUUID,
+                        uint8_t *data,
+                        size_t length) {
+  NimBLERemoteService *pSvc = pClient->getService(serviceUUID);
+  if (pSvc) {
+    NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(characteristicUUID);
+    return ((pChr != nullptr) &&
+            pChr->canWrite() &&
+            pChr->writeValue(data, length, true));
+  }
 
-const char *CanonEOSM6::getName(void) {
-  return m_Name.c_str();
+  return false;
+}
+
+static bool write_prefix(NimBLEClient *pClient,
+                         const char *serviceUUID,
+                         const char *characteristicUUID,
+                         uint8_t prefix,
+                         uint8_t *data,
+                         size_t length) {
+
+  uint8_t buffer[length+1] = { 0 };
+  buffer[0] = prefix;
+  memcpy(&buffer[1], data, length);
+  return write_value(pClient, serviceUUID, characteristicUUID, buffer, length+1);
 }
 
 bool CanonEOSM6::connect(NimBLEClient *pClient,
@@ -57,77 +117,115 @@ bool CanonEOSM6::connect(NimBLEClient *pClient,
 {
   m_Client = pClient;
 
-  progress_bar.value(10.0f);
-
-  //NimBLERemoteService *pSvc = nullptr;
-  //NimBLERemoteCharacteristic *pChr = nullptr;
-  NimBLEDevice::setSecurityAuth(true, true, true);
-  NimBLEDevice::setSecurityInitKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID | BLE_SM_PAIR_KEY_DIST_SIGN);
-  NimBLEDevice::setSecurityRespKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID | BLE_SM_PAIR_KEY_DIST_SIGN);
-
   Serial.println("Connecting");
   if (!m_Client->connect(m_Address)) {
     Serial.println("Connection failed!!!");
     return false;
   }
 
-#if 0
   Serial.println("Connected");
-  progress_bar.value(20.0f);
-  pSvc = m_Client->getService(FUJI_XT30_SVC_PAIR_UUID);
-  if (pSvc == nullptr) return false;
+  progress_bar.value(10.0f);
 
-  Serial.println("Pairing");
-  pChr = pSvc->getCharacteristic(FUJI_XT30_CHR_PAIR_UUID);
-  if (pChr == nullptr) return false;
-
-  if (!pChr->canWrite()) return false;
-  print_token(m_Token);
-  if (!pChr->writeValue(m_Token, XT30_TOKEN_LEN))
+  Serial.println("Securing");
+  if (!m_Client->secureConnection()) {
     return false;
-  Serial.println("Paired!");
+  }
+  Serial.println("Secured!");
+  progress_bar.value(20.0f);
+
+  Serial.println("Identifying 1!");
+  if (!write_prefix(m_Client,
+                    CANON_EOSM6_SVC_IDEN_UUID,
+                    CANON_EOSM6_CHR_NAME_UUID,
+                    0x01, (uint8_t *)FURBLE_STR, strlen(FURBLE_STR)))
+    return false;
+
   progress_bar.value(30.0f);
 
-  Serial.println("Identifying");
-  pChr = pSvc->getCharacteristic(FUJI_XT30_CHR_IDEN_UUID);
-  if (!pChr->canWrite()) return false;
-  if (!pChr->writeValue(FURBLE_STR)) return false;
-  Serial.println("Identified!");
+  Serial.println("Identifying 2!");
+  if (!write_prefix(m_Client,
+                    CANON_EOSM6_SVC_IDEN_UUID,
+                    CANON_EOSM6_CHR_IDEN_UUID,
+                    0x03, m_Uuid.uint8, UUID128_LEN))
+    return false;
+
   progress_bar.value(40.0f);
 
-  Serial.println("Configuring");
-  pSvc = m_Client->getService(FUJI_XT30_SVC_CONF_UUID);
-  // indications
-  pSvc->getCharacteristic(FUJI_XT30_CHR_IND1_UUID)->subscribe(false);
+  Serial.println("Identifying 3!");
+  if (!write_prefix(m_Client,
+                    CANON_EOSM6_SVC_IDEN_UUID,
+                    CANON_EOSM6_CHR_IDEN_UUID,
+                    0x04, (uint8_t *)FURBLE_STR, strlen(FURBLE_STR)))
+    return false;
+
   progress_bar.value(50.0f);
-  pSvc->getCharacteristic(FUJI_XT30_CHR_IND2_UUID)->subscribe(false);
+
+  Serial.println("Identifying 4!");
+
+  uint8_t x = 0x02;
+  if (!write_prefix(m_Client,
+                    CANON_EOSM6_SVC_IDEN_UUID,
+                    CANON_EOSM6_CHR_IDEN_UUID,
+                    0x05, &x, 1))
+    return false;
+
   progress_bar.value(60.0f);
-  // notifications
-  pSvc->getCharacteristic(FUJI_XT30_CHR_NOT1_UUID)->subscribe(true);
+
+  Serial.println("Identifying 5!");
+
+  /* write to 0xf204 */
+  x = 0x0a;
+  if (!write_value(m_Client,
+                   CANON_EOSM6_SVC_UNK0_UUID,
+                   CANON_EOSM6_CHR_UNK0_UUID,
+                   &x, 1))
+    return false;
+
   progress_bar.value(70.0f);
-  pSvc->getCharacteristic(FUJI_XT30_CHR_NOT2_UUID)->subscribe(true);
+
+  /* write to 0xf104 */
+  x = 0x01;
+  if (!write_value(m_Client,
+                   CANON_EOSM6_SVC_IDEN_UUID,
+                   CANON_EOSM6_CHR_IDEN_UUID,
+                   &x, 1))
+    return false;
+
   progress_bar.value(80.0f);
-  pSvc->getCharacteristic(FUJI_XT30_CHR_NOT3_UUID)->subscribe(true);
-  progress_bar.value(90.0f);
 
-  Serial.println("Configured");
+  Serial.println("Identifying 6!");
 
+  /* write to 0xf307 */
+  x = 0x03;
+  if (!write_value(m_Client,
+                   CANON_EOSM6_SVC_UNK1_UUID,
+                   CANON_EOSM6_CHR_UNK1_UUID,
+                   &x, 1))
+    return false;
+
+  Serial.println("Paired!");
   progress_bar.value(100.0f);
-#endif
 
   return true;
 }
 
-void CanonEOSM6::shutterPress(void)
-{
+void CanonEOSM6::shutterPress(void) {
+  uint8_t x[2] = { 0x00, 0x01 };
+  write_value(m_Client,
+              CANON_EOSM6_SVC_SHUTTER_UUID,
+              CANON_EOSM6_CHR_SHUTTER_UUID,
+              &x[0], 2);
 }
 
-void CanonEOSM6::shutterRelease(void)
-{
+void CanonEOSM6::shutterRelease(void) {
+  uint8_t x[2] = { 0x00, 0x02 };
+  write_value(m_Client,
+              CANON_EOSM6_SVC_SHUTTER_UUID,
+              CANON_EOSM6_CHR_SHUTTER_UUID,
+              &x[0], 2);
 }
 
-void CanonEOSM6::disconnect(void)
-{
+void CanonEOSM6::disconnect(void) {
   m_Client->disconnect();
 }
 

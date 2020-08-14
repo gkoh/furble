@@ -13,7 +13,9 @@ typedef struct _xt30_t {
   uint8_t token[XT30_TOKEN_LEN]; /** Pairing token. */
 } xt30_t;
 
+/** 0x4001 */
 static const char *FUJI_XT30_SVC_PAIR_UUID = "91f1de68-dff6-466e-8b65-ff13b0f16fb8";
+/** 0x4042 */
 static const char *FUJI_XT30_CHR_PAIR_UUID = "aba356eb-9633-4e60-b73f-f52516dbd671";
 static const char *FUJI_XT30_CHR_IDEN_UUID = "85b9163e-62d1-49ff-a6f5-054b4630d4a1";
 
@@ -92,10 +94,6 @@ bool FujifilmXT30::matches(NimBLEAdvertisedDevice *pDevice) {
     }
   }
   return false;
-}
-
-const char *FujifilmXT30::getName(void) {
-  return m_Name.c_str();
 }
 
 bool FujifilmXT30::connect(NimBLEClient *pClient,

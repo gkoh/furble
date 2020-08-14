@@ -31,12 +31,12 @@ namespace Furble {
 
 class Device {
   public:
-    virtual const char *getName(void)=0;
     virtual bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar)=0;
     virtual void disconnect(void)=0;
     virtual void shutterPress(void)=0;
     virtual void shutterRelease(void)=0;
 
+    const char *getName(void);
     void save(void);
     void remove(void);
 
@@ -54,6 +54,8 @@ class Device {
 
   protected:
     NimBLEAddress m_Address = NimBLEAddress("");
+    NimBLEClient *m_Client;
+    std::string m_Name;
 
   private:
     virtual device_type_t getDeviceType(void)=0;
@@ -74,7 +76,6 @@ class FujifilmXT30: public Device {
      */
     static bool matches(NimBLEAdvertisedDevice *pDevice);
 
-    const char *getName(void);
     bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar);
     void shutterPress(void);
     void shutterRelease(void);
@@ -86,8 +87,6 @@ class FujifilmXT30: public Device {
     size_t getSerialisedBytes(void);
     bool serialise(void *buffer, size_t bytes);
 
-    NimBLEClient *m_Client;
-    std::string m_Name;
     uint8_t m_Token[XT30_TOKEN_LEN] = {0};
 };
 
@@ -113,8 +112,6 @@ class CanonEOSM6: public Device {
     size_t getSerialisedBytes(void);
     bool serialise(void *buffer, size_t bytes);
 
-    NimBLEClient *m_Client;
-    std::string m_Name;
     uuid128_t m_Uuid;
 };
 

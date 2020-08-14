@@ -57,6 +57,7 @@ void setup() {
   ez.begin();
   m5.Axp.ScreenBreath(200);
   NimBLEDevice::init(FURBLE_STR);
+  NimBLEDevice::setSecurityAuth(true, true, true);
 
   pScan = NimBLEDevice::getScan();
   pScan->setAdvertisedDeviceCallbacks(new AdvertisedCallback());
