@@ -11,7 +11,7 @@
 #undef M5EZ_WIFI
 
 // Turn this off if you don't have a battery attached
-#undef M5EZ_BATTERY
+#define M5EZ_BATTERY
 
 // Turn this off to compile without BLE (Bluetooth Low Energy)
 // #define M5EZ_BLE

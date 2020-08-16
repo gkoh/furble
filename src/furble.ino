@@ -2,13 +2,13 @@
 #include <M5ez.h>
 #include <NimBLEDevice.h>
 #include <Preferences.h>
+#include <Battery.h>
+#include <M5StickC.h>
 
 static Preferences preferences;
 
-const size_t FUJI_XT30_TOKEN_LEN = 7;
-const uint8_t FUJI_XT30_ID_0 = 0xd8;
-const uint8_t FUJI_XT30_ID_1 = 0x04;
-const uint8_t FUJI_XT30_TYPE_TOKEN = 0x02;
+const uint8_t BRIGHTNESS_DEFAULT = 10;
+const uint8_t BRIGHTNESS_SHUTTER = 8;
 
 const uint32_t SCAN_DURATION = 10;
 
@@ -24,13 +24,12 @@ class AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
   }
 };
 
-void remote_control(Furble::Device *device) {
+static void remote_control(Furble::Device *device) {
   Serial.println("Remote Control");
-  m5.Axp.SetLDO2(false);
-  digitalWrite(M5_LED, LOW);
+  m5.Axp.ScreenBreath(BRIGHTNESS_SHUTTER);
+  ez.msgBox("Remote Shutter", "Shutter Control: A\nBack: B", "", false);
   while (true) {
     m5.update();
-
     if (m5.BtnA.wasPressed()) {
       device->shutterPress();
     }
@@ -46,16 +45,16 @@ void remote_control(Furble::Device *device) {
     delay(50);
   }
 
-  m5.Axp.SetLDO2(true);
-  digitalWrite(M5_LED, HIGH);
+  m5.Axp.ScreenBreath(BRIGHTNESS_DEFAULT);
 }
 
 void setup() {
   Serial.begin(115200);
   pinMode(M5_LED, OUTPUT);
   digitalWrite(M5_LED, HIGH);
+
   ez.begin();
-  m5.Axp.ScreenBreath(200);
+  m5.Axp.ScreenBreath(BRIGHTNESS_DEFAULT);
   NimBLEDevice::init(FURBLE_STR);
   NimBLEDevice::setSecurityAuth(true, true, true);
 
@@ -86,6 +85,23 @@ static void do_saved(void) {
   menu_connect(false);
 }
 
+static void menu_remote(Furble::Device *device) {
+  ezMenu submenu(FURBLE_STR " - Connected");
+  submenu.buttons("OK#down");
+  submenu.addItem("Shutter");
+  submenu.addItem("Disconnect");
+  submenu.downOnLast("first");
+
+  do {
+    submenu.runOnce();
+    if (submenu.pickName() == "Shutter") {
+      remote_control(device);
+    }
+  } while (submenu.pickName() != "Disconnect");
+
+  device->disconnect();
+}
+
 static void menu_connect(bool save) {
   ezMenu submenu(FURBLE_STR " - Connect");
   submenu.buttons("OK#down");
@@ -106,7 +122,7 @@ static void menu_connect(bool save) {
     if (save) {
       device->save();
     }
-    remote_control(device);
+    menu_remote(device);
   }
 }
 
@@ -139,5 +155,8 @@ void loop() {
   mainmenu.addItem("Delete Saved", menu_delete);
   mainmenu.addItem("Power Off", mainmenu_poweroff);
   mainmenu.downOnLast("first");
-  mainmenu.run();
+
+  while (mainmenu.runOnce()) {
+    m5.Axp.LightSleep(SLEEP_MSEC(250));
+  }
 }

@@ -12,6 +12,10 @@
 	#include <Update.h>
 #endif //M5EZ_WIFI
 
+#ifdef M5EZ_BATTERY
+#include <Battery.h>
+#endif
+
 #ifdef M5EZ_CLOCK
 	#include <ezTime.h>
 #endif
@@ -1912,6 +1916,7 @@ void ezSettings::defaults() {
 		Wire.begin();
 		ez.battery.readFlash();
 		ez.settings.menuObj.addItem("Battery settings", ez.battery.menu);
+                _on = true;
 		if (_on) {
 			_refresh();
 		}
@@ -1962,19 +1967,17 @@ void ezSettings::defaults() {
 	// From [100, 75, 50, 25, 0] to [4, 3, 2, 1, 0]
 	uint8_t ezBattery::getTransformedBatteryLevel()
 	{
-		switch (m5.Power.getBatteryLevel()) 
-		{
-			case 100:
-				return 4;
-			case 75:
-				return 3;
-			case 50:
-				return 2;
-			case 25:
-				return 1;
-			default:
-				return 0;
-		}
+		uint8_t level = sigmoidal(m5.Axp.GetBatVoltage() * 1000, 3000, 4200);
+                if (level > 80)
+                  return 4;
+                else if (level > 60)
+                  return 3;
+                else if (level > 40)
+                  return 2;
+                else if (level > 20)
+                  return 1;
+                else
+                  return 0;
 	}
 
 	//Return the theme based battery bar color according to its level
@@ -2009,7 +2012,7 @@ void ezSettings::defaults() {
 	void ezBattery::_drawWidget(uint16_t x, uint16_t w) {
 		uint8_t currentBatteryLevel = getTransformedBatteryLevel();
 		uint16_t left_offset = x + ez.theme->header_hmargin;
-		uint8_t top = ez.theme->header_height / 10;
+		uint8_t top = (ez.theme->header_height / 10) + 1;
 		uint8_t height = ez.theme->header_height * 0.8;
 		m5.lcd.fillRoundRect(left_offset, top, ez.theme->battery_bar_width, height, ez.theme->battery_bar_gap, ez.theme->header_bgcolor);
 		m5.lcd.drawRoundRect(left_offset, top, ez.theme->battery_bar_width, height, ez.theme->battery_bar_gap, ez.theme->header_fgcolor);
