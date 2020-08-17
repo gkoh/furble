@@ -686,12 +686,10 @@ void ezSettings::defaults() {
 		ez.settings.menuObj.addItem("Backlight settings", ez.backlight.menu);
 		Preferences prefs;
 		prefs.begin("M5ez", true);	// read-only
-		_brightness = prefs.getUChar("brightness", 128);
-		_inactivity = prefs.getUChar("inactivity", NEVER);
+		_brightness = prefs.getUChar("brightness", 10);
+		_inactivity = prefs.getUChar("inactivity", 1);
 		prefs.end();
-#if 1
 		m5.Axp.ScreenBreath(_brightness);
-#endif
 	}
 
 	void ezBacklight::menu() {
@@ -787,11 +785,11 @@ void ezSettings::defaults() {
 		if (!_backlight_off && _inactivity) {
 			if (millis() > _last_activity + 30000 * _inactivity) {
 				_backlight_off = true;
-				m5.Axp.ScreenBreath(0);
+				m5.Axp.ScreenBreath(8);
 				while (true) {
 					if (m5.BtnA.wasPressed() || m5.BtnB.wasPressed()) break;
 					ez.yield();
-					delay(10);
+					m5.Axp.LightSleep(SLEEP_MSEC(10));
 				}
 				ez.buttons.releaseWait();	// Make sure the key pressed to wake display gets ignored
 				m5.Axp.ScreenBreath(_brightness);

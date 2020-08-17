@@ -48,23 +48,6 @@ static void remote_control(Furble::Device *device) {
   m5.Axp.ScreenBreath(BRIGHTNESS_DEFAULT);
 }
 
-void setup() {
-  Serial.begin(115200);
-  pinMode(M5_LED, OUTPUT);
-  digitalWrite(M5_LED, HIGH);
-
-  ez.begin();
-  m5.Axp.ScreenBreath(BRIGHTNESS_DEFAULT);
-  NimBLEDevice::init(FURBLE_STR);
-  NimBLEDevice::setSecurityAuth(true, true, true);
-
-  pScan = NimBLEDevice::getScan();
-  pScan->setAdvertisedDeviceCallbacks(new AdvertisedCallback());
-  pScan->setActiveScan(true);
-  pScan->setInterval(6553);
-  pScan->setWindow(6553);
-}
-
 /**
  * Scan for devices, then present connection menu.
  */
@@ -86,6 +69,7 @@ static void do_saved(void) {
 }
 
 static void menu_remote(Furble::Device *device) {
+  ez.backlight.inactivity(NEVER);
   ezMenu submenu(FURBLE_STR " - Connected");
   submenu.buttons("OK#down");
   submenu.addItem("Shutter");
@@ -100,6 +84,7 @@ static void menu_remote(Furble::Device *device) {
   } while (submenu.pickName() != "Disconnect");
 
   device->disconnect();
+  ez.backlight.inactivity(1);
 }
 
 static void menu_connect(bool save) {
@@ -147,6 +132,20 @@ static void mainmenu_poweroff(void) {
   m5.Axp.PowerOff();
 }
 
+void setup() {
+  Serial.begin(115200);
+
+  ez.begin();
+  NimBLEDevice::init(FURBLE_STR);
+  NimBLEDevice::setSecurityAuth(true, true, true);
+
+  pScan = NimBLEDevice::getScan();
+  pScan->setAdvertisedDeviceCallbacks(new AdvertisedCallback());
+  pScan->setActiveScan(true);
+  pScan->setInterval(6553);
+  pScan->setWindow(6553);
+}
+
 void loop() {
   ezMenu mainmenu(FURBLE_STR);
   mainmenu.buttons("OK#down");
@@ -155,8 +154,5 @@ void loop() {
   mainmenu.addItem("Delete Saved", menu_delete);
   mainmenu.addItem("Power Off", mainmenu_poweroff);
   mainmenu.downOnLast("first");
-
-  while (mainmenu.runOnce()) {
-    m5.Axp.LightSleep(SLEEP_MSEC(250));
-  }
+  mainmenu.run();
 }

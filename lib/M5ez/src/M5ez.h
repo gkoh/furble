@@ -23,7 +23,7 @@
 // #define M5EZ_WIFI_DEBUG
 
 // Determines whether the backlight is settable
-#undef M5EZ_BACKLIGHT
+#define M5EZ_BACKLIGHT
 
 // Compile in ezTime and create a settings menu for clock display
 #undef M5EZ_CLOCK
