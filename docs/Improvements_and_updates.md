@@ -83,9 +83,18 @@ get the last updated value any time.
 In addition NimBLERemoteCharacteristic::readValue and NimBLERemoteCharacteristic::getValue take an optional timestamp parameter which will update it's value with  
 the time the last value was recieved.  
 
-NimBLEClient::getService will now retrieve only the service specified and not the full database, this preserves resources  
-otherwise wasted retrieving and allocating attributes the user application is not interested in.  
+> NimBLEClient::getService  
+> NimBLERemoteService::getCharacteristic  
+> NimBLERemoteCharacteristic::getDescriptor  
+
+These methods will now check the respective vectors for the attribute object and, if not found, will retrieve (only)  
+the specified attribute from the peripheral.  
+
+These changes allow more control for the user to manage the resources used for the attributes.    
 <br/>
+
+NimBLEClient::connect() can now be called without an address or advertised device parameter. This will connect to the  
+device with the address previously set when last connected or set with NimBLEDevice::setPeerAddress(). 
 
 # General  
 To reduce resource use all instances of std::map have been replaced with std::vector.  
