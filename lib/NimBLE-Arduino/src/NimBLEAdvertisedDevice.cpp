@@ -190,6 +190,15 @@ NimBLEUUID NimBLEAdvertisedDevice::getServiceUUID(uint8_t index) {
 
 
 /**
+ * @brief Get the number of services advertised
+ * @return The count of services in the advertising packet.
+ */
+size_t NimBLEAdvertisedDevice::getServiceUUIDCount() {
+    return m_serviceUUIDs.size();
+} // getServiceUUIDCount
+
+
+/**
  * @brief Check advertised services for existance of the required UUID
  * @return Return true if service is advertised
  */
@@ -559,7 +568,6 @@ std::string NimBLEAdvertisedDevice::toString() {
             res += ", Data: " + getServiceData(i);
         }
     }
-    res += "\nadvType: " + std::string(NimBLEUtils::advTypeToString(m_advType));
 
     return res;
 

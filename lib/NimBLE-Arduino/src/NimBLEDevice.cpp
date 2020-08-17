@@ -137,16 +137,18 @@ void NimBLEDevice::stopAdvertising() {
 /**
  * @brief Creates a new client object and maintains a list of all client objects
  * each client can connect to 1 peripheral device.
+ * @param [in] peerAddress An optional peer address that is copied to the new client
+ * object, allows for calling NimBLEClient::connect(bool) without a device or address parameter.
  * @return A reference to the new client object.
  */
 #if defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
-/* STATIC */ NimBLEClient* NimBLEDevice::createClient() {
+/* STATIC */ NimBLEClient* NimBLEDevice::createClient(NimBLEAddress peerAddress) {
     if(m_cList.size() >= NIMBLE_MAX_CONNECTIONS) {
         NIMBLE_LOGW("Number of clients exceeds Max connections. Max=(%d)",
                                             NIMBLE_MAX_CONNECTIONS);
     }
 
-    NimBLEClient* pClient = new NimBLEClient();
+    NimBLEClient* pClient = new NimBLEClient(peerAddress);
     m_cList.push_back(pClient);
 
     return pClient;
