@@ -137,20 +137,6 @@ void NimBLEAdvertising::setMaxInterval(uint16_t maxinterval) {
 
 
 /**
- * @brief NOP - Not yet implemented, dummy function for backward compatibility.
- */
-void NimBLEAdvertising::setMinPreferred(uint16_t mininterval) {
-} // setMinPreferred
-
-
-/**
- * @brief NOP - Not yet implemented, dummy function for backward compatibility.
- */
-void NimBLEAdvertising::setMaxPreferred(uint16_t maxinterval) {
-} // setMaxPreferred
-
-
-/**
  * @brief Set if scan response is available.
  * @param [in] set true = scan response available.
  */
@@ -241,6 +227,11 @@ void NimBLEAdvertising::start() {
     if(pServer != nullptr) {
         if(!pServer->m_gattsStarted){
             pServer->start();
+            // When the server instance is created it resets GATT which
+            // seems to put the controller in a sleep loop? This causes a delay when
+            // advertising is started the first time. To avoid this we call ble_gap_adv_stop
+            // to get the controller ready.
+            ble_gap_adv_stop();
         } else if(pServer->getConnectedCount() >= NIMBLE_MAX_CONNECTIONS) {
             NIMBLE_LOGW(LOG_TAG, "Max connections reached - not advertising");
             return;
