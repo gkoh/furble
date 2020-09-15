@@ -1,4 +1,3 @@
-#include <host/ble_gap.h>
 #include <NimBLEAdvertisedDevice.h>
 #include <Preferences.h>
 
