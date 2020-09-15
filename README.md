@@ -88,7 +88,9 @@ requirements (and more).
 The project is built with [PlatformIO](https://platformio.org) and depends on
 the following libraries:
 - [Battery Sense](https://github.com/rlogiacco/BatterySense)
+  - only the voltage to capacity function is used
 - [M5ez](https://github.com/M5ez/M5ez)
+  - severely butchered version to work on the M5StickC
 - [M5StickC](https://github.com/m5stack/M5StickC)
 - [NimBLE-Arduino](https://github.com/h2zero/NimBLE-Arduino)
 
