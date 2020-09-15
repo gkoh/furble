@@ -1,5 +1,7 @@
 # furble - FUjifilm Remote Bluetooth Low Energy
 
+![PlatformIO CI](https://github.com/gkoh/furble/workflows/PlatformIO%20CI/badge.svg)
+
 A wireless remote shutter release originally targeted at Fujifilm mirrorless
 cameras.
 
