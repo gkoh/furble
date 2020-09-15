@@ -103,6 +103,31 @@ In most cases it should be:
 - plug in the M5StickC
 - `platformio run -t upload`
 
+## Usage
+
+The top level menu has the following entries:
+- `Connect`
+- `Scan`
+- `Delete Saved`
+- `Power Off`
+
+On first use, put the target camera into pairing mode, then hit `Scan`. If the
+camera advertises a known, matching signature, it should appear in the list.
+You can then connect to the target camera, which, if successful, will save the
+entry and show the remote menu.
+
+Upon subsequent use it should be enough to hit `Connect`, selecting the
+previously paired device and leads to the remote menu.
+
+From the remote menu you may choose to disconnect or control the shutter.
+
+# Things To Do
+- error handling is atrocious (it'll probably crash, then restart, which is OK,
+  the M5StickC boots quickly)
+- improve the device matching and connection abstractions
+  - especially if more cameras get supported
+- get some continuous integration going
+
 # Links
 
 Inspiration for this project came from the following project/posts:
