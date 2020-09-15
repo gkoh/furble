@@ -1,8 +1,6 @@
 #include <Furble.h>
 #include <M5ez.h>
 #include <NimBLEDevice.h>
-#include <Preferences.h>
-#include <Battery.h>
 #include <M5StickC.h>
 
 static Preferences preferences;
