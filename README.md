@@ -81,7 +81,8 @@ My search concluded with the [M5StickC](https://m5stack.com/products/stick-c)
 from [M5Stack](https://m5stack.com).
 
 The M5StickC is an ESP32 based mini-IoT development kit which covered all of the
-requirements (and more).
+requirements (and more). At time of writing, M5Stack sell the M5StickC for
+US$9.95.
 
 ### Software
 
