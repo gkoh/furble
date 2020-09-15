@@ -96,6 +96,13 @@ bool FujifilmXT30::matches(NimBLEAdvertisedDevice *pDevice) {
   return false;
 }
 
+/**
+ * Connect to a Fujifilm X-T30.
+ *
+ * During initial pairing the X-T30 advertisement includes a pairing token, this
+ * token is what we use to identify ourselves upfront and during subsequent
+ * re-pairing.
+ */
 bool FujifilmXT30::connect(NimBLEClient *pClient,
                                  ezProgressBar &progress_bar)
 {

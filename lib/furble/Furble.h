@@ -29,11 +29,34 @@ typedef struct _uuid128_t {
 
 namespace Furble {
 
+/**
+ * Represents a single target camera.
+ */
 class Device {
   public:
+    /**
+     * Connect to the target camera such that it is ready for shutter control.
+     *
+     * This should include connection and pairing as needed for the target
+     * device.
+     *
+     * @return true if the client is now ready for shutter control
+     */
     virtual bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar)=0;
+
+    /**
+     * Disconnect from the target.
+     */
     virtual void disconnect(void)=0;
+
+    /**
+     * Send a shutter button press command.
+     */
     virtual void shutterPress(void)=0;
+
+    /**
+     * Send a shutter button release command.
+     */
     virtual void shutterRelease(void)=0;
 
     const char *getName(void);

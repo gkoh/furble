@@ -112,6 +112,12 @@ static bool write_prefix(NimBLEClient *pClient,
   return write_value(pClient, serviceUUID, characteristicUUID, buffer, length+1);
 }
 
+/**
+ * Connect to a Canon EOS M6.
+ *
+ * The EOS M6 uses the 'just works' BLE bonding to pair, all bond management is
+ * handled by the underlying NimBLE and ESP32 libraries.
+ */
 bool CanonEOSM6::connect(NimBLEClient *pClient,
                          ezProgressBar &progress_bar)
 {

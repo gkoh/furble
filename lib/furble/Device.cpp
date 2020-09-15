@@ -10,6 +10,12 @@ namespace Furble {
 
 static Preferences m_Prefs;
 
+/**
+ * Non-volatile storage index entry.
+ *
+ * The name is unique identifier along with type of device so we can deserialise
+ * properly.
+ */
 typedef struct {
   char   name[16];
   device_type_t type;
@@ -112,6 +118,13 @@ void Device::remove(void) {
   m_Prefs.end();
 }
 
+/**
+ * Load the list of saved devices.
+ *
+ * The Arduino-ESP32 NVS library does not expose an entry iterator even though
+ * the underlying library supports it. We work around this by managing a simple
+ * index with a known name and storing target devices in separate entries.
+ */
 void Device::loadDevices(std::vector<Furble::Device*>&device_list) {
   m_Prefs.begin(FURBLE_STR, true);
   std::vector<index_entry_t> index = load_index();
