@@ -128,7 +128,6 @@ From the remote menu you may choose to disconnect or control the shutter.
   the M5StickC boots quickly)
 - improve the device matching and connection abstractions
   - especially if more cameras get supported
-- get some continuous integration going
 
 # Links
 
