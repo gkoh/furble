@@ -11,12 +11,12 @@
 
 #define MAX_NAME (64)
 
-#define XT30_TOKEN_LEN (4)
+#define FUJIFILM_TOKEN_LEN (4)
 #define UUID128_LEN (16)
 #define UUID128_AS_32_LEN (UUID128_LEN / sizeof(uint32_t))
 
 typedef enum {
-  FURBLE_FUJIFILM_XT30 = 1,
+  FURBLE_FUJIFILM = 1,
   FURBLE_CANON_EOS_M6 = 2,
 } device_type_t;
 
@@ -88,11 +88,11 @@ class Device {
     void fillSaveName(char *name);
 };
 
-class FujifilmXT30: public Device {
+class Fujifilm: public Device {
   public:
-    FujifilmXT30(const void *data, size_t len);
-    FujifilmXT30(NimBLEAdvertisedDevice *pDevice);
-    ~FujifilmXT30(void);
+    Fujifilm(const void *data, size_t len);
+    Fujifilm(NimBLEAdvertisedDevice *pDevice);
+    ~Fujifilm(void);
 
     /**
      * Determine if the advertised BLE device is a Fujifilm X-T30.
