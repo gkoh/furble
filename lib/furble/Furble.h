@@ -110,7 +110,7 @@ class Fujifilm: public Device {
     size_t getSerialisedBytes(void);
     bool serialise(void *buffer, size_t bytes);
 
-    uint8_t m_Token[XT30_TOKEN_LEN] = {0};
+    uint8_t m_Token[FUJIFILM_TOKEN_LEN] = {0};
 };
 
 class CanonEOSM6: public Device {
