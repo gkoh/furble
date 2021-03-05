@@ -157,7 +157,7 @@ namespace Furble
     if (len != sizeof(fujifilm_t))
       throw;
 
-    const fujifilmfilm_t *fujifilm = (fujifilm_t *)data;
+    const fujifilm_t *fujifilm = (fujifilm_t *)data;
     m_Name = std::string(fujifilm->name);
     m_Address = NimBLEAddress(fujifilm->address, fujifilm->type);
     memcpy(m_Token, fujifilm->token, FUJIFILM_TOKEN_LEN);
