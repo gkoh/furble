@@ -8,8 +8,8 @@ cameras.
 The remote uses the camera's native Bluetooth Low Energy interface so additional
 adapters are not required.
 
-furble is developed as a PlatformIO project for the M5StickC (an ESP32 based
-device).
+furble is developed as a PlatformIO project for the M5StickC and M5StickC Plus
+(ESP32 based devices).
 
 ## Supported Cameras
 
@@ -81,10 +81,12 @@ I wanted a complete solution out of the box to have:
 
 My search concluded with the [M5StickC](https://m5stack.com/products/stick-c)
 from [M5Stack](https://m5stack.com).
+The M5StickC has since been EOL and replaced with the [M5StickC Plus](https://shop.m5stack.com/collections/stick-series/products/m5stickc-plus-esp32-pico-mini-iot-development-kit).
 
 The M5StickC is an ESP32 based mini-IoT development kit which covered all of the
 requirements (and more). At time of writing, M5Stack sell the M5StickC for
 US$9.95.
+The M5StickC Plus sells for US$19.95.
 
 ### Software
 
@@ -95,6 +97,7 @@ the following libraries:
 - [M5ez](https://github.com/M5ez/M5ez)
   - severely butchered version to work on the M5StickC
 - [M5StickC](https://github.com/m5stack/M5StickC)
+- [M5StickC Plus](https://github.com/m5stack/M5StickC-Plus)
 - [NimBLE-Arduino](https://github.com/h2zero/NimBLE-Arduino)
 
 ## Installation
@@ -103,7 +106,9 @@ PlatformIO does everything assuming things are installed and connected properly.
 In most cases it should be:
 - clone the repository
 - plug in the M5StickC
-- `platformio run -t upload`
+    - `platformio run -e m5stick-c -t upload`
+- OR plug in the M5StickC Plus
+    - `platformio run -e m5stick-c-plus -t upload`
 
 ## Usage
 
