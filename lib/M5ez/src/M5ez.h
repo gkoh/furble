@@ -35,7 +35,11 @@
 #ifdef M5EZ_WIFI
 	#include <WiFi.h>			// WiFiEvent_t, system_event_info_t
 #endif
+#ifdef M5STICKC_PLUS
+#include <M5StickCPlus.h>
+#else
 #include <M5StickC.h>		// GFXfont*
+#endif
 #ifdef M5EZ_CLOCK
 	#include <ezTime.h>			// events, on-screen clock
 #endif
@@ -59,8 +63,21 @@
 
 #define NO_COLOR			TFT_TRANSPARENT
 
+#ifdef M5STICKC_PLUS
+#define TFT_W		240
+#define TFT_H		135
+#define TFT_FONT        sans16
+#define TFT_HEADER_HEIGHT 23
+#define TFT_BUTTON_HEIGHT 19
+#define TFT_RADIUS      8
+#else
 #define TFT_W		160
 #define TFT_H		80
+#define TFT_FONT        hzk16
+#define TFT_HEADER_HEIGHT 12
+#define TFT_BUTTON_HEIGHT 11
+#define TFT_RADIUS      3
+#endif
 
 struct line_t {
 	int16_t position;
@@ -85,26 +102,26 @@ class ezTheme {
 		String name = "Default";								// Change this when making theme
 		uint16_t background = 0xEF7D;
 		uint16_t foreground = TFT_BLACK;
-		uint8_t header_height = 12;
-		const GFXfont* header_font = hzk16;
+		uint8_t header_height = TFT_HEADER_HEIGHT;
+		const GFXfont* header_font = TFT_FONT;
 		uint8_t header_hmargin = 5;
 		uint8_t header_tmargin = 3;
 		uint16_t header_bgcolor = TFT_BLUE;
 		uint16_t header_fgcolor = TFT_WHITE;					
 
-		const GFXfont* print_font = hzk16;
+		const GFXfont* print_font = TFT_FONT;
 		uint16_t print_color = foreground;					
 		
-		const GFXfont* clock_font = hzk16;
+		const GFXfont* clock_font = TFT_FONT;
 
 		uint16_t longpress_time = 250;							//milliseconds
 
-		uint8_t button_height = 11;
-		const GFXfont* button_font = hzk16;
+		uint8_t button_height = TFT_BUTTON_HEIGHT;
+		const GFXfont* button_font = TFT_FONT;
 		uint8_t button_tmargin = 1;								
 		uint8_t button_hmargin = 5;								
 		uint8_t button_gap = 3;									
-		uint8_t button_radius = 3;
+		uint8_t button_radius = TFT_RADIUS;
 		uint16_t button_bgcolor_b = TFT_BLUE;					
 		uint16_t button_bgcolor_t = TFT_PURPLE;					
 		uint16_t button_fgcolor = TFT_WHITE;					
@@ -113,14 +130,14 @@ class ezTheme {
 		uint8_t input_top = 50;									// pixels below ez.canvas.top()
 		uint8_t input_hmargin = 10;								// The distance between text box and edge of screen
 		uint8_t input_vmargin = 10;								// Vertical margin _inside_ the text box
-		const GFXfont* input_font = hzk16;
-		const GFXfont* input_keylock_font = hzk16;
+		const GFXfont* input_font = TFT_FONT;
+		const GFXfont* input_keylock_font = TFT_FONT;
 		uint16_t input_bgcolor = TFT_BLACK;						
 		uint16_t input_fgcolor = TFT_GREEN;						
 		uint16_t input_cursor_blink = 500;						// milliseconds
 		uint8_t input_faces_btns = 18;							
 
-		const GFXfont* tb_font = hzk16;
+		const GFXfont* tb_font = TFT_FONT;
 		uint16_t tb_color = foreground;							
 		uint8_t tb_hmargin = 5;
 
@@ -130,12 +147,12 @@ class ezTheme {
 		uint16_t menu_item_color = foreground;					
 		uint16_t menu_sel_bgcolor = foreground;					
 		uint16_t menu_sel_fgcolor = background;					
-		const GFXfont* menu_big_font = hzk16;
-		const GFXfont* menu_small_font = hzk16;
+		const GFXfont* menu_big_font = TFT_FONT;
+		const GFXfont* menu_small_font = TFT_FONT;
 		uint8_t menu_item_hmargin = 10;							
-		uint8_t menu_item_radius = 3;
+		uint8_t menu_item_radius = TFT_RADIUS;
 
-		const GFXfont* msg_font = hzk16;
+		const GFXfont* msg_font = TFT_FONT;
 		uint16_t msg_color = foreground;						
 		uint8_t msg_hmargin = 20;								
 
