@@ -27,6 +27,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install platformio
-          
-      - name: Build furble
-        run: platformio run
+
+      - name: Build furble (M5StickC)
+        run: platformio run -e m5stick-c
+
+      - name: Build furble (M5StickC Plus)
+        run: platformio run -e m5stick-c-plus

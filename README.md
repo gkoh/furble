@@ -13,8 +13,11 @@ furble is developed as a PlatformIO project for the M5StickC and M5StickC Plus
 
 ## Supported Cameras
 
-The following devices have actually been tested:
+The following devices have actually been tested and confirmed to work:
+- Fujifilm X-S10 ([@dimitrij2k](https://github.com/dimitrij2k))
+- Fujifilm X-T200 ([@Cronkan](https://github.com/Cronkan))
 - Fujifilm X-T30
+- Fujifilm X100V
 - Canon EOS M6
 
 ## Motivation
@@ -37,11 +40,12 @@ but for my camera.
 
 ### Possibly Supported Cameras
 
-Given the similarities of the Fujifilm X-T3 and X-T30, I'd suspect it may 'just
-work', but I do not have access to an X-T3 to confirm.
-Other Fujifilm cameras may also work, but without access to such devices I
-really do not know.
+#### Fujifilm
+Given reports from the community and access to additional cameras, it
+seems many (all?) Fujifilm cameras use the same Bluetooth protocol.
+Reports of further confirmed working Fujifilm cameras are welcome.
 
+#### Canon
 With access to a Canon EOS M6, I was able to implement support for it. Other
 Canon cameras might work, but I suspect the shutter control protocol will be
 different.
@@ -139,3 +143,6 @@ From the remote menu you may choose to disconnect or control the shutter.
 Inspiration for this project came from the following project/posts:
 - https://github.com/hkr/fuji-cam-wifi-tool
 - https://iandouglasscott.com/2017/09/04/reverse-engineering-the-canon-t7i-s-bluetooth-work-in-progress/
+
+Related projects:
+- https://github.com/ArthurFDLR/BR-M5
