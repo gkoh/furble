@@ -67,11 +67,15 @@ void ezTheme::menu() {
 	String orig_name = ez.theme->name;
 	ezMenu thememenu("Theme chooser");
 	thememenu.txtSmall();
-	thememenu.buttons("up#Back#select##down#");
+	thememenu.buttons("OK#down");
+	thememenu.downOnLast("first");
+
 	for (uint8_t n = 0; n < ez.themes.size(); n++) {
 		thememenu.addItem(ez.themes[n].name);
 	}
+	thememenu.addItem("Back");
 	while(thememenu.runOnce()) {
+		if (thememenu.pickName() == "Back") break;
 		if (thememenu.pick()) {
 			ez.theme->select(thememenu.pickName());
 		}
@@ -697,23 +701,26 @@ void ezSettings::defaults() {
 		uint8_t start_inactivity = _inactivity;
 		ezMenu blmenu("Backlight settings");
 		blmenu.txtSmall();
-		blmenu.buttons("up#Back#select##down#");
+		blmenu.buttons("OK#down");
 		blmenu.addItem("Backlight brightness");
 		blmenu.addItem("Inactivity timeout");
+		blmenu.addItem("Back");
+		blmenu.downOnLast("first");
 		while(true) {
 			switch (blmenu.runOnce()) {
-				case 1:	
+				case 1:
 					{
-						ezProgressBar bl ("Backlight brightness", "Set brightness", "left#ok#right");
+						ezProgressBar bl ("Backlight brightness", "Set brightness", "Adjust#Back");
 						while (true) {
 							String b = ez.buttons.poll();
-							if (b == "right" && _brightness <= 240) _brightness += 16;
-							if (!_brightness) _brightness = 255;
-							if (b == "left" && _brightness > 16) _brightness -= 16;
-							if (_brightness == 239) _brightness = 240;
-							bl.value((float)(_brightness / 2.55));
+							if (b == "Adjust") {
+								if (_brightness >= 7 && _brightness < 12) _brightness += 1;
+								else _brightness = 7;
+							}
+							float p = (_brightness - 7) / 0.05;
+							bl.value(p);
 							m5.Axp.ScreenBreath(_brightness);
-							if (b == "ok") break;
+							if (b == "Back") break;
 						}
 					}
 					break;
@@ -725,30 +732,14 @@ void ezSettings::defaults() {
 								disp_val = "Backlight will not turn off";
 							} else if (_inactivity == 1) {
 								disp_val = "Backlight will turn off after 30 seconds of inactivity";
-							} else if (_inactivity == 2) {
-								disp_val = "Backlight will turn off after a minute of inactivity";
 							} else {
-								disp_val = "Backlight will turn off after " + String(_inactivity / 2) + ((_inactivity % 2) ? ".5 " : "") + " minutes of inactivity";
+								disp_val = "Backlight will turn off after a minute of inactivity";
 							}
-							ez.msgBox("Inactivity timeout", disp_val, "-#--#ok##+#++", false);
+							ez.msgBox("Inactivity timeout", disp_val, "Adjust#Back", false);
 							String b = ez.buttons.wait();
-							if (b == "-" && _inactivity) _inactivity--;
-							if (b == "+" && _inactivity < 254) _inactivity++;
-							if (b == "--") {
-								if (_inactivity < 20) {
-									_inactivity = 0;
-								} else {
-									_inactivity -= 20;
-								}
-							}
-							if (b == "++") {
-								if (_inactivity > 234) {
-									_inactivity = 254;
-								} else {
-									_inactivity += 20;
-								}
-							}
-							if (b == "ok") break;
+							if (b == "Adjust") _inactivity++;
+							if (_inactivity > 2) _inactivity = 0;
+							if (b == "Back") break;
 						}
 					}
 					break;
@@ -785,7 +776,7 @@ void ezSettings::defaults() {
 		if (!_backlight_off && _inactivity) {
 			if (millis() > _last_activity + 30000 * _inactivity) {
 				_backlight_off = true;
-				m5.Axp.ScreenBreath(8);
+				m5.Axp.ScreenBreath(7);
 				while (true) {
 					if (m5.BtnA.wasPressed() || m5.BtnB.wasPressed()) break;
 					ez.yield();

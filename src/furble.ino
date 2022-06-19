@@ -10,9 +10,6 @@
 
 static Preferences preferences;
 
-const uint8_t BRIGHTNESS_DEFAULT = 10;
-const uint8_t BRIGHTNESS_SHUTTER = 8;
-
 const uint32_t SCAN_DURATION = 10;
 
 static NimBLEScan* pScan = nullptr;
@@ -29,7 +26,6 @@ class AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
 
 static void remote_control(Furble::Device *device) {
   Serial.println("Remote Control");
-  m5.Axp.ScreenBreath(BRIGHTNESS_SHUTTER);
   ez.msgBox("Remote Shutter", "Shutter Control: A\nBack: B", "", false);
   while (true) {
     m5.update();
@@ -47,8 +43,6 @@ static void remote_control(Furble::Device *device) {
 
     delay(50);
   }
-
-  m5.Axp.ScreenBreath(BRIGHTNESS_DEFAULT);
 }
 
 /**
@@ -87,7 +81,7 @@ static void menu_remote(Furble::Device *device) {
   } while (submenu.pickName() != "Disconnect");
 
   device->disconnect();
-  ez.backlight.inactivity(1);
+  ez.backlight.inactivity(USER_SET);
 }
 
 static void menu_connect(bool save) {
@@ -131,12 +125,28 @@ static void menu_delete() {
   devices[i-1]->remove();
 }
 
+static void menu_settings(void) {
+  ezMenu submenu(FURBLE_STR " - Settings");
+
+  submenu.buttons("OK#down");
+  submenu.addItem("Backlight", ez.backlight.menu);
+  submenu.addItem("Theme", ez.theme->menu);
+  submenu.addItem("Back");
+  submenu.downOnLast("first");
+
+  int16_t i = submenu.runOnce();
+  if (i == 0) return;
+}
+
 static void mainmenu_poweroff(void) {
   m5.Axp.PowerOff();
 }
 
 void setup() {
   Serial.begin(115200);
+
+#include <themes/default.h>
+#include <themes/dark.h>
 
   ez.begin();
   NimBLEDevice::init(FURBLE_STR);
@@ -155,6 +165,7 @@ void loop() {
   mainmenu.addItem("Connect", do_saved);
   mainmenu.addItem("Scan", do_scan);
   mainmenu.addItem("Delete Saved", menu_delete);
+  mainmenu.addItem("Settings", menu_settings);
   mainmenu.addItem("Power Off", mainmenu_poweroff);
   mainmenu.downOnLast("first");
   mainmenu.run();
