@@ -133,9 +133,10 @@ static void menu_settings(void) {
   submenu.addItem("Theme", ez.theme->menu);
   submenu.addItem("Back");
   submenu.downOnLast("first");
+  submenu.run();
 
-  int16_t i = submenu.runOnce();
-  if (i == 0) return;
+  //int16_t i = submenu.runOnce();
+  //if (i == 0) return;
 }
 
 static void mainmenu_poweroff(void) {
@@ -147,6 +148,7 @@ void setup() {
 
 #include <themes/default.h>
 #include <themes/dark.h>
+#include <themes/mono_furble.h>
 
   ez.begin();
   NimBLEDevice::init(FURBLE_STR);
