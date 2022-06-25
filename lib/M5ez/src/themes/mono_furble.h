@@ -60,9 +60,9 @@
 	// theme.signal_bar_gap = 2;
 	// theme.battery_bar_width = 26;
 	// theme.battery_bar_gap = 2;
-	theme.battery_0_fgcolor = TFT_WHITE;
-	theme.battery_25_fgcolor = TFT_WHITE;
-	theme.battery_50_fgcolor = TFT_WHITE;
+	theme.battery_0_fgcolor = TFT_FURBLE;
+	theme.battery_25_fgcolor = TFT_FURBLE;
+	theme.battery_50_fgcolor = TFT_FURBLE;
 	theme.battery_75_fgcolor = TFT_WHITE;
 	theme.battery_100_fgcolor = TFT_WHITE;
 
