@@ -120,6 +120,7 @@ The top level menu has the following entries:
 - `Connect`
 - `Scan`
 - `Delete Saved`
+- `Settings`
 - `Power Off`
 
 On first use, put the target camera into pairing mode, then hit `Scan`. If the
