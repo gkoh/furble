@@ -184,7 +184,7 @@ void FujifilmXT30::shutterFocus(void)
   NimBLERemoteService *pSvc = m_Client->getService(FUJI_XT30_SVC_SHUTTER_UUID);
   NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(FUJI_XT30_CHR_SHUTTER_UUID);
   pChr->writeValue(&FUJI_XT30_SHUTTER_CMD[0], sizeof(FUJI_XT30_SHUTTER_CMD), true);
-  pChr->writeValue(&FUJI_XT30_SHUTTER_FOCUS[0], sizeof(FUJI_XT30_SHUTTER_RELEASE), true);
+  pChr->writeValue(&FUJI_XT30_SHUTTER_FOCUS[0], sizeof(FUJI_XT30_SHUTTER_FOCUS), true);
 }
 
 void FujifilmXT30::print(void)
