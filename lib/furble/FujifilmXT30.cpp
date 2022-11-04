@@ -36,6 +36,7 @@ static const char *FUJI_XT30_CHR_SHUTTER_UUID = "7fcf49c6-4ff0-4777-a03d-1a79166
 static const uint8_t FUJI_XT30_SHUTTER_CMD[2] = {0x01, 0x00};
 static const uint8_t FUJI_XT30_SHUTTER_PRESS[2] = {0x02, 0x00};
 static const uint8_t FUJI_XT30_SHUTTER_RELEASE[2] = {0x00, 0x00};
+static const uint8_t FUJI_XT30_SHUTTER_FOCUS[2] = {0x03, 0x00};
 
 namespace Furble {
 
@@ -176,6 +177,14 @@ void FujifilmXT30::shutterRelease(void)
   NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(FUJI_XT30_CHR_SHUTTER_UUID);
   pChr->writeValue(&FUJI_XT30_SHUTTER_CMD[0], sizeof(FUJI_XT30_SHUTTER_CMD), true);
   pChr->writeValue(&FUJI_XT30_SHUTTER_RELEASE[0], sizeof(FUJI_XT30_SHUTTER_RELEASE), true);
+}
+
+void FujifilmXT30::shutterFocus(void)
+{
+  NimBLERemoteService *pSvc = m_Client->getService(FUJI_XT30_SVC_SHUTTER_UUID);
+  NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(FUJI_XT30_CHR_SHUTTER_UUID);
+  pChr->writeValue(&FUJI_XT30_SHUTTER_CMD[0], sizeof(FUJI_XT30_SHUTTER_CMD), true);
+  pChr->writeValue(&FUJI_XT30_SHUTTER_FOCUS[0], sizeof(FUJI_XT30_SHUTTER_RELEASE), true);
 }
 
 void FujifilmXT30::print(void)

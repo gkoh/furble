@@ -231,6 +231,11 @@ void CanonEOSM6::shutterRelease(void) {
               &x[0], 2);
 }
 
+void CanonEOSM6::shutterFocus(void) {
+  // Unimplemented
+  return;
+}
+
 void CanonEOSM6::disconnect(void) {
   m_Client->disconnect();
 }
