@@ -26,9 +26,15 @@ class AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
 
 static void remote_control(Furble::Device *device) {
   Serial.println("Remote Control");
-  ez.msgBox("Remote Shutter", "Shutter Control: A\nBack: B", "", false);
+  ez.msgBox("Remote Shutter", "Shutter Control: A\nFocus: B\nBack: Power", "", false);
   while (true) {
     m5.update();
+
+    // Source code in AXP192 says 0x02 is short press.
+    if (m5.Axp.GetBtnPress() == 0x02) {
+      break;
+    }
+
     if (m5.BtnA.wasPressed()) {
       device->shutterPress();
     }
@@ -38,7 +44,11 @@ static void remote_control(Furble::Device *device) {
     }
 
     if (m5.BtnB.wasPressed()) {
-      break;
+      device->shutterFocus();
+    }
+
+    if (m5.BtnB.wasReleased()) {
+      device->shutterRelease();
     }
 
     delay(50);

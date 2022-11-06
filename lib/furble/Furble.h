@@ -59,6 +59,11 @@ class Device {
      */
     virtual void shutterRelease(void)=0;
 
+    /**
+     * Send a shutter button focus command.
+     */
+    virtual void shutterFocus(void)=0;
+
     const char *getName(void);
     void save(void);
     void remove(void);
@@ -102,6 +107,7 @@ class FujifilmXT30: public Device {
     bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar);
     void shutterPress(void);
     void shutterRelease(void);
+    void shutterFocus(void);
     void disconnect(void);
     void print(void);
 
@@ -128,6 +134,7 @@ class CanonEOSM6: public Device {
     bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar);
     void shutterPress(void);
     void shutterRelease(void);
+    void shutterFocus(void);
     void disconnect(void);
 
   private:
