@@ -158,6 +158,7 @@ bool CanonEOSRP::connect(NimBLEClient *pClient,
 
   progress_bar.value(40.0f);
 
+
   Serial.println("Identifying 3!");
   if (!write_prefix(m_Client,
                     CANON_EOSRP_SVC_IDEN_UUID,
@@ -189,6 +190,9 @@ bool CanonEOSRP::connect(NimBLEClient *pClient,
     return false;
 
   progress_bar.value(70.0f);
+  delay(5000); // give camera user time to confirm pairing
+
+  Serial.println("Identifying 5b!");
 
   /* write to 0xf104 */
   x = 0x01;
