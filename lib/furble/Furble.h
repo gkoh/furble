@@ -18,6 +18,7 @@
 typedef enum {
   FURBLE_FUJIFILM_XT30 = 1,
   FURBLE_CANON_EOS_M6 = 2,
+  FURBLE_CANON_EOS_RP = 3,
 } device_type_t;
 
 typedef struct _uuid128_t {
@@ -127,6 +128,32 @@ class CanonEOSM6: public Device {
 
     /**
      * Determine if the advertised BLE device is a Canon EOS M6.
+     */
+    static bool matches(NimBLEAdvertisedDevice *pDevice);
+
+    const char *getName(void);
+    bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar);
+    void shutterPress(void);
+    void shutterRelease(void);
+    void shutterFocus(void);
+    void disconnect(void);
+
+  private:
+    device_type_t getDeviceType(void);
+    size_t getSerialisedBytes(void);
+    bool serialise(void *buffer, size_t bytes);
+
+    uuid128_t m_Uuid;
+};
+
+class CanonEOSRP: public Device {
+  public:
+    CanonEOSRP(const void *data, size_t len);
+    CanonEOSRP(NimBLEAdvertisedDevice *pDevice);
+    ~CanonEOSRP(void);
+
+    /**
+     * Determine if the advertised BLE device is a Canon EOS RP.
      */
     static bool matches(NimBLEAdvertisedDevice *pDevice);
 
