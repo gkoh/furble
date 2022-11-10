@@ -6,9 +6,9 @@ on:
       - 'v*'
 
 env:
-  VERSION: ${GITHUB_REF_NAME}+${GITHUB_RUN_ATTEMPT}
-  M5STICKC_FIRMWARE: furble-m5stick-c-${VERSION}.bin
-  M5STICKC_PLUS_FIRMWARE: furble-m5stick-c-plus-${VERSION}.bin
+  VERSION: ${{ github.ref_name }}+${{ github.run_attempt }}
+  M5STICKC_FIRMWARE: furble-m5stick-c-$VERSION.bin
+  M5STICKC_PLUS_FIRMWARE: furble-m5stick-c-plus-$VERSION.bin
 
 jobs:
   build:
@@ -32,22 +32,22 @@ jobs:
       - name: Build furble (M5StickC)
         run: |
           platformio run -e m5stick-c
-          cp -v .pio/build/m5stick-c/firmware.bin ${M5STICKC_FIRMWARE}
+          cp -v .pio/build/m5stick-c/firmware.bin $M5STICKC_FIRMWARE
 
       - name: Build furble (M5StickC Plus)
         run: |
           platformio run -e m5stick-c-plus
-          cp -v .pio/build/m5stick-c-plus/firmware.bin ${M5STICKC_PLUS_FIRMWARE}
+          cp -v .pio/build/m5stick-c-plus/firmware.bin $M5STICKC_PLUS_FIRMWARE
 
       - name: Generate release hashes
         run: |
-          sha256sum ${M5STICKC_FIRMWARE} ${M5STICKC_PLUS_FIRMWARE} > sha256sum.txt
+          sha256sum $M5STICKC_FIRMWARE $M5STICKC_PLUS_FIRMWARE > sha256sum.txt
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           generate_release_notes: true
           files: |
-            ${M5STICKC_FIRMWARE}
-            ${M5STICKC_PLUS_FIRMWARE}
+            $M5STICKC_FIRMWARE
+            $M5STICKC_PLUS_FIRMWARE
             sha256sum.txt
