@@ -12,15 +12,14 @@ static Preferences preferences;
 
 const uint32_t SCAN_DURATION = 10;
 
-static NimBLEScan* pScan = nullptr;
+static NimBLEScan *pScan = nullptr;
 
 static std::vector<Furble::Device *> connect_list;
 
 class AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
   void onResult(NimBLEAdvertisedDevice *pDevice) {
     Furble::Device::match(pDevice, connect_list);
-    ez.msgBox("Scanning",
-              "Found ... " + String(connect_list.size()), "", false);
+    ez.msgBox("Scanning", "Found ... " + String(connect_list.size()), "", false);
   }
 };
 
@@ -104,9 +103,10 @@ static void menu_connect(bool save) {
   submenu.addItem("Back");
   submenu.downOnLast("first");
   int16_t i = submenu.runOnce();
-  if (i == 0) return;
+  if (i == 0)
+    return;
 
-  Furble::Device *device = connect_list[i-1];
+  Furble::Device *device = connect_list[i - 1];
 
   NimBLEClient *pClient = NimBLEDevice::createClient();
   ezProgressBar progress_bar(FURBLE_STR, "Connecting ...", "");
@@ -131,8 +131,9 @@ static void menu_delete() {
   submenu.downOnLast("first");
 
   int16_t i = submenu.runOnce();
-  if (i == 0) return;
-  devices[i-1]->remove();
+  if (i == 0)
+    return;
+  devices[i - 1]->remove();
 }
 
 static void menu_settings(void) {
@@ -145,8 +146,8 @@ static void menu_settings(void) {
   submenu.downOnLast("first");
   submenu.run();
 
-  //int16_t i = submenu.runOnce();
-  //if (i == 0) return;
+  // int16_t i = submenu.runOnce();
+  // if (i == 0) return;
 }
 
 static void mainmenu_poweroff(void) {
@@ -156,8 +157,8 @@ static void mainmenu_poweroff(void) {
 void setup() {
   Serial.begin(115200);
 
-#include <themes/default.h>
 #include <themes/dark.h>
+#include <themes/default.h>
 #include <themes/mono_furble.h>
 
   ez.begin();

@@ -1,16 +1,16 @@
 #include <NimBLEAddress.h>
 #include <NimBLEAdvertisedDevice.h>
 #include <NimBLEDevice.h>
-#include <NimBLERemoteService.h>
 #include <NimBLERemoteCharacteristic.h>
+#include <NimBLERemoteService.h>
 
 #include "Furble.h"
 
 typedef struct _eosrp_t {
-  char name[MAX_NAME];    /** Human readable device name. */
-  uint64_t address; /** Device MAC address. */
-  uint8_t type;     /** Address type. */
-  uuid128_t uuid; /** Our UUID. */
+  char name[MAX_NAME]; /** Human readable device name. */
+  uint64_t address;    /** Device MAC address. */
+  uint8_t type;        /** Address type. */
+  uuid128_t uuid;      /** Our UUID. */
 } eosrp_t;
 
 static const char *CANON_EOSRP_SVC_IDEN_UUID = "00010000-0000-1000-0000-d8492fffa821";
@@ -34,7 +34,8 @@ static const char *CANON_EOSRP_CHR_SHUTTER_UUID = "00030030-0000-1000-0000-d8492
 namespace Furble {
 
 CanonEOSRP::CanonEOSRP(const void *data, size_t len) {
-  if (len != sizeof(eosrp_t)) throw;
+  if (len != sizeof(eosrp_t))
+    throw;
 
   const eosrp_t *eosrp = (eosrp_t *)data;
   m_Name = std::string(eosrp->name);
@@ -50,8 +51,7 @@ CanonEOSRP::CanonEOSRP(NimBLEAdvertisedDevice *pDevice) {
   Device::getUUID128(&m_Uuid);
 }
 
-CanonEOSRP::~CanonEOSRP(void)
-{
+CanonEOSRP::~CanonEOSRP(void) {
   NimBLEDevice::deleteClient(m_Client);
   m_Client = nullptr;
 }
@@ -67,17 +67,13 @@ const uint8_t CANON_EOS_RP_XX_6 = 0x00;
 const uint8_t CANON_EOS_RP_XX_7 = 0x02;
 
 bool CanonEOSRP::matches(NimBLEAdvertisedDevice *pDevice) {
-  if (pDevice->haveManufacturerData() &&
-      pDevice->getManufacturerData().length() == CANON_EOS_RP_ADV_DATA_LEN) {
+  if (pDevice->haveManufacturerData()
+      && pDevice->getManufacturerData().length() == CANON_EOS_RP_ADV_DATA_LEN) {
     const char *data = pDevice->getManufacturerData().data();
-    if (data[0] == CANON_EOS_RP_ID_0 &&
-        data[1] == CANON_EOS_RP_ID_1 &&
-        data[2] == CANON_EOS_RP_XX_2 &&
-        data[3] == CANON_EOS_RP_XX_3 &&
-        data[4] == CANON_EOS_RP_XX_4 &&
-        data[5] == CANON_EOS_RP_XX_5 &&
-        data[6] == CANON_EOS_RP_XX_6 &&
-        data[7] == CANON_EOS_RP_XX_7) {
+    if (data[0] == CANON_EOS_RP_ID_0 && data[1] == CANON_EOS_RP_ID_1 && data[2] == CANON_EOS_RP_XX_2
+        && data[3] == CANON_EOS_RP_XX_3 && data[4] == CANON_EOS_RP_XX_4
+        && data[5] == CANON_EOS_RP_XX_5 && data[6] == CANON_EOS_RP_XX_6
+        && data[7] == CANON_EOS_RP_XX_7) {
       return true;
     }
   }
@@ -92,9 +88,7 @@ static bool write_value(NimBLEClient *pClient,
   NimBLERemoteService *pSvc = pClient->getService(serviceUUID);
   if (pSvc) {
     NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(characteristicUUID);
-    return ((pChr != nullptr) &&
-            pChr->canWrite() &&
-            pChr->writeValue(data, length, true));
+    return ((pChr != nullptr) && pChr->canWrite() && pChr->writeValue(data, length, true));
   }
 
   return false;
@@ -106,11 +100,10 @@ static bool write_prefix(NimBLEClient *pClient,
                          uint8_t prefix,
                          uint8_t *data,
                          size_t length) {
-
-  uint8_t buffer[length+1] = { 0 };
+  uint8_t buffer[length + 1] = {0};
   buffer[0] = prefix;
   memcpy(&buffer[1], data, length);
-  return write_value(pClient, serviceUUID, characteristicUUID, buffer, length+1);
+  return write_value(pClient, serviceUUID, characteristicUUID, buffer, length + 1);
 }
 
 /**
@@ -119,9 +112,7 @@ static bool write_prefix(NimBLEClient *pClient,
  * The EOS RP uses the 'just works' BLE bonding to pair, all bond management is
  * handled by the underlying NimBLE and ESP32 libraries.
  */
-bool CanonEOSRP::connect(NimBLEClient *pClient,
-                         ezProgressBar &progress_bar)
-{
+bool CanonEOSRP::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
   m_Client = pClient;
 
   Serial.println("Connecting");
@@ -141,29 +132,22 @@ bool CanonEOSRP::connect(NimBLEClient *pClient,
   progress_bar.value(20.0f);
 
   Serial.println("Identifying 1!");
-  if (!write_prefix(m_Client,
-                    CANON_EOSRP_SVC_IDEN_UUID,
-                    CANON_EOSRP_CHR_NAME_UUID,
-                    0x01, (uint8_t *)FURBLE_STR, strlen(FURBLE_STR)))
+  if (!write_prefix(m_Client, CANON_EOSRP_SVC_IDEN_UUID, CANON_EOSRP_CHR_NAME_UUID, 0x01,
+                    (uint8_t *)FURBLE_STR, strlen(FURBLE_STR)))
     return false;
 
   progress_bar.value(30.0f);
 
   Serial.println("Identifying 2!");
-  if (!write_prefix(m_Client,
-                    CANON_EOSRP_SVC_IDEN_UUID,
-                    CANON_EOSRP_CHR_IDEN_UUID,
-                    0x03, m_Uuid.uint8, UUID128_LEN))
+  if (!write_prefix(m_Client, CANON_EOSRP_SVC_IDEN_UUID, CANON_EOSRP_CHR_IDEN_UUID, 0x03,
+                    m_Uuid.uint8, UUID128_LEN))
     return false;
 
   progress_bar.value(40.0f);
 
-
   Serial.println("Identifying 3!");
-  if (!write_prefix(m_Client,
-                    CANON_EOSRP_SVC_IDEN_UUID,
-                    CANON_EOSRP_CHR_IDEN_UUID,
-                    0x04, (uint8_t *)FURBLE_STR, strlen(FURBLE_STR)))
+  if (!write_prefix(m_Client, CANON_EOSRP_SVC_IDEN_UUID, CANON_EOSRP_CHR_IDEN_UUID, 0x04,
+                    (uint8_t *)FURBLE_STR, strlen(FURBLE_STR)))
     return false;
 
   progress_bar.value(50.0f);
@@ -171,10 +155,7 @@ bool CanonEOSRP::connect(NimBLEClient *pClient,
   Serial.println("Identifying 4!");
 
   uint8_t x = 0x02;
-  if (!write_prefix(m_Client,
-                    CANON_EOSRP_SVC_IDEN_UUID,
-                    CANON_EOSRP_CHR_IDEN_UUID,
-                    0x05, &x, 1))
+  if (!write_prefix(m_Client, CANON_EOSRP_SVC_IDEN_UUID, CANON_EOSRP_CHR_IDEN_UUID, 0x05, &x, 1))
     return false;
 
   progress_bar.value(60.0f);
@@ -183,23 +164,17 @@ bool CanonEOSRP::connect(NimBLEClient *pClient,
 
   /* write to 0xf204 */
   x = 0x0a;
-  if (!write_value(m_Client,
-                   CANON_EOSRP_SVC_UNK0_UUID,
-                   CANON_EOSRP_CHR_UNK0_UUID,
-                   &x, 1))
+  if (!write_value(m_Client, CANON_EOSRP_SVC_UNK0_UUID, CANON_EOSRP_CHR_UNK0_UUID, &x, 1))
     return false;
 
   progress_bar.value(70.0f);
-  delay(5000); // give camera user time to confirm pairing
+  delay(5000);  // give camera user time to confirm pairing
 
   Serial.println("Identifying 5b!");
 
   /* write to 0xf104 */
   x = 0x01;
-  if (!write_value(m_Client,
-                   CANON_EOSRP_SVC_IDEN_UUID,
-                   CANON_EOSRP_CHR_IDEN_UUID,
-                   &x, 1))
+  if (!write_value(m_Client, CANON_EOSRP_SVC_IDEN_UUID, CANON_EOSRP_CHR_IDEN_UUID, &x, 1))
     return false;
 
   progress_bar.value(80.0f);
@@ -208,10 +183,7 @@ bool CanonEOSRP::connect(NimBLEClient *pClient,
 
   /* write to 0xf307 */
   x = 0x03;
-  if (!write_value(m_Client,
-                   CANON_EOSRP_SVC_UNK1_UUID,
-                   CANON_EOSRP_CHR_UNK1_UUID,
-                   &x, 1))
+  if (!write_value(m_Client, CANON_EOSRP_SVC_UNK1_UUID, CANON_EOSRP_CHR_UNK1_UUID, &x, 1))
     return false;
 
   Serial.println("Paired!");
@@ -221,19 +193,13 @@ bool CanonEOSRP::connect(NimBLEClient *pClient,
 }
 
 void CanonEOSRP::shutterPress(void) {
-  uint8_t x[2] = { 0x00, 0x01 };
-  write_value(m_Client,
-              CANON_EOSRP_SVC_SHUTTER_UUID,
-              CANON_EOSRP_CHR_SHUTTER_UUID,
-              &x[0], 2);
+  uint8_t x[2] = {0x00, 0x01};
+  write_value(m_Client, CANON_EOSRP_SVC_SHUTTER_UUID, CANON_EOSRP_CHR_SHUTTER_UUID, &x[0], 2);
 }
 
 void CanonEOSRP::shutterRelease(void) {
-  uint8_t x[2] = { 0x00, 0x02 };
-  write_value(m_Client,
-              CANON_EOSRP_SVC_SHUTTER_UUID,
-              CANON_EOSRP_CHR_SHUTTER_UUID,
-              &x[0], 2);
+  uint8_t x[2] = {0x00, 0x02};
+  write_value(m_Client, CANON_EOSRP_SVC_SHUTTER_UUID, CANON_EOSRP_CHR_SHUTTER_UUID, &x[0], 2);
 }
 
 void CanonEOSRP::shutterFocus(void) {
@@ -266,4 +232,4 @@ bool CanonEOSRP::serialise(void *buffer, size_t bytes) {
   return true;
 }
 
-}
+}  // namespace Furble
