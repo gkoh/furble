@@ -1,15 +1,15 @@
 #include <NimBLEAddress.h>
 #include <NimBLEAdvertisedDevice.h>
 #include <NimBLEDevice.h>
-#include <NimBLERemoteService.h>
 #include <NimBLERemoteCharacteristic.h>
+#include <NimBLERemoteService.h>
 
 #include "Furble.h"
 
 typedef struct _xt30_t {
-  char name[MAX_NAME];    /** Human readable device name. */
-  uint64_t address; /** Device MAC address. */
-  uint8_t type;     /** Address type. */
+  char name[MAX_NAME];           /** Human readable device name. */
+  uint64_t address;              /** Device MAC address. */
+  uint8_t type;                  /** Address type. */
   uint8_t token[XT30_TOKEN_LEN]; /** Pairing token. */
 } xt30_t;
 
@@ -20,8 +20,9 @@ static const char *FUJI_XT30_CHR_PAIR_UUID = "aba356eb-9633-4e60-b73f-f52516dbd6
 static const char *FUJI_XT30_CHR_IDEN_UUID = "85b9163e-62d1-49ff-a6f5-054b4630d4a1";
 
 // Currently unused
-//static const char *FUJI_XT30_SVC_READ_UUID = "4e941240-d01d-46b9-a5ea-67636806830b";
-//static const char *FUJI_XT30_CHR_READ_UUID = "bf6dc9cf-3606-4ec9-a4c8-d77576e93ea4";
+// static const char *FUJI_XT30_SVC_READ_UUID =
+// "4e941240-d01d-46b9-a5ea-67636806830b"; static const char
+// *FUJI_XT30_CHR_READ_UUID = "bf6dc9cf-3606-4ec9-a4c8-d77576e93ea4";
 
 static const char *FUJI_XT30_SVC_CONF_UUID = "4c0020fe-f3b6-40de-acc9-77d129067b14";
 static const char *FUJI_XT30_CHR_IND1_UUID = "a68e3f66-0fcc-4395-8d4c-aa980b5877fa";
@@ -41,15 +42,13 @@ static const uint8_t FUJI_XT30_SHUTTER_FOCUS[2] = {0x03, 0x00};
 namespace Furble {
 
 static void print_token(const uint8_t *token) {
-  Serial.println("Token = " +
-                 String(token[0], HEX) +
-                 String(token[1], HEX) +
-                 String(token[2], HEX) +
-                 String(token[3], HEX));
+  Serial.println("Token = " + String(token[0], HEX) + String(token[1], HEX) + String(token[2], HEX)
+                 + String(token[3], HEX));
 }
 
 FujifilmXT30::FujifilmXT30(const void *data, size_t len) {
-  if (len != sizeof(xt30_t)) throw;
+  if (len != sizeof(xt30_t))
+    throw;
 
   const xt30_t *xt30 = (xt30_t *)data;
   m_Name = std::string(xt30->name);
@@ -70,8 +69,7 @@ FujifilmXT30::FujifilmXT30(NimBLEAdvertisedDevice *pDevice) {
   print_token(m_Token);
 }
 
-FujifilmXT30::~FujifilmXT30(void)
-{
+FujifilmXT30::~FujifilmXT30(void) {
   NimBLEDevice::deleteClient(m_Client);
   m_Client = nullptr;
 }
@@ -85,12 +83,10 @@ const uint8_t FUJI_XT30_TYPE_TOKEN = 0x02;
  * Determine if the advertised BLE device is a Fujifilm X-T30.
  */
 bool FujifilmXT30::matches(NimBLEAdvertisedDevice *pDevice) {
-  if (pDevice->haveManufacturerData() &&
-      pDevice->getManufacturerData().length() == FUJI_XT30_ADV_TOKEN_LEN) {
+  if (pDevice->haveManufacturerData()
+      && pDevice->getManufacturerData().length() == FUJI_XT30_ADV_TOKEN_LEN) {
     const char *data = pDevice->getManufacturerData().data();
-    if (data[0] == FUJI_XT30_ID_0 &&
-        data[1] == FUJI_XT30_ID_1 &&
-        data[2] == FUJI_XT30_TYPE_TOKEN) {
+    if (data[0] == FUJI_XT30_ID_0 && data[1] == FUJI_XT30_ID_1 && data[2] == FUJI_XT30_TYPE_TOKEN) {
       return true;
     }
   }
@@ -104,9 +100,7 @@ bool FujifilmXT30::matches(NimBLEAdvertisedDevice *pDevice) {
  * token is what we use to identify ourselves upfront and during subsequent
  * re-pairing.
  */
-bool FujifilmXT30::connect(NimBLEClient *pClient,
-                                 ezProgressBar &progress_bar)
-{
+bool FujifilmXT30::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
   m_Client = pClient;
 
   progress_bar.value(10.0f);
@@ -121,13 +115,16 @@ bool FujifilmXT30::connect(NimBLEClient *pClient,
   Serial.println("Connected");
   progress_bar.value(20.0f);
   pSvc = m_Client->getService(FUJI_XT30_SVC_PAIR_UUID);
-  if (pSvc == nullptr) return false;
+  if (pSvc == nullptr)
+    return false;
 
   Serial.println("Pairing");
   pChr = pSvc->getCharacteristic(FUJI_XT30_CHR_PAIR_UUID);
-  if (pChr == nullptr) return false;
+  if (pChr == nullptr)
+    return false;
 
-  if (!pChr->canWrite()) return false;
+  if (!pChr->canWrite())
+    return false;
   print_token(m_Token);
   if (!pChr->writeValue(m_Token, XT30_TOKEN_LEN))
     return false;
@@ -136,8 +133,10 @@ bool FujifilmXT30::connect(NimBLEClient *pClient,
 
   Serial.println("Identifying");
   pChr = pSvc->getCharacteristic(FUJI_XT30_CHR_IDEN_UUID);
-  if (!pChr->canWrite()) return false;
-  if (!pChr->writeValue(FURBLE_STR)) return false;
+  if (!pChr->canWrite())
+    return false;
+  if (!pChr->writeValue(FURBLE_STR))
+    return false;
   Serial.println("Identified!");
   progress_bar.value(40.0f);
 
@@ -163,32 +162,28 @@ bool FujifilmXT30::connect(NimBLEClient *pClient,
   return true;
 }
 
-void FujifilmXT30::shutterPress(void)
-{
+void FujifilmXT30::shutterPress(void) {
   NimBLERemoteService *pSvc = m_Client->getService(FUJI_XT30_SVC_SHUTTER_UUID);
   NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(FUJI_XT30_CHR_SHUTTER_UUID);
   pChr->writeValue(&FUJI_XT30_SHUTTER_CMD[0], sizeof(FUJI_XT30_SHUTTER_CMD), true);
   pChr->writeValue(&FUJI_XT30_SHUTTER_PRESS[0], sizeof(FUJI_XT30_SHUTTER_PRESS), true);
 }
 
-void FujifilmXT30::shutterRelease(void)
-{
+void FujifilmXT30::shutterRelease(void) {
   NimBLERemoteService *pSvc = m_Client->getService(FUJI_XT30_SVC_SHUTTER_UUID);
   NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(FUJI_XT30_CHR_SHUTTER_UUID);
   pChr->writeValue(&FUJI_XT30_SHUTTER_CMD[0], sizeof(FUJI_XT30_SHUTTER_CMD), true);
   pChr->writeValue(&FUJI_XT30_SHUTTER_RELEASE[0], sizeof(FUJI_XT30_SHUTTER_RELEASE), true);
 }
 
-void FujifilmXT30::shutterFocus(void)
-{
+void FujifilmXT30::shutterFocus(void) {
   NimBLERemoteService *pSvc = m_Client->getService(FUJI_XT30_SVC_SHUTTER_UUID);
   NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(FUJI_XT30_CHR_SHUTTER_UUID);
   pChr->writeValue(&FUJI_XT30_SHUTTER_CMD[0], sizeof(FUJI_XT30_SHUTTER_CMD), true);
   pChr->writeValue(&FUJI_XT30_SHUTTER_FOCUS[0], sizeof(FUJI_XT30_SHUTTER_FOCUS), true);
 }
 
-void FujifilmXT30::print(void)
-{
+void FujifilmXT30::print(void) {
   Serial.print("Name: ");
   Serial.println(m_Name.c_str());
   Serial.print("Address: ");
@@ -197,8 +192,7 @@ void FujifilmXT30::print(void)
   Serial.println(m_Address.getType());
 }
 
-void FujifilmXT30::disconnect(void)
-{
+void FujifilmXT30::disconnect(void) {
   m_Client->disconnect();
 }
 
@@ -223,4 +217,4 @@ bool FujifilmXT30::serialise(void *buffer, size_t bytes) {
   return true;
 }
 
-}
+}  // namespace Furble
