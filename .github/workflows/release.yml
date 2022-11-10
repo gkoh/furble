@@ -6,9 +6,8 @@ on:
       - 'v*'
 
 env:
-  VERSION: ${{ github.ref_name }}+${{ github.run_attempt }}
-  M5STICKC_FIRMWARE: furble-m5stick-c-${{ env.VERSION }}.bin
-  M5STICKC_PLUS_FIRMWARE: furble-m5stick-c-plus-${{ env.VERSION }}.bin
+  M5STICKC_FIRMWARE: furble-m5stick-c-${{ github.ref_name }}+${{ github.run_attempt }}.bin
+  M5STICKC_PLUS_FIRMWARE: furble-m5stick-c-plus-${{ github.ref_name }}+${{ github.run_attempt }}.bin
 
 jobs:
   build:
