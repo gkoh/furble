@@ -23,6 +23,18 @@ class AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
   }
 };
 
+/**
+ * Display the version.
+ */
+static void about(void) {
+  String version = FURBLE_VERSION;
+  if (version.length() < 1) {
+    version = "unknown";
+  }
+
+  ez.msgBox(FURBLE_STR " - About", "Version: " + version, "Back", true);
+}
+
 static void remote_control(Furble::Device *device) {
   Serial.println("Remote Control");
   ez.msgBox("Remote Shutter", "Shutter Control: A\nFocus: B\nBack: Power", "", false);
@@ -142,12 +154,10 @@ static void menu_settings(void) {
   submenu.buttons("OK#down");
   submenu.addItem("Backlight", ez.backlight.menu);
   submenu.addItem("Theme", ez.theme->menu);
+  submenu.addItem("About", about);
   submenu.addItem("Back");
   submenu.downOnLast("first");
   submenu.run();
-
-  // int16_t i = submenu.runOnce();
-  // if (i == 0) return;
 }
 
 static void mainmenu_poweroff(void) {

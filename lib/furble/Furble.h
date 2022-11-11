@@ -9,6 +9,10 @@
 
 #define FURBLE_STR "furble"
 
+#ifndef FURBLE_VERSION
+#define FURBLE_VERSION = "unknown"
+#endif
+
 #define MAX_NAME (64)
 
 #define XT30_TOKEN_LEN (4)
