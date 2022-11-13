@@ -152,12 +152,12 @@ void CanonEOS::shutterRelease(void) {
 }
 
 void CanonEOS::focusPress(void) {
-  // Unimplemented
+  shutterPress();
   return;
 }
 
 void CanonEOS::focusRelease(void) {
-  // Unimplemented
+  // do nothing
   return;
 }
 
