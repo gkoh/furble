@@ -10,7 +10,7 @@
 #define FURBLE_STR "furble"
 
 #ifndef FURBLE_VERSION
-#define FURBLE_VERSION = "unknown"
+#define FURBLE_VERSION "unknown"
 #endif
 
 typedef enum {
