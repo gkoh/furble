@@ -55,11 +55,11 @@ static void remote_control(Furble::Device *device) {
     }
 
     if (m5.BtnB.wasPressed()) {
-      device->shutterFocus();
+      device->focusPress();
     }
 
     if (m5.BtnB.wasReleased()) {
-      device->shutterRelease();
+      device->focusRelease();
     }
 
     delay(50);

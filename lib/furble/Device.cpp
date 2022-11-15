@@ -133,8 +133,8 @@ void Device::loadDevices(std::vector<Furble::Device *> &device_list) {
     m_Prefs.getBytes(index[i].name, dbuffer, dbytes);
 
     switch (index[i].type) {
-      case FURBLE_FUJIFILM_XT30:
-        device_list.push_back(new FujifilmXT30(dbuffer, dbytes));
+      case FURBLE_FUJIFILM:
+        device_list.push_back(new Fujifilm(dbuffer, dbytes));
         break;
       case FURBLE_CANON_EOS_M6:
         device_list.push_back(new CanonEOSM6(dbuffer, dbytes));
@@ -152,8 +152,8 @@ void Device::fillSaveName(char *name) {
 }
 
 void Device::match(NimBLEAdvertisedDevice *pDevice, std::vector<Furble::Device *> &list) {
-  if (FujifilmXT30::matches(pDevice)) {
-    list.push_back(new Furble::FujifilmXT30(pDevice));
+  if (Fujifilm::matches(pDevice)) {
+    list.push_back(new Furble::Fujifilm(pDevice));
   } else if (CanonEOSM6::matches(pDevice)) {
     list.push_back(new Furble::CanonEOSM6(pDevice));
   } else if (CanonEOSRP::matches(pDevice)) {

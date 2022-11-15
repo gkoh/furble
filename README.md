@@ -14,11 +14,13 @@ furble is developed as a PlatformIO project for the M5StickC and M5StickC Plus
 ## Supported Cameras
 
 The following devices have actually been tested and confirmed to work:
+- Fujifilm GFX100S ([@adrianuseless](https://github.com/adrianuseless))
 - Fujifilm X-S10 ([@dimitrij2k](https://github.com/dimitrij2k))
 - Fujifilm X-T200 ([@Cronkan](https://github.com/Cronkan))
 - Fujifilm X-T30
 - Fujifilm X100V
-- Canon EOS M6
+- Canon EOS M6 ([@tardisx](https://github.com/tardisx))
+- Canon EOS RP ([@wolcano](https://github.com/wolcano))
 
 ## Motivation
 
@@ -49,6 +51,7 @@ Reports of further confirmed working Fujifilm cameras are welcome.
 With access to a Canon EOS M6, I was able to implement support for it. Other
 Canon cameras might work, but I suspect the shutter control protocol will be
 different.
+@wolcano kindly implemented support for the Canon EOS RP.
 
 #### Protocol Reverse Engineering
 
