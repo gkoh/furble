@@ -8,8 +8,6 @@
 #include <M5StickC.h>
 #endif
 
-static Preferences preferences;
-
 const uint32_t SCAN_DURATION = 10;
 
 static NimBLEScan *pScan = nullptr;
@@ -154,6 +152,7 @@ static void menu_settings(void) {
   submenu.buttons("OK#down");
   submenu.addItem("Backlight", ez.backlight.menu);
   submenu.addItem("Theme", ez.theme->menu);
+  submenu.addItem("Transmit Power", settings_menu_tx_power);
   submenu.addItem("About", about);
   submenu.addItem("Back");
   submenu.downOnLast("first");
@@ -174,6 +173,10 @@ void setup() {
   ez.begin();
   NimBLEDevice::init(FURBLE_STR);
   NimBLEDevice::setSecurityAuth(true, true, true);
+
+  // Set BLE transmit power
+  esp_power_level_t esp_power = settings_load_esp_tx_power();
+  NimBLEDevice::setPower(esp_power);
 
   pScan = NimBLEDevice::getScan();
   pScan->setAdvertisedDeviceCallbacks(new AdvertisedCallback());
