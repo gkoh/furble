@@ -45,7 +45,7 @@ bool CanonEOSRP::matches(NimBLEAdvertisedDevice *pDevice) {
  * handled by the underlying NimBLE and ESP32 libraries.
  */
 bool CanonEOSRP::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
-  return CanonEOS::connect(pClient, progress_bar, 5000);
+  return CanonEOS::connect(pClient, progress_bar);
 }
 
 device_type_t CanonEOSRP::getDeviceType(void) {

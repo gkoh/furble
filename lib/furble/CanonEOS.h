@@ -39,6 +39,9 @@ class CanonEOS: public Device {
   /** 0xf311 */
   const char *CANON_EOS_CHR_SHUTTER_UUID = "00030030-0000-1000-0000-d8492fffa821";
 
+  const uint8_t CANON_EOS_PAIR_ACCEPT = 0x02;
+  const uint8_t CANON_EOS_PAIR_REJECT = 0x03;
+
   bool write_value(NimBLEClient *pClient,
                    const char *serviceUUID,
                    const char *characteristicUUID,
@@ -52,7 +55,7 @@ class CanonEOS: public Device {
                     uint8_t *data,
                     size_t length);
 
-  bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar, uint32_t pair_delay = 0);
+  bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar);
   void shutterPress(void);
   void shutterRelease(void);
   void focusPress(void);

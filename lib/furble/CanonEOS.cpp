@@ -8,6 +8,8 @@
 
 namespace Furble {
 
+static volatile uint8_t pair_result = 0x00;
+
 CanonEOS::CanonEOS(const void *data, size_t len) {
   if (len != sizeof(eos_t))
     throw;
@@ -29,6 +31,17 @@ CanonEOS::CanonEOS(NimBLEAdvertisedDevice *pDevice) {
 CanonEOS::~CanonEOS(void) {
   NimBLEDevice::deleteClient(m_Client);
   m_Client = nullptr;
+}
+
+// Handle pairing notification
+static void pairResultCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
+                               uint8_t *pData,
+                               size_t length,
+                               bool isNotify) {
+  if (!isNotify && (length > 0)) {
+    Serial.printf("Got pairing callback: 0x%02x\n", pData[0]);
+    pair_result = pData[0];
+  }
 }
 
 bool CanonEOS::write_value(NimBLEClient *pClient,
@@ -63,7 +76,7 @@ bool CanonEOS::write_prefix(NimBLEClient *pClient,
  * The EOS uses the 'just works' BLE bonding to pair, all bond management is
  * handled by the underlying NimBLE and ESP32 libraries.
  */
-bool CanonEOS::connect(NimBLEClient *pClient, ezProgressBar &progress_bar, uint32_t pair_delay) {
+bool CanonEOS::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
   m_Client = pClient;
 
   Serial.println("Connecting");
@@ -81,6 +94,15 @@ bool CanonEOS::connect(NimBLEClient *pClient, ezProgressBar &progress_bar, uint3
   }
   Serial.println("Secured!");
   progress_bar.value(20.0f);
+
+  NimBLERemoteService *pSvc = pClient->getService(CANON_EOS_SVC_IDEN_UUID);
+  if (pSvc) {
+    NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(CANON_EOS_CHR_NAME_UUID);
+    if ((pChr != nullptr) && pChr->canIndicate()) {
+      Serial.println("Subscribed for pairing indication");
+      pChr->subscribe(false, pairResultCallback);
+    }
+  }
 
   Serial.println("Identifying 1!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_NAME_UUID, 0x01,
@@ -118,8 +140,22 @@ bool CanonEOS::connect(NimBLEClient *pClient, ezProgressBar &progress_bar, uint3
   if (!write_value(m_Client, CANON_EOS_SVC_UNK0_UUID, CANON_EOS_CHR_UNK0_UUID, &x, 1))
     return false;
 
-  progress_bar.value(70.0f);
-  delay(pair_delay);  // give camera user time to confirm pairing
+  // Give the user 60s to confirm/deny pairing
+  Serial.println("Waiting for user to confirm/deny pairing.");
+  for (unsigned int i = 0; i < 60; i++) {
+    float progress = 70.0f + (float(i) / 6.0f);
+    progress_bar.value(progress);
+    if (pair_result != 0x00) {
+      break;
+    }
+    delay(1000);
+  }
+
+  if (pair_result != CANON_EOS_PAIR_ACCEPT) {
+    bool deleted = NimBLEDevice::deleteBond(m_Address);
+    Serial.printf("Rejected, delete pairing: %d\n", deleted);
+    return false;
+  }
 
   /* write to 0xf104 */
   x = 0x01;
@@ -152,7 +188,7 @@ void CanonEOS::shutterRelease(void) {
 }
 
 void CanonEOS::focusPress(void) {
-  shutterPress();
+  // do nothing
   return;
 }
 
