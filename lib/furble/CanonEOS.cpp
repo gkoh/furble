@@ -79,6 +79,13 @@ bool CanonEOS::write_prefix(NimBLEClient *pClient,
 bool CanonEOS::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
   m_Client = pClient;
 
+  if (NimBLEDevice::isBonded(m_Address)) {
+    // Already bonded? Assume pair acceptance!
+    pair_result = CANON_EOS_PAIR_ACCEPT;
+  } else {
+    pair_result = 0x00;
+  }
+
   Serial.println("Connecting");
   if (!m_Client->connect(m_Address)) {
     Serial.println("Connection failed!!!");
