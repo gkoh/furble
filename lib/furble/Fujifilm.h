@@ -29,7 +29,7 @@ class Fujifilm: public Device {
   void print(void);
 
  private:
-  device_type_t getDeviceType(void);
+  Device::type_t getDeviceType(void);
   size_t getSerialisedBytes(void);
   bool serialise(void *buffer, size_t bytes);
 

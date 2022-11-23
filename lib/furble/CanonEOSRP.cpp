@@ -8,12 +8,6 @@
 
 namespace Furble {
 
-CanonEOSRP::CanonEOSRP(const void *data, size_t len) : CanonEOS(data, len) {}
-
-CanonEOSRP::CanonEOSRP(NimBLEAdvertisedDevice *pDevice) : CanonEOS(pDevice) {}
-
-CanonEOSRP::~CanonEOSRP(void) {}
-
 const size_t CANON_EOS_RP_ADV_DATA_LEN = 8;
 const uint8_t CANON_EOS_RP_ID_0 = 0xa9;
 const uint8_t CANON_EOS_RP_ID_1 = 0x01;
@@ -38,18 +32,7 @@ bool CanonEOSRP::matches(NimBLEAdvertisedDevice *pDevice) {
   return false;
 }
 
-/**
- * Connect to a Canon EOS RP.
- *
- * The EOS RP uses the 'just works' BLE bonding to pair, all bond management is
- * handled by the underlying NimBLE and ESP32 libraries.
- */
-bool CanonEOSRP::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
-  return CanonEOS::connect(pClient, progress_bar);
+Device::type_t CanonEOSRP::getDeviceType(void) {
+  return Device::FURBLE_CANON_EOS_RP;
 }
-
-device_type_t CanonEOSRP::getDeviceType(void) {
-  return FURBLE_CANON_EOS_RP;
-}
-
 }  // namespace Furble

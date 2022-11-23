@@ -1,10 +1,15 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#include <M5ez.h>
+#include <NimBLEClient.h>
+
 #define MAX_NAME (64)
 
 #define UUID128_LEN (16)
 #define UUID128_AS_32_LEN (UUID128_LEN / sizeof(uint32_t))
+
+#define FURBLE_STR "furble"
 
 namespace Furble {
 /**
@@ -21,6 +26,15 @@ class Device {
       uint8_t uint8[UUID128_LEN];
     };
   } uuid128_t;
+
+  /**
+   * Supported target device enumerations (used for serialising to storage).
+   */
+  typedef enum {
+    FURBLE_FUJIFILM = 1,
+    FURBLE_CANON_EOS_M6 = 2,
+    FURBLE_CANON_EOS_RP = 3,
+  } type_t;
 
   /**
    * Connect to the target camera such that it is ready for shutter control.
@@ -75,11 +89,11 @@ class Device {
 
  protected:
   NimBLEAddress m_Address = NimBLEAddress("");
-  NimBLEClient *m_Client;
+  NimBLEClient *m_Client = nullptr;
   std::string m_Name;
 
  private:
-  virtual device_type_t getDeviceType(void) = 0;
+  virtual type_t getDeviceType(void) = 0;
   virtual size_t getSerialisedBytes(void) = 0;
   virtual bool serialise(void *buffer, size_t bytes) = 0;
 

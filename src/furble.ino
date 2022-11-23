@@ -1,6 +1,7 @@
 #include <Furble.h>
 #include <M5ez.h>
 #include <NimBLEDevice.h>
+#include <Preferences.h>
 
 #ifdef M5STICKC_PLUS
 #include <M5StickCPlus.h>

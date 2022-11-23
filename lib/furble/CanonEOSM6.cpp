@@ -4,15 +4,9 @@
 #include <NimBLERemoteCharacteristic.h>
 #include <NimBLERemoteService.h>
 
-#include "Furble.h"
+#include "CanonEOSM6.h"
 
 namespace Furble {
-
-CanonEOSM6::CanonEOSM6(const void *data, size_t len) : CanonEOS(data, len) {}
-
-CanonEOSM6::CanonEOSM6(NimBLEAdvertisedDevice *pDevice) : CanonEOS(pDevice) {}
-
-CanonEOSM6::~CanonEOSM6(void) {}
 
 const size_t CANON_EOS_M6_ADV_DATA_LEN = 21;
 const uint8_t CANON_EOS_M6_ID_0 = 0xa9;
@@ -45,11 +39,11 @@ bool CanonEOSM6::matches(NimBLEAdvertisedDevice *pDevice) {
  * handled by the underlying NimBLE and ESP32 libraries.
  */
 bool CanonEOSM6::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
-  return CanonEOS::connect(pClient, progress_bar);
+  return CanonEOSSmartphone::connect(pClient, progress_bar);
 }
 
-device_type_t CanonEOSM6::getDeviceType(void) {
-  return FURBLE_CANON_EOS_M6;
+Device::type_t CanonEOSM6::getDeviceType(void) {
+  return Device::FURBLE_CANON_EOS_M6;
 }
 
 }  // namespace Furble

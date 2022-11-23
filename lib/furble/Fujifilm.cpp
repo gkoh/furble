@@ -200,8 +200,8 @@ void Fujifilm::disconnect(void) {
   m_Client->disconnect();
 }
 
-device_type_t Fujifilm::getDeviceType(void) {
-  return FURBLE_FUJIFILM;
+Device::type_t Fujifilm::getDeviceType(void) {
+  return Device::FURBLE_FUJIFILM;
 }
 
 size_t Fujifilm::getSerialisedBytes(void) {
