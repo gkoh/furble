@@ -35,7 +35,7 @@ class CanonEOSSmartphone: public CanonEOS {
   const uint8_t CANON_EOS_PAIR_ACCEPT = 0x02;
   const uint8_t CANON_EOS_PAIR_REJECT = 0x03;
 
-  bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar);
+  bool connect(ezProgressBar &progress_bar);
   void shutterPress(void);
   void shutterRelease(void);
   void focusPress(void);

@@ -44,7 +44,7 @@ class Device {
    *
    * @return true if the client is now ready for shutter control
    */
-  virtual bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar) = 0;
+  virtual bool connect(ezProgressBar &progress_bar) = 0;
 
   /**
    * Disconnect from the target.

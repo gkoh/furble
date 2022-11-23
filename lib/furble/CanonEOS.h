@@ -24,8 +24,7 @@ class CanonEOS: public Device {
   /**
    * Write a value to a characteristic.
    */
-  bool write_value(NimBLEClient *pClient,
-                   const char *serviceUUID,
+  bool write_value(const char *serviceUUID,
                    const char *characteristicUUID,
                    uint8_t *data,
                    size_t length);
@@ -33,8 +32,7 @@ class CanonEOS: public Device {
   /**
    * Write a value with a prefix to a characteristic.
    */
-  bool write_prefix(NimBLEClient *pClient,
-                    const char *serviceUUID,
+  bool write_prefix(const char *serviceUUID,
                     const char *characteristicUUID,
                     uint8_t prefix,
                     uint8_t *data,
@@ -45,7 +43,6 @@ class CanonEOS: public Device {
  private:
   size_t getSerialisedBytes(void);
   bool serialise(void *buffer, size_t bytes);
-
 };
 
 }  // namespace Furble

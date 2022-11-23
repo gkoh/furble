@@ -18,8 +18,6 @@ class CanonEOSM6: public CanonEOSSmartphone {
    */
   static bool matches(NimBLEAdvertisedDevice *pDevice);
 
-  bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar);
-
  private:
   Device::type_t getDeviceType(void);
 };

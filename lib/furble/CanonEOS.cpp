@@ -18,6 +18,7 @@ CanonEOS::CanonEOS(const void *data, size_t len) {
   m_Name = std::string(eos->name);
   m_Address = NimBLEAddress(eos->address, eos->type);
   memcpy(&m_Uuid, &eos->uuid, sizeof(uuid128_t));
+  m_Client = NimBLEDevice::createClient();
 }
 
 CanonEOS::CanonEOS(NimBLEAdvertisedDevice *pDevice) {
@@ -26,6 +27,7 @@ CanonEOS::CanonEOS(NimBLEAdvertisedDevice *pDevice) {
   Serial.println("Name = " + String(m_Name.c_str()));
   Serial.println("Address = " + String(m_Address.toString().c_str()));
   Device::getUUID128(&m_Uuid);
+  m_Client = NimBLEDevice::createClient();
 }
 
 CanonEOS::~CanonEOS(void) {
@@ -33,12 +35,11 @@ CanonEOS::~CanonEOS(void) {
   m_Client = nullptr;
 }
 
-bool CanonEOS::write_value(NimBLEClient *pClient,
-                           const char *serviceUUID,
+bool CanonEOS::write_value(const char *serviceUUID,
                            const char *characteristicUUID,
                            uint8_t *data,
                            size_t length) {
-  NimBLERemoteService *pSvc = pClient->getService(serviceUUID);
+  NimBLERemoteService *pSvc = m_Client->getService(serviceUUID);
   if (pSvc) {
     NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(characteristicUUID);
     return ((pChr != nullptr) && pChr->canWrite() && pChr->writeValue(data, length, true));
@@ -47,8 +48,7 @@ bool CanonEOS::write_value(NimBLEClient *pClient,
   return false;
 }
 
-bool CanonEOS::write_prefix(NimBLEClient *pClient,
-                            const char *serviceUUID,
+bool CanonEOS::write_prefix(const char *serviceUUID,
                             const char *characteristicUUID,
                             uint8_t prefix,
                             uint8_t *data,
@@ -56,7 +56,7 @@ bool CanonEOS::write_prefix(NimBLEClient *pClient,
   uint8_t buffer[length + 1] = {0};
   buffer[0] = prefix;
   memcpy(&buffer[1], data, length);
-  return write_value(pClient, serviceUUID, characteristicUUID, buffer, length + 1);
+  return write_value(serviceUUID, characteristicUUID, buffer, length + 1);
 }
 
 size_t CanonEOS::getSerialisedBytes(void) {

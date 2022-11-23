@@ -27,9 +27,7 @@ static void pairResultCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic
  * The EOS uses the 'just works' BLE bonding to pair, all bond management is
  * handled by the underlying NimBLE and ESP32 libraries.
  */
-bool CanonEOSSmartphone::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
-  m_Client = pClient;
-
+bool CanonEOSSmartphone::connect(ezProgressBar &progress_bar) {
   if (NimBLEDevice::isBonded(m_Address)) {
     // Already bonded? Assume pair acceptance!
     pair_result = CANON_EOS_PAIR_ACCEPT;
@@ -53,7 +51,7 @@ bool CanonEOSSmartphone::connect(NimBLEClient *pClient, ezProgressBar &progress_
   Serial.println("Secured!");
   progress_bar.value(20.0f);
 
-  NimBLERemoteService *pSvc = pClient->getService(CANON_EOS_SVC_IDEN_UUID);
+  NimBLERemoteService *pSvc = m_Client->getService(CANON_EOS_SVC_IDEN_UUID);
   if (pSvc) {
     NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(CANON_EOS_CHR_NAME_UUID);
     if ((pChr != nullptr) && pChr->canIndicate()) {
@@ -63,22 +61,22 @@ bool CanonEOSSmartphone::connect(NimBLEClient *pClient, ezProgressBar &progress_
   }
 
   Serial.println("Identifying 1!");
-  if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_NAME_UUID, 0x01,
-                    (uint8_t *)FURBLE_STR, strlen(FURBLE_STR)))
+  if (!write_prefix(CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_NAME_UUID, 0x01, (uint8_t *)FURBLE_STR,
+                    strlen(FURBLE_STR)))
     return false;
 
   progress_bar.value(30.0f);
 
   Serial.println("Identifying 2!");
-  if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x03, m_Uuid.uint8,
+  if (!write_prefix(CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x03, m_Uuid.uint8,
                     UUID128_LEN))
     return false;
 
   progress_bar.value(40.0f);
 
   Serial.println("Identifying 3!");
-  if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x04,
-                    (uint8_t *)FURBLE_STR, strlen(FURBLE_STR)))
+  if (!write_prefix(CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x04, (uint8_t *)FURBLE_STR,
+                    strlen(FURBLE_STR)))
     return false;
 
   progress_bar.value(50.0f);
@@ -86,7 +84,7 @@ bool CanonEOSSmartphone::connect(NimBLEClient *pClient, ezProgressBar &progress_
   Serial.println("Identifying 4!");
 
   uint8_t x = 0x02;
-  if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x05, &x, 1))
+  if (!write_prefix(CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x05, &x, 1))
     return false;
 
   progress_bar.value(60.0f);
@@ -95,7 +93,7 @@ bool CanonEOSSmartphone::connect(NimBLEClient *pClient, ezProgressBar &progress_
 
   /* write to 0xf204 */
   x = 0x0a;
-  if (!write_value(m_Client, CANON_EOS_SVC_UNK0_UUID, CANON_EOS_CHR_UNK0_UUID, &x, 1))
+  if (!write_value(CANON_EOS_SVC_UNK0_UUID, CANON_EOS_CHR_UNK0_UUID, &x, 1))
     return false;
 
   // Give the user 60s to confirm/deny pairing
@@ -117,7 +115,7 @@ bool CanonEOSSmartphone::connect(NimBLEClient *pClient, ezProgressBar &progress_
 
   /* write to 0xf104 */
   x = 0x01;
-  if (!write_value(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, &x, 1))
+  if (!write_value(CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, &x, 1))
     return false;
 
   progress_bar.value(80.0f);
@@ -126,7 +124,7 @@ bool CanonEOSSmartphone::connect(NimBLEClient *pClient, ezProgressBar &progress_
 
   /* write to 0xf307 */
   x = 0x03;
-  if (!write_value(m_Client, CANON_EOS_SVC_UNK1_UUID, CANON_EOS_CHR_UNK1_UUID, &x, 1))
+  if (!write_value(CANON_EOS_SVC_UNK1_UUID, CANON_EOS_CHR_UNK1_UUID, &x, 1))
     return false;
 
   Serial.println("Paired!");
@@ -137,12 +135,12 @@ bool CanonEOSSmartphone::connect(NimBLEClient *pClient, ezProgressBar &progress_
 
 void CanonEOSSmartphone::shutterPress(void) {
   uint8_t x[2] = {0x00, 0x01};
-  write_value(m_Client, CANON_EOS_SVC_SHUTTER_UUID, CANON_EOS_CHR_SHUTTER_UUID, &x[0], 2);
+  write_value(CANON_EOS_SVC_SHUTTER_UUID, CANON_EOS_CHR_SHUTTER_UUID, &x[0], 2);
 }
 
 void CanonEOSSmartphone::shutterRelease(void) {
   uint8_t x[2] = {0x00, 0x02};
-  write_value(m_Client, CANON_EOS_SVC_SHUTTER_UUID, CANON_EOS_CHR_SHUTTER_UUID, &x[0], 2);
+  write_value(CANON_EOS_SVC_SHUTTER_UUID, CANON_EOS_CHR_SHUTTER_UUID, &x[0], 2);
 }
 
 void CanonEOSSmartphone::focusPress(void) {

@@ -54,6 +54,7 @@ Fujifilm::Fujifilm(const void *data, size_t len) {
   m_Name = std::string(fujifilm->name);
   m_Address = NimBLEAddress(fujifilm->address, fujifilm->type);
   memcpy(m_Token, fujifilm->token, FUJIFILM_TOKEN_LEN);
+  m_Client = NimBLEDevice::createClient();
 }
 
 Fujifilm::Fujifilm(NimBLEAdvertisedDevice *pDevice) {
@@ -67,6 +68,7 @@ Fujifilm::Fujifilm(NimBLEAdvertisedDevice *pDevice) {
   Serial.println("Name = " + String(m_Name.c_str()));
   Serial.println("Address = " + String(m_Address.toString().c_str()));
   print_token(m_Token);
+  m_Client = NimBLEDevice::createClient();
 }
 
 Fujifilm::~Fujifilm(void) {
@@ -100,9 +102,7 @@ bool Fujifilm::matches(NimBLEAdvertisedDevice *pDevice) {
  * is what we use to identify ourselves upfront and during subsequent
  * re-pairing.
  */
-bool Fujifilm::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
-  m_Client = pClient;
-
+bool Fujifilm::connect(ezProgressBar &progress_bar) {
   progress_bar.value(10.0f);
 
   NimBLERemoteService *pSvc = nullptr;

@@ -20,7 +20,7 @@ class Fujifilm: public Device {
    */
   static bool matches(NimBLEAdvertisedDevice *pDevice);
 
-  bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar);
+  bool connect(ezProgressBar &progress_bar);
   void shutterPress(void);
   void shutterRelease(void);
   void focusPress(void);
