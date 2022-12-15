@@ -126,7 +126,7 @@ bool Fujifilm::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
   if (!pChr->canWrite())
     return false;
   print_token(m_Token);
-  if (!pChr->writeValue(m_Token, FUJIFILM_TOKEN_LEN))
+  if (!pChr->writeValue(m_Token, FUJIFILM_TOKEN_LEN, true))
     return false;
   Serial.println("Paired!");
   progress_bar.value(30.0f);
@@ -135,7 +135,7 @@ bool Fujifilm::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
   pChr = pSvc->getCharacteristic(FUJIFILM_CHR_IDEN_UUID);
   if (!pChr->canWrite())
     return false;
-  if (!pChr->writeValue(FURBLE_STR))
+  if (!pChr->writeValue(FURBLE_STR, true))
     return false;
   Serial.println("Identified!");
   progress_bar.value(40.0f);
@@ -143,16 +143,16 @@ bool Fujifilm::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
   Serial.println("Configuring");
   pSvc = m_Client->getService(FUJIFILM_SVC_CONF_UUID);
   // indications
-  pSvc->getCharacteristic(FUJIFILM_CHR_IND1_UUID)->subscribe(false);
+  pSvc->getCharacteristic(FUJIFILM_CHR_IND1_UUID)->subscribe(false, nullptr, true);
   progress_bar.value(50.0f);
-  pSvc->getCharacteristic(FUJIFILM_CHR_IND2_UUID)->subscribe(false);
+  pSvc->getCharacteristic(FUJIFILM_CHR_IND2_UUID)->subscribe(false, nullptr, true);
   progress_bar.value(60.0f);
   // notifications
-  pSvc->getCharacteristic(FUJIFILM_CHR_NOT1_UUID)->subscribe(true);
+  pSvc->getCharacteristic(FUJIFILM_CHR_NOT1_UUID)->subscribe(true, nullptr, true);
   progress_bar.value(70.0f);
-  pSvc->getCharacteristic(FUJIFILM_CHR_NOT2_UUID)->subscribe(true);
+  pSvc->getCharacteristic(FUJIFILM_CHR_NOT2_UUID)->subscribe(true, nullptr, true);
   progress_bar.value(80.0f);
-  pSvc->getCharacteristic(FUJIFILM_CHR_NOT3_UUID)->subscribe(true);
+  pSvc->getCharacteristic(FUJIFILM_CHR_NOT3_UUID)->subscribe(true, nullptr, true);
   progress_bar.value(90.0f);
 
   Serial.println("Configured");
