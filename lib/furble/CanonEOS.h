@@ -60,6 +60,7 @@ class CanonEOS: public Device {
   void shutterRelease(void);
   void focusPress(void);
   void focusRelease(void);
+  void updateGeoData(gps_t &gps, timesync_t &timesync);
   void disconnect(void);
   size_t getSerialisedBytes(void);
   bool serialise(void *buffer, size_t bytes);
