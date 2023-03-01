@@ -58,8 +58,7 @@ class Fujifilm: public Device {
   device_type_t getDeviceType(void);
   size_t getSerialisedBytes(void);
   bool serialise(void *buffer, size_t bytes);
-  void configure(NimBLERemoteCharacteristic*, uint8_t*, size_t, bool);
-  void update(NimBLERemoteCharacteristic*, uint8_t*, size_t, bool);
+  void notify(NimBLERemoteCharacteristic*, uint8_t*, size_t, bool);
   void sendGeoData();
 
   uint8_t m_Token[FUJIFILM_TOKEN_LEN] = {0};
@@ -71,7 +70,6 @@ class Fujifilm: public Device {
   timesync_t m_TimeSync = {0};
 
   volatile bool m_GeoRequested = false;
-  NimBLERemoteCharacteristic *m_ChrGeoData = nullptr;
 };
 
 }  // namespace Furble

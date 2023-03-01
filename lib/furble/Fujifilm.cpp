@@ -52,10 +52,10 @@ static void print_token(const uint8_t *token) {
                  + String(token[3], HEX));
 }
 
-static void debugCallback(BLERemoteCharacteristic *pChr,
-                          uint8_t *pData,
-                          size_t length,
-                          bool isNotify) {
+void Fujifilm::notify(BLERemoteCharacteristic *pChr,
+                      uint8_t *pData,
+                      size_t length,
+                      bool isNotify) {
   Serial.printf("Got %s callback: %u bytes from 0x%04x\r\n",
                 isNotify ? "notification" : "indication",
                 length,
@@ -65,42 +65,24 @@ static void debugCallback(BLERemoteCharacteristic *pChr,
       Serial.printf("  [%d] 0x%02x\r\n", i, pData[i]);
     }
   }
-}
 
-/**
- * Configuration callback.
- *
- * Handles the geotag request.
- */
-void Fujifilm::configure(NimBLERemoteCharacteristic *pChr,
-                         uint8_t *pData,
-                         size_t length,
-                         bool isNotify) {
-  debugCallback(pChr, pData, length, isNotify);
-  if ((pChr->getHandle() == FUJIFILM_CHR_CONFIGURE) && (length >= 2)) {
-    if ((pData[0] == 0x02) && (pData[1] == 0x00)) {
-      m_Configured = true;
-    }
-  }
-}
+  switch (pChr->getHandle()) {
+    case FUJIFILM_CHR_CONFIGURE:
+      if ((length >= 2) && (pData[0] == 0x02) && (pData[1] == 0x00)) {
+        m_Configured = true;
+      }
+      break;
 
-/**
- * Notification callback.
- *
- * Handles the geotag update request.
- */
-void Fujifilm::update(NimBLERemoteCharacteristic *pChr,
-                      uint8_t *pData,
-                      size_t length,
-                      bool isNotify) {
-  debugCallback(pChr, pData, length, isNotify);
+    case FUJIFILM_GEOTAG_UPDATE:
+      if ((length >= 2) && (pData[0] == 0x01) && (pData[1] == 0x00) &&
+          m_GeoDataValid) {
+        m_GeoRequested = true;
+      }
+      break;
 
-  if (m_GeoDataValid &&
-      (pChr->getHandle() == FUJIFILM_GEOTAG_UPDATE) &&
-      (length >= 2)) {
-    if ((pData[0] == 0x01) && (pData[1] == 0x00)) {
-      m_GeoRequested = true;
-    }
+    default:
+      Serial.println("Unhandled notification handle.");
+      break;
   }
 }
 
@@ -203,10 +185,10 @@ bool Fujifilm::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
   Serial.println("Configuring");
   pSvc = m_Client->getService(FUJIFILM_SVC_CONF_UUID);
   // indications
-  pSvc->getCharacteristic(FUJIFILM_CHR_IND1_UUID)->subscribe(false, std::bind(&Fujifilm::configure, this, _1, _2, _3, _4), true);
+  pSvc->getCharacteristic(FUJIFILM_CHR_IND1_UUID)->subscribe(false, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
   progress_bar.value(50.0f);
 
-  pSvc->getCharacteristic(FUJIFILM_CHR_IND2_UUID)->subscribe(false, std::bind(&Fujifilm::configure, this, _1, _2, _3, _4), true);
+  pSvc->getCharacteristic(FUJIFILM_CHR_IND2_UUID)->subscribe(false, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
 
   // wait for up to 5000ms callback
   for (unsigned int i = 0; i < 5000; i+=100) {
@@ -218,19 +200,23 @@ bool Fujifilm::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
 
   progress_bar.value(60.0f);
   // notifications
-  pSvc->getCharacteristic(FUJIFILM_CHR_NOT1_UUID)->subscribe(true, std::bind(&Fujifilm::update, this, _1, _2, _3, _4), true);
+  pSvc->getCharacteristic(FUJIFILM_CHR_NOT1_UUID)->subscribe(true, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
 
   progress_bar.value(70.0f);
-  pSvc->getCharacteristic(FUJIFILM_CHR_NOT2_UUID)->subscribe(true, std::bind(&Fujifilm::update, this, _1, _2, _3, _4), true);
+  pSvc->getCharacteristic(FUJIFILM_CHR_NOT2_UUID)->subscribe(true, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
 
   progress_bar.value(80.0f);
-  pSvc->getCharacteristic(FUJIFILM_CHR_IND3_UUID)->subscribe(false, std::bind(&Fujifilm::configure, this, _1, _2, _3, _4), true);
+  pSvc->getCharacteristic(FUJIFILM_CHR_IND3_UUID)->subscribe(false, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
 
   progress_bar.value(90.0f);
-  m_ChrGeoData = m_Client->getService(FUJIFILM_SVC_GEOTAG_UUID)->getCharacteristic(FUJIFILM_CHR_GEOTAG_UUID);
-  if (m_GeoRequested) {
-    sendGeoData();
-    m_GeoRequested = false;
+  // wait for up to 5000ms for geotag request
+  for (unsigned int i = 0; i < 5000; i+=100) {
+    if (m_GeoRequested) {
+      sendGeoData();
+      m_GeoRequested = false;
+      break;
+    }
+    delay(100);
   }
 
   Serial.println("Configured");
@@ -266,28 +252,32 @@ void Fujifilm::focusRelease(void) {
 }
 
 void Fujifilm::sendGeoData(void) {
-  if (m_ChrGeoData == nullptr) {
-    // Characteristic not configured.
-    return;
-  }
+  NimBLERemoteService *pSvc = m_Client->getService(FUJIFILM_SVC_GEOTAG_UUID);
+  NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(FUJIFILM_CHR_GEOTAG_UUID);
 
   geotag_t geotag = {
-    .latitude = int32_t(m_GPS.latitude * 10000000),
-    .longitude = int32_t(m_GPS.longitude * 10000000),
-    .altitude = int32_t(m_GPS.altitude),
+    .latitude = (int32_t)(m_GPS.latitude * 10000000),
+    .longitude = (int32_t)(m_GPS.longitude * 10000000),
+    .altitude = (int32_t)m_GPS.altitude,
     .pad = {0},
     .gps_time = {
-      .year = uint16_t(m_TimeSync.year),
-      .day = uint8_t(m_TimeSync.day),
-      .month = uint8_t(m_TimeSync.month),
-      .hour = uint8_t(m_TimeSync.hour),
-      .minute = uint8_t(m_TimeSync.minute),
-      .second = uint8_t(m_TimeSync.second),
+      .year = (uint16_t)m_TimeSync.year,
+      .day = (uint8_t)m_TimeSync.day,
+      .month = (uint8_t)m_TimeSync.month,
+      .hour = (uint8_t)m_TimeSync.hour,
+      .minute = (uint8_t)m_TimeSync.minute,
+      .second = (uint8_t)m_TimeSync.second,
     }
   };
 
-  Serial.printf("Sending geotag data (%u bytes) to 0x%04x\r\n", sizeof(geotag), m_ChrGeoData->getHandle());
-  m_ChrGeoData->writeValue((uint8_t *)&geotag, sizeof(geotag), true);
+  if (pChr->canWrite()) {
+    Serial.printf("Sending geotag data (%u bytes) to 0x%04x\r\n", sizeof(geotag), pChr->getHandle());
+    Serial.printf("  lat: %f, %d\r\n", m_GPS.latitude, geotag.latitude);
+    Serial.printf("  lon: %f, %d\r\n", m_GPS.longitude, geotag.longitude);
+    Serial.printf("  alt: %f, %d\r\n", m_GPS.altitude, geotag.altitude);
+
+    pChr->writeValue((uint8_t *)&geotag, sizeof(geotag), true);
+  }
 }
 
 void Fujifilm::updateGeoData(gps_t &gps, timesync_t &timesync) {
@@ -296,7 +286,6 @@ void Fujifilm::updateGeoData(gps_t &gps, timesync_t &timesync) {
   m_GeoDataValid = true;
 
   if (m_GeoRequested) {
-    Serial.println("Here!");
     sendGeoData();
     m_GeoRequested = false;
   }
@@ -312,7 +301,6 @@ void Fujifilm::print(void) {
 }
 
 void Fujifilm::disconnect(void) {
-  m_ChrGeoData = nullptr;
   m_Client->disconnect();
 }
 

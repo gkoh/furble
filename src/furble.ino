@@ -122,7 +122,7 @@ static void menu_connect(bool save) {
 
   Furble::Device *device = connect_list[i - 1];
 
-  Furble::Device::gps_t gps = { -34.939249, 138.642434, -567 };
+  Furble::Device::gps_t gps = { -34.935452, -56.160619, -567 };
   Furble::Device::timesync_t timesync = { 2024, 25, 12, 12, 34, 56 };
   device->updateGeoData(gps, timesync);
 

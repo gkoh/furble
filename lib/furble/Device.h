@@ -26,9 +26,9 @@ class Device {
    * GPS data type.
    */
   typedef struct _gps_t {
-    float latitude;
-    float longitude;
-    float altitude;
+    double latitude;
+    double longitude;
+    double altitude;
   } gps_t;
 
   /**
