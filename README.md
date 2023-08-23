@@ -15,9 +15,11 @@ furble is developed as a PlatformIO project for the M5StickC and M5StickC Plus
 
 The following devices have actually been tested and confirmed to work:
 - Fujifilm GFX100S ([@adrianuseless](https://github.com/adrianuseless))
+- Fujifilm X-H2S ([@val123456](https://github.com/val123456))
 - Fujifilm X-S10 ([@dimitrij2k](https://github.com/dimitrij2k))
 - Fujifilm X-T200 ([@Cronkan](https://github.com/Cronkan))
 - Fujifilm X-T30
+- Fujifilm X-T5 ([@stulevine](https://github.com/stulevine))
 - Fujifilm X100V
 - Canon EOS M6 ([@tardisx](https://github.com/tardisx))
 - Canon EOS RP ([@wolcano](https://github.com/wolcano))
