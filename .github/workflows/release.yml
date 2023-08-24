@@ -53,5 +53,7 @@ jobs:
           generate_release_notes: true
           files: |
             ${{ env.M5STICKC_FIRMWARE }}
+            ${{ env.M5STICKC_ELF }}
             ${{ env.M5STICKC_PLUS_FIRMWARE }}
+            ${{ env.M5STICKC_PLUS_ELF }}
             sha256sum.txt
