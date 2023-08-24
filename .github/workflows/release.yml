@@ -8,7 +8,9 @@ on:
 env:
   FURBLE_VERSION: ${{ github.ref_name }}+${{ github.run_attempt }}
   M5STICKC_FIRMWARE: furble-m5stick-c-${{ github.ref_name }}+${{ github.run_attempt }}.bin
+  M5STICKC_ELF: furble-m5stick-c-${{ github.ref_name }}+${{ github.run_attempt }}.elf
   M5STICKC_PLUS_FIRMWARE: furble-m5stick-c-plus-${{ github.ref_name }}+${{ github.run_attempt }}.bin
+  M5STICKC_PLUS_ELF: furble-m5stick-c-plus-${{ github.ref_name }}+${{ github.run_attempt }}.elf
 
 jobs:
   build:
@@ -33,11 +35,13 @@ jobs:
         run: |
           platformio run -e m5stick-c
           cp -v .pio/build/m5stick-c/firmware.bin $M5STICKC_FIRMWARE
+          cp -v .pio/build/m5stick-c/firmware.elf $M5STICKC_ELF
 
       - name: Build furble (M5StickC Plus)
         run: |
           platformio run -e m5stick-c-plus
           cp -v .pio/build/m5stick-c-plus/firmware.bin $M5STICKC_PLUS_FIRMWARE
+          cp -v .pio/build/m5stick-c-plus/firmware.elf $M5STICKC_PLUS_ELF
 
       - name: Generate release hashes
         run: |
