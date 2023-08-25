@@ -1,6 +1,7 @@
 #include <Furble.h>
 #include <M5ez.h>
 #include <NimBLEDevice.h>
+#include <Preferences.h>
 
 #ifdef M5STICKC_PLUS
 #include <M5StickCPlus.h>
@@ -118,9 +119,8 @@ static void menu_connect(bool save) {
 
   Furble::Device *device = connect_list[i - 1];
 
-  NimBLEClient *pClient = NimBLEDevice::createClient();
   ezProgressBar progress_bar(FURBLE_STR, "Connecting ...", "");
-  if (device->connect(pClient, progress_bar)) {
+  if (device->connect(progress_bar)) {
     if (save) {
       device->save();
     }

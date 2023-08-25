@@ -20,7 +20,7 @@ class Fujifilm: public Device {
    */
   static bool matches(NimBLEAdvertisedDevice *pDevice);
 
-  bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar);
+  bool connect(ezProgressBar &progress_bar);
   void shutterPress(void);
   void shutterRelease(void);
   void focusPress(void);
@@ -29,7 +29,7 @@ class Fujifilm: public Device {
   void print(void);
 
  private:
-  device_type_t getDeviceType(void);
+  Device::type_t getDeviceType(void);
   size_t getSerialisedBytes(void);
   bool serialise(void *buffer, size_t bytes);
 

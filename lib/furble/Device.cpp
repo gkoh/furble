@@ -1,7 +1,10 @@
 #include <NimBLEAdvertisedDevice.h>
 #include <Preferences.h>
 
-#include "Furble.h"
+#include "CanonEOSM6.h"
+#include "CanonEOSRP.h"
+#include "Device.h"
+#include "Fujifilm.h"
 
 #define FURBLE_PREF_INDEX "index"
 
@@ -17,7 +20,7 @@ static Preferences m_Prefs;
  */
 typedef struct {
   char name[16];
-  device_type_t type;
+  Device::type_t type;
 } index_entry_t;
 
 static void save_index(std::vector<index_entry_t> &index) {
