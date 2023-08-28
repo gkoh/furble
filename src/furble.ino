@@ -79,6 +79,7 @@ static void update_geodata(Furble::Device *device) {
     gps.date.day(), gps.time.hour(), gps.time.minute(), gps.time.second() };
 
     device->updateGeoData(dgps, timesync);
+    ez.header.draw("gps");
   }
 }
 
@@ -90,7 +91,7 @@ static void gps_draw_widget(uint16_t x, uint16_t y) {
     return;
   }
 
-  int16_t r = ((ez.theme->header_height - (2 * ez.theme->header_hmargin)) / 2);
+  int16_t r = (ez.theme->header_height * 0.8) / 2;
   int16_t cx = x + r;
   int16_t cy = (ez.theme->header_height / 2);
 
@@ -264,8 +265,7 @@ void setup() {
 #include <themes/mono_furble.h>
 
   ez.begin();
-  ez.header.insert(GPS_HEADER_POSITION, "gps", ez.theme->header_height -
-  (2 * ez.theme->header_hmargin), gps_draw_widget);
+  ez.header.insert(GPS_HEADER_POSITION, "gps", ez.theme->header_height * 0.8, gps_draw_widget);
   ez.addEvent(service_grove_gps, millis() + 500);
   NimBLEDevice::init(FURBLE_STR);
   NimBLEDevice::setSecurityAuth(true, true, true);

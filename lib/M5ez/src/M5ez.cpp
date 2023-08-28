@@ -2873,6 +2873,7 @@ void ezMenu::_drawItem(int16_t n, String text, bool selected) {
 	uint16_t fill_color;
 	ez.setFont(_font);
 	int16_t top_item_h = ez.canvas.top() + (ez.canvas.height() % _per_item_h) / 2;   // remainder of screen left over by last item not fitting split to center menu
+        int16_t menu_text_y = top_item_h + (n * _per_item_h) + (_per_item_h / 2) + (_per_item_h % 2 ? 1 : 0);
 	m5.lcd.setTextDatum(CL_DATUM);
 	if (selected) {
 		fill_color = ez.theme->menu_sel_bgcolor;
@@ -2883,10 +2884,10 @@ void ezMenu::_drawItem(int16_t n, String text, bool selected) {
 	}
 	text = ez.clipString(text, TFT_W - ez.theme->menu_lmargin - 2 * ez.theme->menu_item_hmargin - ez.theme->menu_rmargin);
 	m5.lcd.fillRoundRect(ez.theme->menu_lmargin, top_item_h + n * _per_item_h, TFT_W - ez.theme->menu_lmargin - ez.theme->menu_rmargin, _per_item_h, ez.theme->menu_item_radius, fill_color);
-	m5.lcd.drawString(ez.leftOf(text, "\t"), ez.theme->menu_lmargin + ez.theme->menu_item_hmargin, top_item_h + _per_item_h / 2 + n * _per_item_h + 1);
+	m5.lcd.drawString(ez.leftOf(text, "\t"), ez.theme->menu_lmargin + ez.theme->menu_item_hmargin, menu_text_y);
 	if (text.indexOf("\t") != -1) {
 		m5.lcd.setTextDatum(CR_DATUM);
-		m5.lcd.drawString(ez.rightOf(text, "\t"),  TFT_W - ez.theme->menu_rmargin - ez.theme->menu_item_hmargin, top_item_h + _per_item_h / 2 + n * _per_item_h - 2);
+		m5.lcd.drawString(ez.rightOf(text, "\t"),  TFT_W - ez.theme->menu_rmargin - ez.theme->menu_item_hmargin, menu_text_y);
 	}
 }
 
