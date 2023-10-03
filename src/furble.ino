@@ -43,7 +43,7 @@ static void remote_control(Furble::Device *device) {
   Serial.println("Remote Control");
 
 #ifdef M5STACK_CORE2
-  ez.msgBox("Remote Shutter", "Back: C", "Release#Focus", false);
+  ez.msgBox("Remote Shutter", "", "Release#Focus#Back", false);
 #else
   ez.msgBox("Remote Shutter", "Back: Power", "Release#Focus", false);
 #endif
