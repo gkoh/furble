@@ -1,3 +1,6 @@
+# 1 "/var/folders/ls/rv_m501s27303fw6jh8dv9_00000gn/T/tmpjjjlrl8q"
+#include <Arduino.h>
+# 1 "/Users/sbstjn/Workspace/src/sbstjn/furble/src/furble.ino"
 #include <Furble.h>
 #include <M5ez.h>
 #include <NimBLEDevice.h>
@@ -26,10 +29,20 @@ class AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
     ez.msgBox("Scanning", "Found ... " + String(connect_list.size()), "", false);
   }
 };
-
-/**
- * Display the version.
- */
+static void about(void);
+static void do_scan(void);
+static void do_saved(void);
+static void menu_connect(bool save);
+static void menu_delete();
+static void menu_settings(void);
+static void mainmenu_poweroff(void);
+void setup();
+void loop();
+static void save_tx_power(uint8_t tx_power);
+static uint8_t load_tx_power();
+esp_power_level_t settings_load_esp_tx_power();
+void settings_menu_tx_power(void);
+#line 33 "/Users/sbstjn/Workspace/src/sbstjn/furble/src/furble.ino"
 static void about(void) {
   String version = FURBLE_VERSION;
   if (version.length() < 1) {
@@ -92,7 +105,7 @@ static void remote_control(Furble::Device *device) {
       break;
     }
 #else
-    // Source code in AXP192 says 0x02 is short press.
+
     if (m5.Axp.GetBtnPress() == 0x02) {
       break;
     }
@@ -118,9 +131,9 @@ static void remote_control(Furble::Device *device) {
   }
 }
 
-/**
- * Scan for devices, then present connection menu.
- */
+
+
+
 static void do_scan(void) {
   connect_list.clear();
   pScan->clearResults();
@@ -129,9 +142,9 @@ static void do_scan(void) {
   menu_connect(true);
 }
 
-/**
- * Retrieve saved devices, then present connection menu.
- */
+
+
+
 static void do_saved(void) {
   connect_list.clear();
   Furble::Device::loadDevices(connect_list);
@@ -239,7 +252,7 @@ void setup() {
   NimBLEDevice::init(FURBLE_STR);
   NimBLEDevice::setSecurityAuth(true, true, true);
 
-  // Set BLE transmit power
+
   esp_power_level_t esp_power = settings_load_esp_tx_power();
   NimBLEDevice::setPower(esp_power);
 
@@ -262,4 +275,72 @@ void loop() {
   mainmenu.addItem("Power Off", mainmenu_poweroff);
   mainmenu.downOnLast("first");
   mainmenu.run();
+}
+# 1 "/Users/sbstjn/Workspace/src/sbstjn/furble/src/settings.ino"
+const char *PREFS_TX_POWER = "txpower";
+
+static Preferences prefs;
+
+
+
+
+static void save_tx_power(uint8_t tx_power) {
+  prefs.begin(FURBLE_STR, false);
+  prefs.putUChar(PREFS_TX_POWER, tx_power);
+  prefs.end();
+}
+
+
+
+
+static uint8_t load_tx_power() {
+  prefs.begin(FURBLE_STR, true);
+  uint8_t power = prefs.getUChar(PREFS_TX_POWER, 1);
+  prefs.end();
+
+  return power;
+}
+
+
+
+
+esp_power_level_t settings_load_esp_tx_power() {
+  uint8_t power = load_tx_power();
+  switch (power) {
+    case 0:
+      return ESP_PWR_LVL_P3;
+    case 1:
+      return ESP_PWR_LVL_P6;
+    case 2:
+      return ESP_PWR_LVL_P9;
+    default:
+      return ESP_PWR_LVL_P3;
+  }
+  return ESP_PWR_LVL_P3;
+}
+
+
+
+
+
+
+void settings_menu_tx_power(void) {
+  uint8_t power = load_tx_power();
+  ezProgressBar power_bar(FURBLE_STR, "Set transmit power", "Adjust#Back");
+  power_bar.value(power / 0.03f);
+  while (true) {
+    String b = ez.buttons.poll();
+    if (b == "Adjust") {
+      power++;
+      if (power > 3) {
+        power = 1;
+      }
+      power_bar.value(power / 0.03f);
+    }
+    if (b == "Back") {
+      break;
+    }
+  }
+
+  save_tx_power(power);
 }
