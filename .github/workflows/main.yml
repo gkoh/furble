@@ -42,3 +42,6 @@ jobs:
 
       - name: Build furble (M5StickC Plus)
         run: platformio run -e m5stick-c-plus
+
+      - name: Build furble (M5Stack Core2)
+        run: platformio run -e m5stack-core2
