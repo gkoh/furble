@@ -4,8 +4,14 @@
 
 #ifdef M5STICKC_PLUS
 #include <M5StickCPlus.h>
-#else
+#endif
+
+#ifdef M5STICKC
 #include <M5StickC.h>
+#endif
+
+#ifdef M5STACK_CORE2
+#include <M5Core2.h>
 #endif
 
 const uint32_t SCAN_DURATION = 10;
@@ -35,14 +41,25 @@ static void about(void) {
 
 static void remote_control(Furble::Device *device) {
   Serial.println("Remote Control");
-  ez.msgBox("Remote Shutter", "Shutter Control: A\nFocus: B\nBack: Power", "", false);
+
+#ifdef M5STACK_CORE2
+  ez.msgBox("Remote Shutter", "Back: C", "Release#Focus", false);
+#else
+  ez.msgBox("Remote Shutter", "Back: Power", "Release#Focus", false);
+#endif
   while (true) {
     m5.update();
 
+#ifdef M5STACK_CORE2
+    if (m5.BtnC.wasPressed()) {
+      break;
+    }
+#else
     // Source code in AXP192 says 0x02 is short press.
     if (m5.Axp.GetBtnPress() == 0x02) {
       break;
     }
+#endif
 
     if (m5.BtnA.wasPressed()) {
       device->shutterPress();
@@ -171,6 +188,11 @@ void setup() {
 #include <themes/mono_furble.h>
 
   ez.begin();
+
+#ifdef M5STACK_CORE2
+  m5.lcd.setRotation(1);
+#endif
+
   NimBLEDevice::init(FURBLE_STR);
   NimBLEDevice::setSecurityAuth(true, true, true);
 

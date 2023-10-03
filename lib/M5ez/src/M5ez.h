@@ -37,8 +37,12 @@
 #endif
 #ifdef M5STICKC_PLUS
 #include <M5StickCPlus.h>
-#else
+#endif
+#ifdef M5STICKC
 #include <M5StickC.h>		// GFXfont*
+#endif
+#ifdef M5STACK_CORE2
+#include <M5Core2.h>
 #endif
 #ifdef M5EZ_CLOCK
 	#include <ezTime.h>			// events, on-screen clock
@@ -70,13 +74,24 @@
 #define TFT_HEADER_HEIGHT 23
 #define TFT_BUTTON_HEIGHT 19
 #define TFT_RADIUS      8
-#else
+#endif
+
+#ifdef M5STICKC
 #define TFT_W		160
 #define TFT_H		80
 #define TFT_FONT        hzk16
 #define TFT_HEADER_HEIGHT 12
 #define TFT_BUTTON_HEIGHT 11
 #define TFT_RADIUS      3
+#endif
+
+#ifdef M5STACK_CORE2
+#define TFT_W		320
+#define TFT_H		240
+#define TFT_FONT        sans16
+#define TFT_HEADER_HEIGHT 23
+#define TFT_BUTTON_HEIGHT 19
+#define TFT_RADIUS      8
 #endif
 
 struct line_t {

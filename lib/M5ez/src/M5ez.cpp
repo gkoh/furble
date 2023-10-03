@@ -780,11 +780,7 @@ void ezSettings::defaults() {
 				while (true) {
 					if (m5.BtnA.wasPressed() || m5.BtnB.wasPressed()) break;
 					ez.yield();
-#if M5STICKC_PLUS
-                                        //m5.Axp.LightSleep(SLEEP_MSEC(10));
-                                        //On M5StickC-Plus, the screen blanks
-                                        //without recovery.
-#else
+#ifdef M5STICKC
 					m5.Axp.LightSleep(SLEEP_MSEC(10));
 #endif
 				}
@@ -2630,10 +2626,16 @@ void M5ez::setFont(const GFXfont* font) {
 }
 
 int16_t M5ez::fontHeight() {
-#if M5STICKC_PLUS
-  return m5.lcd.fontHeight(m5.lcd.textfont);
-#else
-  return 11;
+#ifdef M5STICKC_PLUS
+	return m5.lcd.fontHeight(m5.lcd.textfont);
+#endif
+
+#ifdef M5STACK_CORE2
+	return 26;
+#endif
+
+#ifdef M5STICKC
+	return 11;
 #endif
 }
 
