@@ -10,8 +10,11 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
+  # This workflow contains a matrix of build platforms
+  build_matrix:
+    strategy:
+      matrix:
+        platform: [m5stick-c, m5stick-c-plus, m5stack-core, m5stack-core2]
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -37,11 +40,5 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Build furble (M5StickC)
-        run: platformio run -e m5stick-c
-
-      - name: Build furble (M5StickC Plus)
-        run: platformio run -e m5stick-c-plus
-
-      - name: Build furble (M5Stack Core2)
-        run: platformio run -e m5stack-core2
+      - name: Build furble (${{ build_matrix.platform }})
+        run: platformio run -e ${{ build_matrix.platform }}
