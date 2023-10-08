@@ -68,13 +68,24 @@
 #define TFT_HEADER_HEIGHT 23
 #define TFT_BUTTON_HEIGHT 19
 #define TFT_RADIUS 8
-#else
+#endif
+
+#ifdef M5STICKC
 #define TFT_W 160
 #define TFT_H 80
 #define TFT_FONT hzk16
 #define TFT_HEADER_HEIGHT 12
 #define TFT_BUTTON_HEIGHT 11
 #define TFT_RADIUS 3
+#endif
+
+#ifdef M5STACK_CORE2
+#define TFT_W 320
+#define TFT_H 240
+#define TFT_FONT sans16
+#define TFT_HEADER_HEIGHT 23
+#define TFT_BUTTON_HEIGHT 19
+#define TFT_RADIUS 8
 #endif
 
 struct line_t {
@@ -318,12 +329,20 @@ class ezButtons {
  private:
   static String _btn_a_s, _btn_a_l;
   static String _btn_b_s, _btn_b_l;
+  static String _btn_c_s, _btn_c_l;
   static bool _key_release_wait;
   static bool _lower_button_row, _upper_button_row;
-  static void _drawButtons(String btn_a_s, String btn_a_l, String btn_b_s, String btn_b_l);
+  static void _drawButtons(String btn_a_s,
+                           String btn_a_l,
+                           String btn_b_s,
+                           String btn_b_l,
+                           String btn_c_s,
+                           String btn_c_l,
+                           String btn_ab,
+                           String btn_bc,
+                           String btn_ac);
   static void _drawButton(int16_t row, String text_s, String text_l, int16_t x, int16_t w);
   static void _drawButtonString(String text, int16_t x, int16_t y, uint16_t color, int16_t datum);
-  //
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

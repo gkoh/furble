@@ -9,7 +9,7 @@ The remote uses the camera's native Bluetooth Low Energy interface so additional
 adapters are not required.
 
 furble is developed as a PlatformIO project for the M5StickC and M5StickC Plus
-(ESP32 based devices).
+(ESP32 based devices). Additionally, it can be used on the M5Stack Core2.
 
 ## Supported Cameras
 
@@ -118,6 +118,8 @@ In most cases it should be:
     - `platformio run -e m5stick-c -t upload`
 - OR plug in the M5StickC Plus
     - `platformio run -e m5stick-c-plus -t upload`
+- OR plug in the M5Stack Core2
+    - `platformio run -e m5stack-core2 -t upload`
 
 ## Usage
 
