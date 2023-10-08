@@ -93,9 +93,9 @@ static void show_gps_info(void) {
       ez.msgBox("GPS Data", buffer, "Back", false);
     }
 
-    m5.update();
+    M5.update();
 
-    if (m5.BtnB.wasPressed()) {
+    if (M5.BtnB.wasPressed()) {
       break;
     }
 

@@ -25,7 +25,7 @@ jobs:
         with:
           clang-format-version: '13'
           check-path: '.'
-          exclude-regex: 'lib/M5ez'
+          exclude-regex: 'lib/M5ez/examples'
 
       - name: Setup Python
         uses: actions/setup-python@v4
