@@ -13,10 +13,11 @@ typedef struct _fujifilm_t {
   uint8_t token[FUJIFILM_TOKEN_LEN]; /** Pairing token. */
 } fujifilm_t;
 
-/** 0x4001 */
+// 0x4001
 static const NimBLEUUID FUJIFILM_SVC_PAIR_UUID = NimBLEUUID("91f1de68-dff6-466e-8b65-ff13b0f16fb8");
-/** 0x4042 */
+// 0x4042
 static const NimBLEUUID FUJIFILM_CHR_PAIR_UUID = NimBLEUUID("aba356eb-9633-4e60-b73f-f52516dbd671");
+// 0x4012
 static const NimBLEUUID FUJIFILM_CHR_IDEN_UUID = NimBLEUUID("85b9163e-62d1-49ff-a6f5-054b4630d4a1");
 
 // Currently unused
@@ -25,9 +26,13 @@ static const NimBLEUUID FUJIFILM_CHR_IDEN_UUID = NimBLEUUID("85b9163e-62d1-49ff-
 // *FUJIFILM_CHR_READ_UUID = "bf6dc9cf-3606-4ec9-a4c8-d77576e93ea4";
 
 static const NimBLEUUID FUJIFILM_SVC_CONF_UUID = NimBLEUUID("4c0020fe-f3b6-40de-acc9-77d129067b14");
+// 0x5013
 static const NimBLEUUID FUJIFILM_CHR_IND1_UUID = NimBLEUUID("a68e3f66-0fcc-4395-8d4c-aa980b5877fa");
+// 0x5023
 static const NimBLEUUID FUJIFILM_CHR_IND2_UUID = NimBLEUUID("bd17ba04-b76b-4892-a545-b73ba1f74dae");
+// 0x5033
 static const NimBLEUUID FUJIFILM_CHR_NOT1_UUID = NimBLEUUID("f9150137-5d40-4801-a8dc-f7fc5b01da50");
+// 0x5043
 static const NimBLEUUID FUJIFILM_CHR_NOT2_UUID = NimBLEUUID("ad06c7b7-f41a-46f4-a29a-712055319122");
 static const NimBLEUUID FUJIFILM_CHR_IND3_UUID = NimBLEUUID("049ec406-ef75-4205-a390-08fe209c51f0");
 

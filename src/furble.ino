@@ -3,11 +3,7 @@
 #include <NimBLEDevice.h>
 #include <TinyGPS++.h>
 
-#ifdef M5STICKC_PLUS
-#include <M5StickCPlus.h>
-#else
-#include <M5StickC.h>
-#endif
+#include <M5Unified.h>
 
 const uint32_t SCAN_DURATION = 10;
 
@@ -23,7 +19,8 @@ static const uint32_t GPS_BAUD = 9600;
 static const uint16_t GPS_SERVICE_MS = 250;
 static const uint32_t GPS_MAX_AGE_MS = 60 * 1000;
 
-static const uint8_t GPS_HEADER_POSITION = LEFTMOST + 1;
+static const uint8_t CURRENT_POSITION = LEFTMOST + 1;
+static const uint8_t GPS_HEADER_POSITION = CURRENT_POSITION + 1;
 
 static bool gps_enable = false;
 static bool gps_has_fix = false;
@@ -94,11 +91,30 @@ static void gps_draw_widget(uint16_t x, uint16_t y) {
 
   if (gps_has_fix) {
     // With fix, draw solid circle
-    m5.lcd.fillCircle(cx, cy, r, ez.theme->header_fgcolor);
+    M5.Lcd.fillCircle(cx, cy, r, ez.theme->header_fgcolor);
   } else {
     // No fix, empty circle
-    m5.lcd.drawCircle(cx, cy, r, ez.theme->header_fgcolor);
+    M5.Lcd.drawCircle(cx, cy, r, ez.theme->header_fgcolor);
   }
+}
+
+static void current_draw_widget(uint16_t x, uint16_t y) {
+  // hard disable for now
+  return;
+
+  M5.Lcd.fillRect(x, 0, y, ez.theme->header_height, ez.theme->header_bgcolor);
+  M5.Lcd.setTextColor(ez.theme->header_fgcolor);
+  M5.Lcd.setTextDatum(TL_DATUM);
+  int32_t ma = M5.Power.getBatteryCurrent();
+  Serial.println(ma);
+  char s[32] = {0};
+  snprintf(s, 32, "%d", ma);
+  M5.Lcd.drawString(s, x + ez.theme->header_hmargin, ez.theme->header_tmargin + 2);
+}
+
+static uint16_t current_service(void) {
+  ez.header.draw("current");
+  return 1000;
 }
 
 /**
@@ -117,28 +133,27 @@ static void remote_control(Furble::Device *device) {
   Serial.println("Remote Control");
   ez.msgBox("Remote Shutter", "Shutter Control: A\nFocus: B\nBack: Power", "", false);
   while (true) {
-    m5.update();
+    M5.update();
 
     update_geodata(device);
 
-    // Source code in AXP192 says 0x02 is short press.
-    if (m5.Axp.GetBtnPress() == 0x02) {
+    if (M5.BtnPWR.wasClicked()) {
       break;
     }
 
-    if (m5.BtnA.wasPressed()) {
+    if (M5.BtnA.wasPressed()) {
       device->shutterPress();
     }
 
-    if (m5.BtnA.wasReleased()) {
+    if (M5.BtnA.wasReleased()) {
       device->shutterRelease();
     }
 
-    if (m5.BtnB.wasPressed()) {
+    if (M5.BtnB.wasPressed()) {
       device->focusPress();
     }
 
-    if (m5.BtnB.wasReleased()) {
+    if (M5.BtnB.wasReleased()) {
       device->focusRelease();
     }
 
@@ -246,7 +261,7 @@ static void menu_settings(void) {
 }
 
 static void mainmenu_poweroff(void) {
-  m5.Axp.PowerOff();
+  M5.Power.powerOff();
 }
 
 void setup() {
@@ -260,8 +275,11 @@ void setup() {
 #include <themes/mono_furble.h>
 
   ez.begin();
+  uint8_t width = 4 * M5.Lcd.textWidth("5") + ez.theme->header_hmargin * 2;
+  ez.header.insert(CURRENT_POSITION, "current", width, current_draw_widget);
   ez.header.insert(GPS_HEADER_POSITION, "gps", ez.theme->header_height * 0.8, gps_draw_widget);
   ez.addEvent(service_grove_gps, millis() + 500);
+  ez.addEvent(current_service, millis() + 500);
   NimBLEDevice::init(FURBLE_STR);
   NimBLEDevice::setSecurityAuth(true, true, true);
 

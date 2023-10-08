@@ -35,11 +35,10 @@
 #ifdef M5EZ_WIFI
 	#include <WiFi.h>			// WiFiEvent_t, system_event_info_t
 #endif
-#ifdef M5STICKC_PLUS
-#include <M5StickCPlus.h>
-#else
-#include <M5StickC.h>		// GFXfont*
-#endif
+
+#include <M5Unified.h>
+#include <FS.h>
+
 #ifdef M5EZ_CLOCK
 	#include <ezTime.h>			// events, on-screen clock
 #endif
@@ -166,11 +165,11 @@ class ezTheme {
 
 		uint8_t battery_bar_width = 26;
 		uint8_t battery_bar_gap = 2;
-		uint32_t battery_0_fgcolor = TFT_RED; 
-		uint32_t battery_25_fgcolor = TFT_ORANGE;
-		uint32_t battery_50_fgcolor = TFT_YELLOW;
-		uint32_t battery_75_fgcolor = TFT_GREENYELLOW;
-		uint32_t battery_100_fgcolor = TFT_GREEN;
+		uint16_t battery_0_fgcolor = TFT_RED; 
+		uint16_t battery_25_fgcolor = TFT_ORANGE;
+		uint16_t battery_50_fgcolor = TFT_YELLOW;
+		uint16_t battery_75_fgcolor = TFT_GREENYELLOW;
+		uint16_t battery_100_fgcolor = TFT_GREEN;
 	//						
 };
 
@@ -640,7 +639,7 @@ class ezSettings {
 			static void menu();
 			static uint16_t loop();
 			static uint8_t getTransformedBatteryLevel();
-			static uint32_t getBatteryBarColor(uint8_t batteryLevel);
+			static uint16_t getBatteryBarColor(uint8_t batteryLevel);
 		private:
 			static bool _on;
 			static void _refresh();
