@@ -9,14 +9,11 @@
 {
   ezTheme theme;
 
-  // theme.name = "Default";								// Change this
-  // when making theme theme.background = 0xEF7D; theme.foreground = TFT_BLACK; theme.header_height
-  // = 23; theme.GFXfont* header_font = &FreeSansBold9pt7b; theme.header_hmargin = 5;
-  // theme.header_tmargin = 3;
-  // theme.header_bgcolor = TFT_BLUE;
-  // theme.header_fgcolor = TFT_WHITE;
-  // theme.GFXfont* print_font = mono6x8;
-  // theme.print_color = theme.foreground;
+  // theme.name = "Default";								// Change
+  // this when making theme theme.background = 0xEF7D; theme.foreground = TFT_BLACK;
+  // theme.header_height = 23; theme.GFXfont* header_font = &FreeSansBold9pt7b; theme.header_hmargin
+  // = 5; theme.header_tmargin = 3; theme.header_bgcolor = TFT_BLUE; theme.header_fgcolor =
+  // TFT_WHITE; theme.GFXfont* print_font = mono6x8; theme.print_color = theme.foreground;
   // theme.GFXfont* clock_font = mono12x16;
   // theme.longpress_time = 250; //milliseconds theme.button_height = 19; theme.GFXfont* button_font
   // = &FreeSans9pt7b; theme.button_tmargin = 1; theme.button_hmargin = 5; theme.button_gap = 3;
