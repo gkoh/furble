@@ -10,18 +10,10 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a matrix of build platforms
-  build:
-    strategy:
-      matrix:
-        platform: [m5stick-c, m5stick-c-plus, m5stack-core, m5stack-core2]
-
-    # The type of runner that the job will run on
+  format:
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
       - name: Run clang-format style check
@@ -30,6 +22,24 @@ jobs:
           clang-format-version: '13'
           check-path: '.'
           exclude-regex: 'lib/M5ez/examples'
+
+  # This workflow contains a matrix of build platforms
+  build:
+    strategy:
+      matrix:
+        platform:
+          - m5stick-c
+          - m5stick-c-plus
+          - m5stack-core
+          - m5stack-core2
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
 
       - name: Setup Python
         uses: actions/setup-python@v4
