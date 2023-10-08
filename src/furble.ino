@@ -23,7 +23,7 @@ static const uint32_t GPS_BAUD = 9600;
 static const uint16_t GPS_SERVICE_MS = 250;
 static const uint32_t GPS_MAX_AGE_MS = 60 * 1000;
 
-static const uint8_t  GPS_HEADER_POSITION = LEFTMOST + 1;
+static const uint8_t GPS_HEADER_POSITION = LEFTMOST + 1;
 
 static bool gps_enable = false;
 static bool gps_has_fix = false;
@@ -50,12 +50,11 @@ static uint16_t service_grove_gps(void) {
     gps.encode(Serial2.read());
   }
 
-  if ((gps.location.age() < GPS_MAX_AGE_MS) && gps.location.isValid() &&
-    (gps.date.age() < GPS_MAX_AGE_MS) && gps.date.isValid() &&
-    (gps.time.age() < GPS_MAX_AGE_MS) && gps.time.age()) {
+  if ((gps.location.age() < GPS_MAX_AGE_MS) && gps.location.isValid()
+      && (gps.date.age() < GPS_MAX_AGE_MS) && gps.date.isValid()
+      && (gps.time.age() < GPS_MAX_AGE_MS) && gps.time.age()) {
     gps_has_fix = true;
-  }
-  else {
+  } else {
     gps_has_fix = false;
   }
 
@@ -71,12 +70,10 @@ static void update_geodata(Furble::Device *device) {
   }
 
   if (gps.location.isUpdated() && gps.location.isValid() && gps.date.isUpdated()
-    && gps.date.isValid() && gps.time.isValid() && gps.time.isValid()) {
-    Furble::Device::gps_t dgps = { gps.location.lat(),
-      gps.location.lng(),
-      gps.altitude.meters() };
-    Furble::Device::timesync_t timesync = { gps.date.year(), gps.date.month(),
-    gps.date.day(), gps.time.hour(), gps.time.minute(), gps.time.second() };
+      && gps.date.isValid() && gps.time.isValid() && gps.time.isValid()) {
+    Furble::Device::gps_t dgps = {gps.location.lat(), gps.location.lng(), gps.altitude.meters()};
+    Furble::Device::timesync_t timesync = {gps.date.year(), gps.date.month(),  gps.date.day(),
+                                           gps.time.hour(), gps.time.minute(), gps.time.second()};
 
     device->updateGeoData(dgps, timesync);
     ez.header.draw("gps");
@@ -98,8 +95,7 @@ static void gps_draw_widget(uint16_t x, uint16_t y) {
   if (gps_has_fix) {
     // With fix, draw solid circle
     m5.lcd.fillCircle(cx, cy, r, ez.theme->header_fgcolor);
-  }
-  else {
+  } else {
     // No fix, empty circle
     m5.lcd.drawCircle(cx, cy, r, ez.theme->header_fgcolor);
   }
@@ -234,7 +230,6 @@ static void menu_delete() {
     return;
   devices[i - 1]->remove();
 }
-
 
 static void menu_settings(void) {
   ezMenu submenu(FURBLE_STR " - Settings");

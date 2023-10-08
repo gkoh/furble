@@ -74,29 +74,23 @@ void settings_menu_tx_power(void) {
  */
 static void show_gps_info(void) {
   Serial.println("GPS Data");
-  char buffer[256] = { 0x0 };
+  char buffer[256] = {0x0};
   bool first = true;
 
   do {
     bool updated = gps.location.isUpdated() || gps.date.isUpdated() || gps.time.isUpdated();
 
-    snprintf(buffer, 256, "%s (%d) | %.2f, %.2f | %.2f metres | %4u-%02u-%02u %02u:%02u:%02u",
-             gps.location.isValid() && gps.date.isValid() && gps.time.isValid() ? "Valid" : "Invalid",
-             gps.location.age(),
-             gps.location.lat(),
-             gps.location.lng(),
-             gps.altitude.meters(),
-             gps.date.year(),
-             gps.date.month(),
-             gps.date.day(),
-             gps.time.hour(),
-             gps.time.minute(),
-             gps.time.second());
+    snprintf(
+        buffer, 256, "%s (%d) | %.2f, %.2f | %.2f metres | %4u-%02u-%02u %02u:%02u:%02u",
+        gps.location.isValid() && gps.date.isValid() && gps.time.isValid() ? "Valid" : "Invalid",
+        gps.location.age(), gps.location.lat(), gps.location.lng(), gps.altitude.meters(),
+        gps.date.year(), gps.date.month(), gps.date.day(), gps.time.hour(), gps.time.minute(),
+        gps.time.second());
 
     if (first || updated) {
-        first = false;
-        ez.header.draw("gps");
-        ez.msgBox("GPS Data", buffer, "Back", false);
+      first = false;
+      ez.header.draw("gps");
+      ez.msgBox("GPS Data", buffer, "Back", false);
     }
 
     m5.update();

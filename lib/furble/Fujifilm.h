@@ -35,7 +35,7 @@ class Fujifilm: public Device {
   /**
    * Time synchronisation.
    */
-  typedef struct __attribute__ ((packed)) _fujifilm_time_t {
+  typedef struct __attribute__((packed)) _fujifilm_time_t {
     uint16_t year;
     uint8_t day;
     uint8_t month;
@@ -47,7 +47,7 @@ class Fujifilm: public Device {
   /**
    * Location and time packet.
    */
-  typedef struct __attribute__ ((packed)) _fujigeotag_t {
+  typedef struct __attribute__((packed)) _fujigeotag_t {
     int32_t latitude;
     int32_t longitude;
     int32_t altitude;
@@ -58,7 +58,7 @@ class Fujifilm: public Device {
   device_type_t getDeviceType(void);
   size_t getSerialisedBytes(void);
   bool serialise(void *buffer, size_t bytes);
-  void notify(NimBLERemoteCharacteristic*, uint8_t*, size_t, bool);
+  void notify(NimBLERemoteCharacteristic *, uint8_t *, size_t, bool);
   void sendGeoData();
 
   uint8_t m_Token[FUJIFILM_TOKEN_LEN] = {0};
