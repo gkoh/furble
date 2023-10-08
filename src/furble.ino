@@ -1,6 +1,7 @@
 #include <Furble.h>
 #include <M5ez.h>
 #include <NimBLEDevice.h>
+#include <TinyGPS++.h>
 
 #ifdef M5STICKC_PLUS
 #include <M5StickCPlus.h>
@@ -14,12 +15,91 @@ static NimBLEScan *pScan = nullptr;
 
 static std::vector<Furble::Device *> connect_list;
 
+bool load_gps_enable();
+
+static TinyGPSPlus gps;
+HardwareSerial GroveSerial(2);
+static const uint32_t GPS_BAUD = 9600;
+static const uint16_t GPS_SERVICE_MS = 250;
+static const uint32_t GPS_MAX_AGE_MS = 60 * 1000;
+
+static const uint8_t GPS_HEADER_POSITION = LEFTMOST + 1;
+
+static bool gps_enable = false;
+static bool gps_has_fix = false;
+
+/**
+ * BLE Advertisement callback.
+ */
 class AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
   void onResult(NimBLEAdvertisedDevice *pDevice) {
     Furble::Device::match(pDevice, connect_list);
     ez.msgBox("Scanning", "Found ... " + String(connect_list.size()), "", false);
   }
 };
+
+/**
+ * GPS serial event service handler.
+ */
+static uint16_t service_grove_gps(void) {
+  if (!gps_enable) {
+    return GPS_SERVICE_MS;
+  }
+
+  while (Serial2.available() > 0) {
+    gps.encode(Serial2.read());
+  }
+
+  if ((gps.location.age() < GPS_MAX_AGE_MS) && gps.location.isValid()
+      && (gps.date.age() < GPS_MAX_AGE_MS) && gps.date.isValid()
+      && (gps.time.age() < GPS_MAX_AGE_MS) && gps.time.age()) {
+    gps_has_fix = true;
+  } else {
+    gps_has_fix = false;
+  }
+
+  return GPS_SERVICE_MS;
+}
+
+/**
+ * Update geotag data.
+ */
+static void update_geodata(Furble::Device *device) {
+  if (!gps_enable) {
+    return;
+  }
+
+  if (gps.location.isUpdated() && gps.location.isValid() && gps.date.isUpdated()
+      && gps.date.isValid() && gps.time.isValid() && gps.time.isValid()) {
+    Furble::Device::gps_t dgps = {gps.location.lat(), gps.location.lng(), gps.altitude.meters()};
+    Furble::Device::timesync_t timesync = {gps.date.year(), gps.date.month(),  gps.date.day(),
+                                           gps.time.hour(), gps.time.minute(), gps.time.second()};
+
+    device->updateGeoData(dgps, timesync);
+    ez.header.draw("gps");
+  }
+}
+
+/**
+ * Draw GPS enable/fix widget.
+ */
+static void gps_draw_widget(uint16_t x, uint16_t y) {
+  if (!gps_enable) {
+    return;
+  }
+
+  int16_t r = (ez.theme->header_height * 0.8) / 2;
+  int16_t cx = x + r;
+  int16_t cy = (ez.theme->header_height / 2);
+
+  if (gps_has_fix) {
+    // With fix, draw solid circle
+    m5.lcd.fillCircle(cx, cy, r, ez.theme->header_fgcolor);
+  } else {
+    // No fix, empty circle
+    m5.lcd.drawCircle(cx, cy, r, ez.theme->header_fgcolor);
+  }
+}
 
 /**
  * Display the version.
@@ -38,6 +118,8 @@ static void remote_control(Furble::Device *device) {
   ez.msgBox("Remote Shutter", "Shutter Control: A\nFocus: B\nBack: Power", "", false);
   while (true) {
     m5.update();
+
+    update_geodata(device);
 
     // Source code in AXP192 says 0x02 is short press.
     if (m5.Axp.GetBtnPress() == 0x02) {
@@ -60,6 +142,7 @@ static void remote_control(Furble::Device *device) {
       device->focusRelease();
     }
 
+    ez.yield();
     delay(50);
   }
 }
@@ -118,6 +201,8 @@ static void menu_connect(bool save) {
 
   Furble::Device *device = connect_list[i - 1];
 
+  update_geodata(device);
+
   NimBLEClient *pClient = NimBLEDevice::createClient();
   ezProgressBar progress_bar(FURBLE_STR, "Connecting ...", "");
   if (device->connect(pClient, progress_bar)) {
@@ -151,6 +236,7 @@ static void menu_settings(void) {
 
   submenu.buttons("OK#down");
   submenu.addItem("Backlight", ez.backlight.menu);
+  submenu.addItem("GPS", settings_menu_gps);
   submenu.addItem("Theme", ez.theme->menu);
   submenu.addItem("Transmit Power", settings_menu_tx_power);
   submenu.addItem("About", about);
@@ -164,13 +250,18 @@ static void mainmenu_poweroff(void) {
 }
 
 void setup() {
+  gps_enable = load_gps_enable();
+
   Serial.begin(115200);
+  Serial2.begin(GPS_BAUD, SERIAL_8N1, 33, 32);
 
 #include <themes/dark.h>
 #include <themes/default.h>
 #include <themes/mono_furble.h>
 
   ez.begin();
+  ez.header.insert(GPS_HEADER_POSITION, "gps", ez.theme->header_height * 0.8, gps_draw_widget);
+  ez.addEvent(service_grove_gps, millis() + 500);
   NimBLEDevice::init(FURBLE_STR);
   NimBLEDevice::setSecurityAuth(true, true, true);
 

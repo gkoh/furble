@@ -13,7 +13,7 @@ namespace Furble {
 class Device {
  public:
   /**
-   * UUID type
+   * UUID type.
    */
   typedef struct _uuid128_t {
     union {
@@ -21,6 +21,27 @@ class Device {
       uint8_t uint8[UUID128_LEN];
     };
   } uuid128_t;
+
+  /**
+   * GPS data type.
+   */
+  typedef struct _gps_t {
+    double latitude;
+    double longitude;
+    double altitude;
+  } gps_t;
+
+  /**
+   * Time synchronisation type.
+   */
+  typedef struct _timesync_t {
+    unsigned int year;
+    unsigned int month;
+    unsigned int day;
+    unsigned int hour;
+    unsigned int minute;
+    unsigned int second;
+  } timesync_t;
 
   /**
    * Connect to the target camera such that it is ready for shutter control.
@@ -56,6 +77,11 @@ class Device {
    * Send a focus button release command.
    */
   virtual void focusRelease(void) = 0;
+
+  /**
+   * Update geotagging data.
+   */
+  virtual void updateGeoData(gps_t &gps, timesync_t &timesync) = 0;
 
   const char *getName(void);
   void save(void);
