@@ -131,15 +131,26 @@ static void about(void) {
 
 static void remote_control(Furble::Device *device) {
   Serial.println("Remote Control");
-  ez.msgBox("Remote Shutter", "Shutter Control: A\nFocus: B\nBack: Power", "", false);
+
+#ifdef M5STACK_CORE2
+  ez.msgBox("Remote Shutter", "", "Release#Focus#Back", false);
+#else
+  ez.msgBox("Remote Shutter", "Back: Power", "Release#Focus", false);
+#endif
   while (true) {
     M5.update();
 
     update_geodata(device);
 
+#ifdef M5STACK_CORE2
+    if (M5.BtnC.wasPressed()) {
+      break;
+    }
+#else
     if (M5.BtnPWR.wasClicked()) {
       break;
     }
+#endif
 
     if (M5.BtnA.wasPressed()) {
       device->shutterPress();
@@ -280,6 +291,7 @@ void setup() {
   ez.header.insert(GPS_HEADER_POSITION, "gps", ez.theme->header_height * 0.8, gps_draw_widget);
   ez.addEvent(service_grove_gps, millis() + 500);
   ez.addEvent(current_service, millis() + 500);
+
   NimBLEDevice::init(FURBLE_STR);
   NimBLEDevice::setSecurityAuth(true, true, true);
 
