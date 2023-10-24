@@ -9,6 +9,8 @@ env:
   FURBLE_VERSION: ${{ github.ref_name }}+${{ github.run_attempt }}
   M5STICKC_FIRMWARE: furble-m5stick-c-${{ github.ref_name }}+${{ github.run_attempt }}.bin
   M5STICKC_PLUS_FIRMWARE: furble-m5stick-c-plus-${{ github.ref_name }}+${{ github.run_attempt }}.bin
+  M5STACK_CORE_FIRMWARE: furble-m5stack-core-${{ github.ref_name }}+${{ github.run_attempt }}.bin
+  M5STACK_CORE2_FIRMWARE: furble-m5stack-core2-${{ github.ref_name }}+${{ github.run_attempt }}.bin
 
 jobs:
   build:
@@ -39,9 +41,19 @@ jobs:
           platformio run -e m5stick-c-plus
           cp -v .pio/build/m5stick-c-plus/firmware.bin $M5STICKC_PLUS_FIRMWARE
 
+      - name: Build furble (M5Stack Core)
+        run: |
+          platformio run -e m5stack-core
+          cp -v .pio/build/m5stack-core/firmware.bin $M5STACK_CORE_FIRMWARE
+
+      - name: Build furble (M5Stack Core2)
+        run: |
+          platformio run -e m5stack-core2
+          cp -v .pio/build/m5stack-core2/firmware.bin $M5STACK_CORE2_FIRMWARE
+
       - name: Generate release hashes
         run: |
-          sha256sum $M5STICKC_FIRMWARE $M5STICKC_PLUS_FIRMWARE > sha256sum.txt
+          sha256sum $M5STICKC_FIRMWARE $M5STICKC_PLUS_FIRMWARE $M%M5STACK_CORE_FIRMWARE $M5STACK_CORE2_FIRMWARE > sha256sum.txt
 
       - name: Release
         uses: softprops/action-gh-release@v1
@@ -50,4 +62,6 @@ jobs:
           files: |
             ${{ env.M5STICKC_FIRMWARE }}
             ${{ env.M5STICKC_PLUS_FIRMWARE }}
+            ${{ env.M5STACK_CORE_FIRMWARE }}
+            ${{ env.M5STACK_CORE2_FIRMWARE }}
             sha256sum.txt

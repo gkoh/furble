@@ -530,6 +530,7 @@ void ezCanvas::_putString(String text) {
 
 String ezButtons::_btn_a_s, ezButtons::_btn_a_l;
 String ezButtons::_btn_b_s, ezButtons::_btn_b_l;
+String ezButtons::_btn_c_s, ezButtons::_btn_c_l;
 bool ezButtons::_key_release_wait;
 bool ezButtons::_lower_button_row, ezButtons::_upper_button_row;
 
@@ -543,12 +544,13 @@ void ezButtons::show(String buttons) {
   ez.chopString(buttons, "#", buttonVector, true);
   switch (buttonVector.size()) {
     case 1:
-      _drawButtons("", "", buttons, "");
+      _drawButtons("", "", buttons, "", "", "", "", "", "");
       break;
     case 2:
+      _drawButtons(buttonVector[0], "", buttonVector[1], "", "", "", "", "", "");
     case 3:
       // Three elements, so shortpress only
-      _drawButtons(buttonVector[0], "", buttonVector[1], "");
+      _drawButtons(buttonVector[0], "", buttonVector[1], "", buttonVector[2], "", "", "", "");
       break;
   }
 }
@@ -558,17 +560,26 @@ void ezButtons::clear(bool wipe /* = true */) {
     M5.Lcd.fillRect(0, ez.canvas.bottom() + 1, TFT_H - ez.canvas.bottom() - 1, TFT_W,
                     ez.screen.background());
   }
-  _btn_a_s = _btn_a_l = _btn_b_s = _btn_b_l = "";
+  _btn_a_s = _btn_a_l = _btn_b_s = _btn_b_l = _btn_c_s = _btn_c_l = "";
   _lower_button_row = false;
   _upper_button_row = false;
   ez.canvas.bottom(TFT_H - 1);
 }
 
-void ezButtons::_drawButtons(String btn_a_s, String btn_a_l, String btn_b_s, String btn_b_l) {
+void ezButtons::_drawButtons(String btn_a_s,
+                             String btn_a_l,
+                             String btn_b_s,
+                             String btn_b_l,
+                             String btn_c_s,
+                             String btn_c_l,
+                             String btn_ab,
+                             String btn_bc,
+                             String btn_ac) {
   int16_t btnwidth = int16_t((TFT_W - 4 * ez.theme->button_gap) / 3);
 
   // See if any buttons are used on the bottom row
-  if (btn_a_s != "" || btn_a_l != "" || btn_b_s != "" || btn_b_l != "") {
+  if (btn_a_s != "" || btn_a_l != "" || btn_b_s != "" || btn_b_l != "" || btn_c_s != ""
+      || btn_c_l != "") {
     if (!_lower_button_row) {
       // If the lower button row wasn't there before, clear the area first
       M5.Lcd.fillRect(0, TFT_H - ez.theme->button_height - ez.theme->button_gap, TFT_W,
@@ -587,13 +598,19 @@ void ezButtons::_drawButtons(String btn_a_s, String btn_a_l, String btn_b_s, Str
       _btn_b_s = btn_b_s;
       _btn_b_l = btn_b_l;
     }
+    if (_btn_c_s != btn_c_s || _btn_c_l != btn_c_l) {
+      _drawButton(1, ez.rightOf(btn_c_s, "|", true), ez.rightOf(btn_c_l, "|", true),
+                  2 * btnwidth + 3 * ez.theme->button_gap, btnwidth);
+      _btn_c_s = btn_c_s;
+      _btn_c_l = btn_c_l;
+    }
     _lower_button_row = true;
   } else {
     if (_lower_button_row) {
       // If there was a lower button row before and it's now gone, clear the area
       M5.Lcd.fillRect(0, TFT_H - ez.theme->button_height - ez.theme->button_gap, TFT_W,
                       ez.theme->button_height + ez.theme->button_gap, ez.screen.background());
-      _btn_a_s = _btn_a_l = _btn_b_s = _btn_b_l = "";
+      _btn_a_s = _btn_a_l = _btn_b_s = _btn_b_l = _btn_c_s = _btn_c_l = "";
       _lower_button_row = false;
     }
   }
@@ -743,6 +760,10 @@ void ezSettings::begin() {
     ez.settings.menuObj.addItem("Theme chooser", ez.theme->menu);
   }
   ez.settings.menuObj.addItem("Factory defaults", ez.settings.defaults);
+
+#ifdef M5STACK_CORE2
+  M5.Lcd.setRotation(1);
+#endif
 }
 
 void ezSettings::menu() {
@@ -2834,6 +2855,8 @@ void M5ez::setFont(const GFXfont *font) {
 int16_t M5ez::fontHeight() {
 #if M5STICKC_PLUS
   return M5.Lcd.fontHeight(M5.Lcd.getFont());
+#elif M5STACK_CORE2
+  return 26;
 #else
   return 11;
 #endif
