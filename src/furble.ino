@@ -350,8 +350,6 @@ void setup() {
   pScan->setWindow(6553);
 }
 
-
-
 void loop() {
   ezMenu mainmenu(FURBLE_STR);
   mainmenu.buttons("OK#down");
