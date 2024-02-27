@@ -49,14 +49,14 @@ static const NimBLEUUID FUJIFILM_CHR_GEOTAG_UUID =
 
 static const NimBLEUUID FUJIFILM_GEOTAG_UPDATE = NimBLEUUID("ad06c7b7-f41a-46f4-a29a-712055319122");
 
-static const uint8_t FUJIFILM_SHUTTER_CMD[2] = {0x01, 0x00};
-static const uint8_t FUJIFILM_SHUTTER_PRESS[2] = {0x02, 0x00};
-static const uint8_t FUJIFILM_SHUTTER_RELEASE[2] = {0x00, 0x00};
-static const uint8_t FUJIFILM_SHUTTER_FOCUS[2] = {0x03, 0x00};
+static const std::array<uint8_t, 2> FUJIFILM_SHUTTER_RELEASE = {0x00, 0x00};
+static const std::array<uint8_t, 2> FUJIFILM_SHUTTER_CMD = {0x01, 0x00};
+static const std::array<uint8_t, 2> FUJIFILM_SHUTTER_PRESS = {0x02, 0x00};
+static const std::array<uint8_t, 2> FUJIFILM_SHUTTER_FOCUS = {0x03, 0x00};
 
 namespace Furble {
 
-static void print_token(const uint8_t *token) {
+static void print_token(const std::array<uint8_t, FUJIFILM_TOKEN_LEN> &token) {
   Serial.printf("Token = %02x%02x%02x%02x\r\n", token[0], token[1], token[2], token[3]);
 }
 
@@ -89,17 +89,14 @@ Fujifilm::Fujifilm(const void *data, size_t len) {
   const fujifilm_t *fujifilm = static_cast<const fujifilm_t *>(data);
   m_Name = std::string(fujifilm->name);
   m_Address = NimBLEAddress(fujifilm->address, fujifilm->type);
-  memcpy(m_Token, fujifilm->token, FUJIFILM_TOKEN_LEN);
+  memcpy(m_Token.data(), fujifilm->token, FUJIFILM_TOKEN_LEN);
 }
 
 Fujifilm::Fujifilm(NimBLEAdvertisedDevice *pDevice) {
   const char *data = pDevice->getManufacturerData().data();
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
-  m_Token[0] = data[3];
-  m_Token[1] = data[4];
-  m_Token[2] = data[5];
-  m_Token[3] = data[6];
+  m_Token = {data[3], data[4], data[5], data[6]};
   Serial.printf("Name = %s\r\n", m_Name.c_str());
   Serial.printf("Address = %s\r\n", m_Address.toString().c_str());
   print_token(m_Token);
@@ -162,7 +159,7 @@ bool Fujifilm::connect(progressFunc pFunc, void *pCtx) {
   if (!pChr->canWrite())
     return false;
   print_token(m_Token);
-  if (!pChr->writeValue(m_Token, FUJIFILM_TOKEN_LEN, true))
+  if (!pChr->writeValue(m_Token.data(), sizeof(m_Token), true))
     return false;
   Serial.println("Paired!");
   updateProgress(pFunc, pCtx, 30.0f);
@@ -239,25 +236,25 @@ bool Fujifilm::connect(progressFunc pFunc, void *pCtx) {
   return true;
 }
 
-void Fujifilm::shutterPress(void) {
+template <std::size_t N>
+void Fujifilm::sendShutterCommand(const std::array<uint8_t, N> &cmd,
+                                  const std::array<uint8_t, N> &param) {
   NimBLERemoteService *pSvc = m_Client->getService(FUJIFILM_SVC_SHUTTER_UUID);
   NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(FUJIFILM_CHR_SHUTTER_UUID);
-  pChr->writeValue(&FUJIFILM_SHUTTER_CMD[0], sizeof(FUJIFILM_SHUTTER_CMD), true);
-  pChr->writeValue(&FUJIFILM_SHUTTER_PRESS[0], sizeof(FUJIFILM_SHUTTER_PRESS), true);
+  pChr->writeValue(cmd.data(), sizeof(cmd), true);
+  pChr->writeValue(param.data(), sizeof(cmd), true);
+}
+
+void Fujifilm::shutterPress(void) {
+  sendShutterCommand(FUJIFILM_SHUTTER_CMD, FUJIFILM_SHUTTER_PRESS);
 }
 
 void Fujifilm::shutterRelease(void) {
-  NimBLERemoteService *pSvc = m_Client->getService(FUJIFILM_SVC_SHUTTER_UUID);
-  NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(FUJIFILM_CHR_SHUTTER_UUID);
-  pChr->writeValue(&FUJIFILM_SHUTTER_CMD[0], sizeof(FUJIFILM_SHUTTER_CMD), true);
-  pChr->writeValue(&FUJIFILM_SHUTTER_RELEASE[0], sizeof(FUJIFILM_SHUTTER_RELEASE), true);
+  sendShutterCommand(FUJIFILM_SHUTTER_CMD, FUJIFILM_SHUTTER_RELEASE);
 }
 
 void Fujifilm::focusPress(void) {
-  NimBLERemoteService *pSvc = m_Client->getService(FUJIFILM_SVC_SHUTTER_UUID);
-  NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(FUJIFILM_CHR_SHUTTER_UUID);
-  pChr->writeValue(&FUJIFILM_SHUTTER_CMD[0], sizeof(FUJIFILM_SHUTTER_CMD), true);
-  pChr->writeValue(&FUJIFILM_SHUTTER_FOCUS[0], sizeof(FUJIFILM_SHUTTER_FOCUS), true);
+  sendShutterCommand(FUJIFILM_SHUTTER_CMD, FUJIFILM_SHUTTER_FOCUS);
 }
 
 void Fujifilm::focusRelease(void) {
@@ -332,7 +329,7 @@ bool Fujifilm::serialise(void *buffer, size_t bytes) {
   strncpy(x->name, m_Name.c_str(), MAX_NAME);
   x->address = (uint64_t)m_Address;
   x->type = m_Address.getType();
-  memcpy(x->token, m_Token, FUJIFILM_TOKEN_LEN);
+  memcpy(x->token, m_Token.data(), FUJIFILM_TOKEN_LEN);
 
   return true;
 }
