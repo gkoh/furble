@@ -5,24 +5,29 @@ on:
     tags:
       - 'v*'
 
-env:
-  FURBLE_VERSION: ${{ github.ref_name }}+${{ github.run_attempt }}
-  M5STICKC_FIRMWARE: furble-m5stick-c-${{ github.ref_name }}+${{ github.run_attempt }}.bin
-  M5STICKC_PLUS_FIRMWARE: furble-m5stick-c-plus-${{ github.ref_name }}+${{ github.run_attempt }}.bin
-  M5STACK_CORE_FIRMWARE: furble-m5stack-core-${{ github.ref_name }}+${{ github.run_attempt }}.bin
-  M5STACK_CORE2_FIRMWARE: furble-m5stack-core2-${{ github.ref_name }}+${{ github.run_attempt }}.bin
-
 jobs:
   build:
+
+    strategy:
+      matrix:
+        platform:
+          - m5stick-c
+          - m5stick-c-plus
+          - m5stack-core
+          - m5stack-core2
+
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
+    env:
+      FIRMWARE_NAME: furble-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
           cache: 'pip'
@@ -31,37 +36,37 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Build furble (M5StickC)
-        run: |
-          platformio run -e m5stick-c
-          cp -v .pio/build/m5stick-c/firmware.bin $M5STICKC_FIRMWARE
+      - name: Build furble (${{ matrix.platform }})
+        run: platformio run -e ${{ matrix.platform }}
 
-      - name: Build furble (M5StickC Plus)
-        run: |
-          platformio run -e m5stick-c-plus
-          cp -v .pio/build/m5stick-c-plus/firmware.bin $M5STICKC_PLUS_FIRMWARE
+      - name: Rename binary (${{ matrix.platform}})
+        run: mv .pio/build/${{ matrix.platform }}/firmware.bin $FIRMWARE_NAME
 
-      - name: Build furble (M5Stack Core)
-        run: |
-          platformio run -e m5stack-core
-          cp -v .pio/build/m5stack-core/firmware.bin $M5STACK_CORE_FIRMWARE
+      - name: Upload binary artifact (${{ matrix.platform }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.FIRMWARE_NAME }}
+          path: ${{ env.FIRMWARE_NAME }}
+          if-no-files-found: error
 
-      - name: Build furble (M5Stack Core2)
-        run: |
-          platformio run -e m5stack-core2
-          cp -v .pio/build/m5stack-core2/firmware.bin $M5STACK_CORE2_FIRMWARE
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
 
       - name: Generate release hashes
         run: |
-          sha256sum $M5STICKC_FIRMWARE $M5STICKC_PLUS_FIRMWARE $M%M5STACK_CORE_FIRMWARE $M5STACK_CORE2_FIRMWARE > sha256sum.txt
+          ls -lR
+          sha256sum furble-*.bin > sha256sum.txt
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           generate_release_notes: true
           files: |
-            ${{ env.M5STICKC_FIRMWARE }}
-            ${{ env.M5STICKC_PLUS_FIRMWARE }}
-            ${{ env.M5STACK_CORE_FIRMWARE }}
-            ${{ env.M5STACK_CORE2_FIRMWARE }}
+            furble-*.bin
             sha256sum.txt
