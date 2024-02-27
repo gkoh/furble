@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: furble-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
-          path: .pio/build/${{ matrix.platform }})/firmware.bin
+          path: .pio/build/${{ matrix.platform }}/firmware.bin
           if-no-files-found: error
 
   release:
