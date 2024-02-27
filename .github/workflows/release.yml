@@ -20,6 +20,9 @@ jobs:
     permissions:
       contents: write
 
+    env:
+      FIRMWARE_NAME: furble-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
+
     steps:
       - uses: actions/checkout@v4
 
@@ -36,11 +39,14 @@ jobs:
       - name: Build furble (${{ matrix.platform }})
         run: platformio run -e ${{ matrix.platform }}
 
+      - name: Rename binary (${{ matrix.platform}})
+        run: mv .pio/build/${{ matrix.platform }}/firmware.bin $FIRMWARE_NAME
+
       - name: Upload binary artifact (${{ matrix.platform }})
         uses: actions/upload-artifact@v4
         with:
-          name: furble-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
-          path: .pio/build/${{ matrix.platform }}/firmware.bin
+          name: ${{ env.FIRMWARE_NAME }}
+          path: ${{ env.FIRMWARE_NAME }}
           if-no-files-found: error
 
   release:
