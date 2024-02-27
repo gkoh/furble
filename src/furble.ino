@@ -129,6 +129,43 @@ static void about(void) {
   ez.msgBox(FURBLE_STR " - About", "Version: " + version, "Back", true);
 }
 
+static void trigger(Furble::Device *device, int counter) {
+  device->focusPress();
+  delay(250);
+  device->shutterPress();
+  delay(50);
+
+  ez.msgBox("Interval Release", String(counter), "Stop", false);
+  device->shutterRelease();
+}
+
+static void remote_interval(Furble::Device *device) {
+  int i = 0;
+  int j = 1;
+
+  ez.msgBox("Interval Release", "", "Stop", false);
+  trigger(device, j);
+
+  while (true) {
+    i++;
+
+    M5.update();
+
+    if (M5.BtnB.wasReleased()) {
+      break;
+    }
+
+    if (i > 50) {
+      i = 0;
+      j++;
+
+      trigger(device, j);
+    }
+
+    delay(50);
+  }
+}
+
 static void remote_control(Furble::Device *device) {
   Serial.println("Remote Control");
 
@@ -198,13 +235,19 @@ static void menu_remote(Furble::Device *device) {
   ezMenu submenu(FURBLE_STR " - Connected");
   submenu.buttons("OK#down");
   submenu.addItem("Shutter");
+  submenu.addItem("Interval");
   submenu.addItem("Disconnect");
   submenu.downOnLast("first");
 
   do {
     submenu.runOnce();
+
     if (submenu.pickName() == "Shutter") {
       remote_control(device);
+    }
+
+    if (submenu.pickName() == "Interval") {
+      remote_interval(device);
     }
   } while (submenu.pickName() != "Disconnect");
 
@@ -286,6 +329,7 @@ void setup() {
 #include <themes/mono_furble.h>
 
   ez.begin();
+
   uint8_t width = 4 * M5.Lcd.textWidth("5") + ez.theme->header_hmargin * 2;
   ez.header.insert(CURRENT_POSITION, "current", width, current_draw_widget);
   ez.header.insert(GPS_HEADER_POSITION, "gps", ez.theme->header_height * 0.8, gps_draw_widget);
