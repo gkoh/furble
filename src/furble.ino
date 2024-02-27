@@ -1,18 +1,9 @@
 #include <Furble.h>
 #include <M5ez.h>
 #include <NimBLEDevice.h>
+#include <TinyGPS++.h>
 
-#ifdef M5STICKC_PLUS
-#include <M5StickCPlus.h>
-#endif
-
-#ifdef M5STICKC
-#include <M5StickC.h>
-#endif
-
-#ifdef M5STACK_CORE2
-#include <M5Core2.h>
-#endif
+#include <M5Unified.h>
 
 const uint32_t SCAN_DURATION = 10;
 
@@ -20,12 +11,111 @@ static NimBLEScan *pScan = nullptr;
 
 static std::vector<Furble::Device *> connect_list;
 
+bool load_gps_enable();
+
+static TinyGPSPlus gps;
+HardwareSerial GroveSerial(2);
+static const uint32_t GPS_BAUD = 9600;
+static const uint16_t GPS_SERVICE_MS = 250;
+static const uint32_t GPS_MAX_AGE_MS = 60 * 1000;
+
+static const uint8_t CURRENT_POSITION = LEFTMOST + 1;
+static const uint8_t GPS_HEADER_POSITION = CURRENT_POSITION + 1;
+
+static bool gps_enable = false;
+static bool gps_has_fix = false;
+
+/**
+ * BLE Advertisement callback.
+ */
 class AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
   void onResult(NimBLEAdvertisedDevice *pDevice) {
     Furble::Device::match(pDevice, connect_list);
     ez.msgBox("Scanning", "Found ... " + String(connect_list.size()), "", false);
   }
 };
+
+/**
+ * GPS serial event service handler.
+ */
+static uint16_t service_grove_gps(void) {
+  if (!gps_enable) {
+    return GPS_SERVICE_MS;
+  }
+
+  while (Serial2.available() > 0) {
+    gps.encode(Serial2.read());
+  }
+
+  if ((gps.location.age() < GPS_MAX_AGE_MS) && gps.location.isValid()
+      && (gps.date.age() < GPS_MAX_AGE_MS) && gps.date.isValid()
+      && (gps.time.age() < GPS_MAX_AGE_MS) && gps.time.age()) {
+    gps_has_fix = true;
+  } else {
+    gps_has_fix = false;
+  }
+
+  return GPS_SERVICE_MS;
+}
+
+/**
+ * Update geotag data.
+ */
+static void update_geodata(Furble::Device *device) {
+  if (!gps_enable) {
+    return;
+  }
+
+  if (gps.location.isUpdated() && gps.location.isValid() && gps.date.isUpdated()
+      && gps.date.isValid() && gps.time.isValid() && gps.time.isValid()) {
+    Furble::Device::gps_t dgps = {gps.location.lat(), gps.location.lng(), gps.altitude.meters()};
+    Furble::Device::timesync_t timesync = {gps.date.year(), gps.date.month(),  gps.date.day(),
+                                           gps.time.hour(), gps.time.minute(), gps.time.second()};
+
+    device->updateGeoData(dgps, timesync);
+    ez.header.draw("gps");
+  }
+}
+
+/**
+ * Draw GPS enable/fix widget.
+ */
+static void gps_draw_widget(uint16_t x, uint16_t y) {
+  if (!gps_enable) {
+    return;
+  }
+
+  int16_t r = (ez.theme->header_height * 0.8) / 2;
+  int16_t cx = x + r;
+  int16_t cy = (ez.theme->header_height / 2);
+
+  if (gps_has_fix) {
+    // With fix, draw solid circle
+    M5.Lcd.fillCircle(cx, cy, r, ez.theme->header_fgcolor);
+  } else {
+    // No fix, empty circle
+    M5.Lcd.drawCircle(cx, cy, r, ez.theme->header_fgcolor);
+  }
+}
+
+static void current_draw_widget(uint16_t x, uint16_t y) {
+  // hard disable for now
+  return;
+
+  M5.Lcd.fillRect(x, 0, y, ez.theme->header_height, ez.theme->header_bgcolor);
+  M5.Lcd.setTextColor(ez.theme->header_fgcolor);
+  M5.Lcd.setTextDatum(TL_DATUM);
+  int32_t ma = M5.Power.getBatteryCurrent();
+  Serial.println(ma);
+  char s[32] = {0};
+  snprintf(s, 32, "%d", ma);
+  M5.Lcd.drawString(s, x + ez.theme->header_hmargin, ez.theme->header_tmargin + 2);
+}
+
+static uint16_t current_service(void) {
+  ez.header.draw("current");
+  return 1000;
+}
 
 /**
  * Display the version.
@@ -59,9 +149,9 @@ static void remote_interval(Furble::Device *device) {
   while (true) {
     i++;
 
-    m5.update();
+    M5.update();
 
-    if (m5.BtnB.wasReleased()) {
+    if (M5.BtnB.wasReleased()) {
       break;
     }
 
@@ -85,35 +175,37 @@ static void remote_control(Furble::Device *device) {
   ez.msgBox("Remote Shutter", "Back: Power", "Release#Focus", false);
 #endif
   while (true) {
-    m5.update();
+    M5.update();
+
+    update_geodata(device);
 
 #ifdef M5STACK_CORE2
-    if (m5.BtnC.wasPressed()) {
+    if (M5.BtnC.wasPressed()) {
       break;
     }
 #else
-    // Source code in AXP192 says 0x02 is short press.
-    if (m5.Axp.GetBtnPress() == 0x02) {
+    if (M5.BtnPWR.wasClicked()) {
       break;
     }
 #endif
 
-    if (m5.BtnA.wasPressed()) {
+    if (M5.BtnA.wasPressed()) {
       device->shutterPress();
     }
 
-    if (m5.BtnA.wasReleased()) {
+    if (M5.BtnA.wasReleased()) {
       device->shutterRelease();
     }
 
-    if (m5.BtnB.wasPressed()) {
+    if (M5.BtnB.wasPressed()) {
       device->focusPress();
     }
 
-    if (m5.BtnB.wasReleased()) {
+    if (M5.BtnB.wasReleased()) {
       device->focusRelease();
     }
 
+    ez.yield();
     delay(50);
   }
 }
@@ -178,6 +270,8 @@ static void menu_connect(bool save) {
 
   Furble::Device *device = connect_list[i - 1];
 
+  update_geodata(device);
+
   NimBLEClient *pClient = NimBLEDevice::createClient();
   ezProgressBar progress_bar(FURBLE_STR, "Connecting ...", "");
   if (device->connect(pClient, progress_bar)) {
@@ -211,6 +305,7 @@ static void menu_settings(void) {
 
   submenu.buttons("OK#down");
   submenu.addItem("Backlight", ez.backlight.menu);
+  submenu.addItem("GPS", settings_menu_gps);
   submenu.addItem("Theme", ez.theme->menu);
   submenu.addItem("Transmit Power", settings_menu_tx_power);
   submenu.addItem("About", about);
@@ -220,11 +315,14 @@ static void menu_settings(void) {
 }
 
 static void mainmenu_poweroff(void) {
-  m5.Axp.PowerOff();
+  M5.Power.powerOff();
 }
 
 void setup() {
+  gps_enable = load_gps_enable();
+
   Serial.begin(115200);
+  Serial2.begin(GPS_BAUD, SERIAL_8N1, 33, 32);
 
 #include <themes/dark.h>
 #include <themes/default.h>
@@ -232,9 +330,11 @@ void setup() {
 
   ez.begin();
 
-#ifdef M5STACK_CORE2
-  m5.lcd.setRotation(1);
-#endif
+  uint8_t width = 4 * M5.Lcd.textWidth("5") + ez.theme->header_hmargin * 2;
+  ez.header.insert(CURRENT_POSITION, "current", width, current_draw_widget);
+  ez.header.insert(GPS_HEADER_POSITION, "gps", ez.theme->header_height * 0.8, gps_draw_widget);
+  ez.addEvent(service_grove_gps, millis() + 500);
+  ez.addEvent(current_service, millis() + 500);
 
   NimBLEDevice::init(FURBLE_STR);
   NimBLEDevice::setSecurityAuth(true, true, true);
