@@ -105,6 +105,7 @@ the following libraries:
   - severely butchered version to work on the M5StickC
 - [M5Unified](https://github.com/m5stack/M5Unified)
 - [NimBLE-Arduino](https://github.com/h2zero/NimBLE-Arduino)
+- [TinyGPSPlus](https://github.com/mikalhart/TinyGPSPlus)
 
 ## Installation
 
