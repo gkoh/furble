@@ -101,12 +101,9 @@ The M5StickC Plus sells for US$19.95.
 
 The project is built with [PlatformIO](https://platformio.org) and depends on
 the following libraries:
-- [Battery Sense](https://github.com/rlogiacco/BatterySense)
-  - only the voltage to capacity function is used
 - [M5ez](https://github.com/M5ez/M5ez)
   - severely butchered version to work on the M5StickC
-- [M5StickC](https://github.com/m5stack/M5StickC)
-- [M5StickC Plus](https://github.com/m5stack/M5StickC-Plus)
+- [M5Unified](https://github.com/m5stack/M5Unified)
 - [NimBLE-Arduino](https://github.com/h2zero/NimBLE-Arduino)
 
 ## Installation
