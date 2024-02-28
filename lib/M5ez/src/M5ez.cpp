@@ -13,7 +13,6 @@ extern "C" {
 #endif                         // M5EZ_WIFI
 
 #ifdef M5EZ_BATTERY
-#include <Battery.h>
 #endif
 
 #ifdef M5EZ_CLOCK
@@ -2120,17 +2119,9 @@ uint16_t ezBattery::loop() {
 // Transform the M5Stack built in battery level into an internal format.
 //  From [100, 75, 50, 25, 0] to [4, 3, 2, 1, 0]
 uint8_t ezBattery::getTransformedBatteryLevel() {
-  uint8_t level = sigmoidal(M5.Power.getBatteryVoltage(), 3000, 4200);
-  if (level > 80)
-    return 4;
-  else if (level > 60)
-    return 3;
-  else if (level > 40)
-    return 2;
-  else if (level > 20)
-    return 1;
-  else
-    return 0;
+  int32_t level = M5.Power.getBatteryLevel();
+
+  return map(level, 0, 100, 0, 4);
 }
 
 // Return the theme based battery bar color according to its level

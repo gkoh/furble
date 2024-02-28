@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+env:
+  FURBLE_VERSION: ${{ github.ref_name }}+${{ github.run_attempt }}
+
 jobs:
   build:
 
