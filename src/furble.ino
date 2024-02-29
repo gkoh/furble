@@ -167,7 +167,6 @@ static void remote_interval(Furble::Device *device) {
 }
 
 static void remote_control(Furble::Device *device) {
-
   static bool shutter_lock = false;
 
   Serial.println("Remote Control");
@@ -194,9 +193,9 @@ static void remote_control(Furble::Device *device) {
     if (shutter_lock) {
       // release shutter if either shutter or focus is pressed
       if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked()) {
-         shutter_lock = false;
-         device->shutterRelease();
-         Serial.println("shutterRelease(unlock)");
+        shutter_lock = false;
+        device->shutterRelease();
+        Serial.println("shutterRelease(unlock)");
       }
     } else {
       if (M5.BtnA.wasPressed()) {
@@ -208,8 +207,8 @@ static void remote_control(Furble::Device *device) {
       if (M5.BtnA.wasReleased()) {
         // focus + shutter = shutter lock
         if (M5.BtnB.isPressed()) {
-           shutter_lock = true;
-           Serial.println("shutter lock");
+          shutter_lock = true;
+          Serial.println("shutter lock");
         } else {
           device->shutterRelease();
           Serial.println("shutterRelease()");
