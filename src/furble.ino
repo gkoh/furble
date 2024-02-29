@@ -166,16 +166,29 @@ static void remote_interval(Furble::Device *device) {
   }
 }
 
+static void show_shutter_control(bool shutter_locked) {
+  if (shutter_locked) {
+#ifdef M5STACK_CORE2
+    ez.msgBox("Remote Shutter", "Shutter Locked", "Unlock#Unlock#Back", false);
+#else
+    ez.msgBox("Remote Shutter", "Shutter Locked|Back: Power", "Unlock#Unlock", false);
+#endif
+  } else {
+#ifdef M5STACK_CORE2
+    ez.msgBox("Remote Shutter", "Lock: Focus+Release", "Release#Focus#Back", false);
+#else
+    ez.msgBox("Remote Shutter", "Lock: Focus+Release|Back: Power", "Release#Focus", false);
+#endif
+  }
+}
+
 static void remote_control(Furble::Device *device) {
   static bool shutter_lock = false;
 
   Serial.println("Remote Control");
 
-#ifdef M5STACK_CORE2
-  ez.msgBox("Remote Shutter", "Lock: Focus+Release", "Release#Focus#Back", false);
-#else
-  ez.msgBox("Remote Shutter", "Lock: Focus+Release\nBack: Power", "Release#Focus", false);
-#endif
+  show_shutter_control(false);
+
   do {
     M5.update();
 
@@ -195,6 +208,7 @@ static void remote_control(Furble::Device *device) {
       if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked()) {
         shutter_lock = false;
         device->shutterRelease();
+        show_shutter_control(false);
         Serial.println("shutterRelease(unlock)");
       }
     } else {
@@ -208,6 +222,7 @@ static void remote_control(Furble::Device *device) {
         // focus + shutter = shutter lock
         if (M5.BtnB.isPressed()) {
           shutter_lock = true;
+          show_shutter_control(true);
           Serial.println("shutter lock");
         } else {
           device->shutterRelease();
