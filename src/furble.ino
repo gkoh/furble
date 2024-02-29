@@ -182,8 +182,8 @@ static void show_shutter_control(bool shutter_locked, unsigned long lock_start_m
     unsigned long seconds = (total_ms / 1000) % 60;
     prev_update_ms = now;
 
-    char duration[6] = {0x0};
-    sprintf(duration, "%02lu:%02lu", minutes, seconds);
+    char duration[8] = {0x0};
+    snprintf(duration, 8, "%02lu:%02lu", minutes, seconds);
 
 #ifdef M5STACK_CORE2
     ez.msgBox("Remote Shutter", "Shutter Locked|" + String(duration), "Unlock#Unlock#Back", false);
