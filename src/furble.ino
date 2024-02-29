@@ -167,12 +167,15 @@ static void remote_interval(Furble::Device *device) {
 }
 
 static void remote_control(Furble::Device *device) {
+
+  static bool shutter_lock = false;
+
   Serial.println("Remote Control");
 
 #ifdef M5STACK_CORE2
-  ez.msgBox("Remote Shutter", "", "Release#Focus#Back", false);
+  ez.msgBox("Remote Shutter", "Lock: Focus+Release", "Release#Focus#Back", false);
 #else
-  ez.msgBox("Remote Shutter", "Back: Power", "Release#Focus", false);
+  ez.msgBox("Remote Shutter", "Lock: Focus+Release\nBack: Power", "Release#Focus", false);
 #endif
   do {
     M5.update();
@@ -180,32 +183,51 @@ static void remote_control(Furble::Device *device) {
     update_geodata(device);
 
     if (M5.BtnPWR.wasClicked() || M5.BtnC.wasPressed()) {
+      if (shutter_lock) {
+        // ensure shutter is released on exit
+        device->shutterRelease();
+      }
       Serial.println("Exit shutter");
       break;
     }
 
-    if (M5.BtnA.wasPressed()) {
-      device->shutterPress();
-      Serial.println("shutterPress()");
-      continue;
-    }
+    if (shutter_lock) {
+      // release shutter if either shutter or focus is pressed
+      if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked()) {
+         shutter_lock = false;
+         device->shutterRelease();
+         Serial.println("shutterRelease(unlock)");
+      }
+    } else {
+      if (M5.BtnA.wasPressed()) {
+        device->shutterPress();
+        Serial.println("shutterPress()");
+        continue;
+      }
 
-    if (M5.BtnA.wasReleased()) {
-      device->shutterRelease();
-      Serial.println("shutterRelease()");
-      continue;
-    }
+      if (M5.BtnA.wasReleased()) {
+        // focus + shutter = shutter lock
+        if (M5.BtnB.isPressed()) {
+           shutter_lock = true;
+           Serial.println("shutter lock");
+        } else {
+          device->shutterRelease();
+          Serial.println("shutterRelease()");
+        }
+        continue;
+      }
 
-    if (M5.BtnB.wasPressed()) {
-      device->focusPress();
-      Serial.println("focusPress()");
-      continue;
-    }
+      if (M5.BtnB.wasPressed()) {
+        device->focusPress();
+        Serial.println("focusPress()");
+        continue;
+      }
 
-    if (M5.BtnB.wasReleased()) {
-      device->focusRelease();
-      Serial.println("focusRelease()");
-      continue;
+      if (M5.BtnB.wasReleased()) {
+        device->focusRelease();
+        Serial.println("focusRelease()");
+        continue;
+      }
     }
 
     ez.yield();
