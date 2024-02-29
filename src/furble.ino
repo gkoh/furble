@@ -140,26 +140,105 @@ static void trigger(Furble::Device *device, int counter) {
 }
 
 static void remote_interval(Furble::Device *device) {
-  int i = 0;
-  int j = 1;
-
-  ez.msgBox("Interval Release", "", "Stop", false);
-  trigger(device, j);
+  int interval_target = 20;
+  int interval_counter = 0;
+  int interval_increment = 0;
+  
+  int exit_counter = 0;
+  int exit_increment = 0;
+  
+  int update_flag = 0;
+  
+  ez.msgBox("Interval Release", "1s", "Stop", false);
 
   while (true) {
-    i++;
-
     M5.update();
-
-    if (M5.BtnB.wasReleased()) {
-      break;
+    
+    //start exit check
+    if (M5.BtnA.wasPressed()) {
+      exit_increment = 1;
+    }
+    
+    //toggle shooting
+    if (M5.BtnA.wasReleased()) {
+      //check for exit condition
+      if (exit_counter >= 20){
+        device->shutterRelease();
+        break;
+      }
+      
+      
+      if (interval_increment == 0){
+        interval_increment = 1;
+        device->shutterPress();
+      }else{
+        interval_increment = 0;
+        interval_counter = 0;
+        device->shutterRelease();
+        update_flag = 1;
+      }
+      
+      
+      exit_increment = 0;
+      exit_counter = 0;
+    }
+    
+    //increment counter
+    if (M5.BtnB.wasPressed()) {
+      if (interval_increment == 0){
+        if (interval_target < 7200){
+          interval_target += 20;
+          update_flag = 1;
+        }
+      }
     }
 
-    if (i > 50) {
-      i = 0;
-      j++;
+    if (M5.BtnB.wasReleased()) {
+      
+    }
+    
+    //decrement counter, and start check for exit condition
+#ifdef M5STACK_CORE2
+    if (M5.BtnC.wasPressed()) {
+#else
+    if (M5.BtnPWR.wasClicked()) {
+#endif
+      if (interval_increment == 0){
+        if (interval_target > 20){
+          interval_target -= 20;
+          update_flag = 1;
+        }
+      }
+    }
 
-      trigger(device, j);
+
+    if (M5.BtnC.wasReleased()) {
+      
+    }
+
+    //let's do this
+    //increment exit counter
+    exit_counter += exit_increment;
+    
+    //increment interval counter
+    interval_counter += interval_increment;
+    
+    if (interval_counter == 5){
+      device->shutterRelease();
+    }
+    
+    if (interval_counter > interval_target){
+      device->shutterPress();
+      interval_counter = 0;
+    }
+    
+    if (update_flag == 1){
+      ez.msgBox("Interval Release", String(interval_target/20)+"s", "Stop", false);
+      update_flag = 0;
+    }
+    
+    if (interval_counter % 20 == 0 and interval_increment == 1){
+      ez.msgBox("Interval Release", "Shooting...\n"+String((interval_target-interval_counter+19)/20)+"s", "Stop", false);
     }
 
     delay(50);
