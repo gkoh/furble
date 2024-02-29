@@ -166,46 +166,104 @@ static void remote_interval(Furble::Device *device) {
   }
 }
 
-static void remote_control(Furble::Device *device) {
-  Serial.println("Remote Control");
+static void show_shutter_control(bool shutter_locked, unsigned long lock_start_ms) {
+  static unsigned long prev_update_ms = 0;
+
+  if (shutter_locked) {
+    unsigned long now = millis();
+
+    if ((now - prev_update_ms) < 1000) {
+      // Don't update if less than 1000ms
+      return;
+    }
+
+    unsigned long total_ms = now - lock_start_ms;
+    unsigned long minutes = total_ms / 1000 / 60;
+    unsigned long seconds = (total_ms / 1000) % 60;
+    prev_update_ms = now;
+
+    char duration[8] = {0x0};
+    snprintf(duration, 8, "%02lu:%02lu", minutes, seconds);
 
 #ifdef M5STACK_CORE2
-  ez.msgBox("Remote Shutter", "", "Release#Focus#Back", false);
+    ez.msgBox("Remote Shutter", "Shutter Locked|" + String(duration), "Unlock#Unlock#Back", false);
 #else
-  ez.msgBox("Remote Shutter", "Back: Power", "Release#Focus", false);
+    ez.msgBox("Remote Shutter", "Shutter Locked|" + String(duration) + "||Back: Power",
+              "Unlock#Unlock", false);
 #endif
+  } else {
+#ifdef M5STACK_CORE2
+    ez.msgBox("Remote Shutter", "Lock: Focus+Release", "Release#Focus#Back", false);
+#else
+    ez.msgBox("Remote Shutter", "Lock: Focus+Release|Back: Power", "Release#Focus", false);
+#endif
+  }
+}
+
+static void remote_control(Furble::Device *device) {
+  static unsigned long shutter_lock_start_ms = 0;
+  static bool shutter_lock = false;
+
+  Serial.println("Remote Control");
+
+  show_shutter_control(false, 0);
+
   do {
     M5.update();
 
     update_geodata(device);
 
     if (M5.BtnPWR.wasClicked() || M5.BtnC.wasPressed()) {
+      if (shutter_lock) {
+        // ensure shutter is released on exit
+        device->shutterRelease();
+      }
       Serial.println("Exit shutter");
       break;
     }
 
-    if (M5.BtnA.wasPressed()) {
-      device->shutterPress();
-      Serial.println("shutterPress()");
-      continue;
-    }
+    if (shutter_lock) {
+      // release shutter if either shutter or focus is pressed
+      if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked()) {
+        shutter_lock = false;
+        device->shutterRelease();
+        show_shutter_control(false, 0);
+        Serial.println("shutterRelease(unlock)");
+      } else {
+        show_shutter_control(true, shutter_lock_start_ms);
+      }
+    } else {
+      if (M5.BtnA.wasPressed()) {
+        device->shutterPress();
+        Serial.println("shutterPress()");
+        continue;
+      }
 
-    if (M5.BtnA.wasReleased()) {
-      device->shutterRelease();
-      Serial.println("shutterRelease()");
-      continue;
-    }
+      if (M5.BtnA.wasReleased()) {
+        // focus + shutter = shutter lock
+        if (M5.BtnB.isPressed()) {
+          shutter_lock = true;
+          shutter_lock_start_ms = millis();
+          show_shutter_control(true, shutter_lock_start_ms);
+          Serial.println("shutter lock");
+        } else {
+          device->shutterRelease();
+          Serial.println("shutterRelease()");
+        }
+        continue;
+      }
 
-    if (M5.BtnB.wasPressed()) {
-      device->focusPress();
-      Serial.println("focusPress()");
-      continue;
-    }
+      if (M5.BtnB.wasPressed()) {
+        device->focusPress();
+        Serial.println("focusPress()");
+        continue;
+      }
 
-    if (M5.BtnB.wasReleased()) {
-      device->focusRelease();
-      Serial.println("focusRelease()");
-      continue;
+      if (M5.BtnB.wasReleased()) {
+        device->focusRelease();
+        Serial.println("focusRelease()");
+        continue;
+      }
     }
 
     ez.yield();
