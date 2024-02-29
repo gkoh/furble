@@ -174,40 +174,43 @@ static void remote_control(Furble::Device *device) {
 #else
   ez.msgBox("Remote Shutter", "Back: Power", "Release#Focus", false);
 #endif
-  while (true) {
+  do {
     M5.update();
 
     update_geodata(device);
 
-#ifdef M5STACK_CORE2
-    if (M5.BtnC.wasPressed()) {
+    if (M5.BtnPWR.wasClicked() || M5.BtnC.wasPressed()) {
+      Serial.println("Exit shutter");
       break;
     }
-#else
-    if (M5.BtnPWR.wasClicked()) {
-      break;
-    }
-#endif
 
     if (M5.BtnA.wasPressed()) {
       device->shutterPress();
+      Serial.println("shutterPress()");
+      continue;
     }
 
     if (M5.BtnA.wasReleased()) {
       device->shutterRelease();
+      Serial.println("shutterRelease()");
+      continue;
     }
 
     if (M5.BtnB.wasPressed()) {
       device->focusPress();
+      Serial.println("focusPress()");
+      continue;
     }
 
     if (M5.BtnB.wasReleased()) {
       device->focusRelease();
+      Serial.println("focusRelease()");
+      continue;
     }
 
     ez.yield();
     delay(50);
-  }
+  } while (true);
 }
 
 /**
