@@ -547,6 +547,7 @@ void ezButtons::show(String buttons) {
       break;
     case 2:
       _drawButtons(buttonVector[0], "", buttonVector[1], "", "", "", "", "", "");
+      break;
     case 3:
       // Three elements, so shortpress only
       _drawButtons(buttonVector[0], "", buttonVector[1], "", buttonVector[2], "", "", "", "");

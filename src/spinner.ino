@@ -37,7 +37,7 @@ static void display_spinner(const char *title, unsigned int index, unsigned int 
     buttons = "OK#Next";
   }
 
-  ez.msgBox(title, (String)spin_row, buttons, false);
+  ez.msgBox(title, (String)spin_row), buttons, false);
 }
 
 void spinner_modify_value(const char *title, SpinValue *sv) {
@@ -45,7 +45,7 @@ void spinner_modify_value(const char *title, SpinValue *sv) {
   unsigned int i = 0;
   bool ok = false;
 
-  // decontruct the value
+  // deconstruct the value
   unsigned int h = sv->value / 100;
   unsigned int t = (sv->value % 100) / 10;
   unsigned int u = sv->value % 10;

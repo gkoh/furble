@@ -131,7 +131,32 @@ static void about(void) {
   ez.msgBox(FURBLE_STR " - About", "Version: " + version, "Back", true);
 }
 
-static void trigger(Furble::Device *device, int counter) {
+static SpinValue interval_count = { 10, SPIN_UNIT_NIL };
+static SpinValue interval_delay = { 10, SPIN_UNIT_SEC };
+static SpinValue interval_shutter = { 50, SPIN_UNIT_MS };
+
+bool configure_count(ezMenu *menu) {
+  spinner_modify_value("Count", &interval_count);
+  menu->setCaption("interval_count", "Count\t" + spinvalue2str(&interval_count));
+
+  return true;
+}
+
+bool configure_delay(ezMenu *menu) {
+  spinner_modify_value("Delay", &interval_delay);
+  menu->setCaption("interval_delay", "Delay\t" + spinvalue2str(&interval_delay));
+
+  return true;
+}
+
+bool configure_shutter(ezMenu *menu) {
+  spinner_modify_value("Shutter", &interval_shutter);
+  menu->setCaption("interval_shutter", "Shutter\t" + spinvalue2str(&interval_shutter));
+
+  return true;
+}
+
+static void interval_start(Furble::Device *device, int counter) {
   device->focusPress();
   delay(250);
   device->shutterPress();
@@ -142,30 +167,27 @@ static void trigger(Furble::Device *device, int counter) {
 }
 
 static void remote_interval(Furble::Device *device) {
-  int i = 0;
-  int j = 1;
+  ezMenu submenu(FURBLE_STR " - Interval");
+  submenu.buttons("OK#down");
+  submenu.addItem("Start");
+  submenu.addItem("interval_count | Count\t" + spinvalue2str(&interval_count), NULL, configure_count);
+  submenu.addItem("interval_delay | Delay\t" + spinvalue2str(&interval_delay), NULL, configure_delay);
+  submenu.addItem("interval_shutter | Shutter\t" + spinvalue2str(&interval_shutter), NULL, configure_shutter);
+  submenu.addItem("Back");
+  submenu.downOnLast("first");
 
-  ez.msgBox("Interval Release", "", "Stop", false);
-  trigger(device, j);
+  do {
+    int16_t i = submenu.runOnce();
 
-  while (true) {
-    i++;
-
-    M5.update();
-
-    if (M5.BtnB.wasReleased()) {
-      break;
+    if (submenu.pickName() == "Start") {
+      interval_start(device, 2);
     }
 
-    if (i > 50) {
-      i = 0;
-      j++;
-
-      trigger(device, j);
+    if (i == 0) {
+      return;
     }
 
-    delay(50);
-  }
+  } while (submenu.pickName() != "Back");
 }
 
 static void show_shutter_control(bool shutter_locked, unsigned long lock_start_ms) {
@@ -413,27 +435,9 @@ void setup() {
   pScan->setWindow(6553);
 }
 
-static SpinValue sv1 = { 123, SPIN_UNIT_MS };
-bool do_delay(ezMenu *menu) {
-  spinner_modify_value("Delay", &sv1);
-  menu->setCaption("delay", "Delay\t" + spinvalue2str(&sv1));
-
-  return true;
-}
-
-static SpinValue sv2 = { 456, SPIN_UNIT_NIL };
-bool do_count(ezMenu *menu) {
-  spinner_modify_value("Count", &sv2);
-  menu->setCaption("count", "Count\t" + spinvalue2str(&sv2));
-
-  return true;
-}
-
 void loop() {
   ezMenu mainmenu(FURBLE_STR);
   mainmenu.buttons("OK#down");
-  mainmenu.addItem("delay | Delay\t" + spinvalue2str(&sv1), NULL, do_delay);
-  mainmenu.addItem("count | Count\t" + spinvalue2str(&sv2), NULL, do_count);
   mainmenu.addItem("Connect", do_saved);
   mainmenu.addItem("Scan", do_scan);
   mainmenu.addItem("Delete Saved", menu_delete);
