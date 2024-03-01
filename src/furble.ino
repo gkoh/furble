@@ -5,6 +5,8 @@
 
 #include <M5Unified.h>
 
+#include "spinner.h"
+
 const uint32_t SCAN_DURATION = 10;
 
 static NimBLEScan *pScan = nullptr;
@@ -411,9 +413,27 @@ void setup() {
   pScan->setWindow(6553);
 }
 
+static SpinValue sv1 = { 123, SPIN_UNIT_MS };
+bool do_delay(ezMenu *menu) {
+  spinner_modify_value("Delay", &sv1);
+  menu->setCaption("delay", "Delay\t" + spinvalue2str(&sv1));
+
+  return true;
+}
+
+static SpinValue sv2 = { 456, SPIN_UNIT_NIL };
+bool do_count(ezMenu *menu) {
+  spinner_modify_value("Count", &sv2);
+  menu->setCaption("count", "Count\t" + spinvalue2str(&sv2));
+
+  return true;
+}
+
 void loop() {
   ezMenu mainmenu(FURBLE_STR);
   mainmenu.buttons("OK#down");
+  mainmenu.addItem("delay | Delay\t" + spinvalue2str(&sv1), NULL, do_delay);
+  mainmenu.addItem("count | Count\t" + spinvalue2str(&sv2), NULL, do_count);
   mainmenu.addItem("Connect", do_saved);
   mainmenu.addItem("Scan", do_scan);
   mainmenu.addItem("Delete Saved", menu_delete);
