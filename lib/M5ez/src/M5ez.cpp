@@ -2121,7 +2121,7 @@ uint16_t ezBattery::loop() {
 uint8_t ezBattery::getTransformedBatteryLevel() {
   int32_t level = M5.Power.getBatteryLevel();
 
-  return map(level, 0, 100, 0, 4);
+  return map(level, 0, 85, 0, 4);
 }
 
 // Return the theme based battery bar color according to its level
