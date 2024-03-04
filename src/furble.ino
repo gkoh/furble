@@ -136,33 +136,43 @@ static SpinValue interval_delay = { 10, SPIN_UNIT_SEC };
 static SpinValue interval_shutter = { 50, SPIN_UNIT_MS };
 
 bool configure_count(ezMenu *menu) {
-  spinner_modify_value("Count", &interval_count);
+  spinner_modify_value("Count", false, &interval_count);
   menu->setCaption("interval_count", "Count\t" + spinvalue2str(&interval_count));
 
   return true;
 }
 
 bool configure_delay(ezMenu *menu) {
-  spinner_modify_value("Delay", &interval_delay);
+  spinner_modify_value("Delay", true, &interval_delay);
   menu->setCaption("interval_delay", "Delay\t" + spinvalue2str(&interval_delay));
 
   return true;
 }
 
 bool configure_shutter(ezMenu *menu) {
-  spinner_modify_value("Shutter", &interval_shutter);
+  spinner_modify_value("Shutter", true, &interval_shutter);
   menu->setCaption("interval_shutter", "Shutter\t" + spinvalue2str(&interval_shutter));
 
   return true;
 }
 
-static void interval_start(Furble::Device *device, int counter) {
+static void do_interval(Furble::Device *device, SpinValue *count, SpinValue *idelay, SpinValue *shutter) {
+  const unsigned int initial_count = count->value;
+  const unsigned long initial_delay = spinvalue2ms(idelay);
+  const unsigned long initial_shutter = spinvalue2ms(shutter);
+
+  bool shooting = true;
+
+  do {
+    ez.yield();
+    delay(10);
+  } while (shooting);
   device->focusPress();
   delay(250);
   device->shutterPress();
   delay(50);
 
-  ez.msgBox("Interval Release", String(counter), "Stop", false);
+  ez.msgBox("Interval Release", String(initial_count), "Stop", false);
   device->shutterRelease();
 }
 
@@ -180,7 +190,7 @@ static void remote_interval(Furble::Device *device) {
     int16_t i = submenu.runOnce();
 
     if (submenu.pickName() == "Start") {
-      interval_start(device, 2);
+      do_interval(device, &interval_count, &interval_delay, &interval_shutter);
     }
 
     if (i == 0) {
@@ -435,9 +445,14 @@ void setup() {
   pScan->setWindow(6553);
 }
 
+static void test_interval(void) {
+  remote_interval(nullptr);
+}
+
 void loop() {
   ezMenu mainmenu(FURBLE_STR);
   mainmenu.buttons("OK#down");
+  mainmenu.addItem("Interval", test_interval);
   mainmenu.addItem("Connect", do_saved);
   mainmenu.addItem("Scan", do_scan);
   mainmenu.addItem("Delete Saved", menu_delete);
