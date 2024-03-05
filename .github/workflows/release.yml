@@ -115,8 +115,8 @@ jobs:
         run: |
           mkdir -p deploy
           cp web-installer/index.html deploy/index.html
+          mv manifest*.json deploy/.
           mkdir -p deploy/firmware
-          mv manifest*.json deploy/firmware
           mv furble-*.bin deploy/firmware
 
       - name: Publish
