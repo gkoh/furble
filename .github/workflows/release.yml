@@ -50,7 +50,7 @@ jobs:
           mv .pio/build/${{ matrix.platform }}/firmware.bin $FIRMWARE_NAME
           mv .pio/build/${{ matrix.platform }}/bootloader.bin $BOOTLOADER_NAME
           mv .pio/build/${{ matrix.platform }}/partitions.bin $PARTITIONS_NAME
-          mv ${{ env.HOME }}.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin $BOOT_APP0_NAME
+          mv ~/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin $BOOT_APP0_NAME
 
       - name: Upload binary artifact (${{ matrix.platform }})
         uses: actions/upload-artifact@v4
