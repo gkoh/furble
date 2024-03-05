@@ -69,7 +69,7 @@ jobs:
             ${{ env.BOOTLOADER_NAME }}
             ${{ env.PARTITIONS_NAME }}
             ${{ env.BOOT_APP0_NAME }}
-            manifest_${{ matrix.platform.json }}
+            manifest_${{ matrix.platform }}.json
           if-no-files-found: error
 
   release:
