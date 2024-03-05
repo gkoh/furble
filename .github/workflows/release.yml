@@ -58,7 +58,7 @@ jobs:
           VERSION: ${{ env.FURBLE_VERSION }}
           PLATFORM: ${{ matrix.platform }}
         run: |
-          python generate-manifest.py > manifest_${{ matrix.platform }}.json
+          python generate-manifest.py > ../manifest_${{ matrix.platform }}.json
 
       - name: Upload artifacts (${{ matrix.platform }})
         uses: actions/upload-artifact@v4
