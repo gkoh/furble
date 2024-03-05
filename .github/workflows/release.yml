@@ -25,6 +25,9 @@ jobs:
 
     env:
       FIRMWARE_NAME: furble-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
+      BOOTLOADER_NAME: furble-bootloader-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
+      PARTITIONS_NAME: furble-partitions-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
+      BOOT_APP0_NAME: furble-boot-app0-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
 
     steps:
       - uses: actions/checkout@v4
@@ -42,14 +45,22 @@ jobs:
       - name: Build furble (${{ matrix.platform }})
         run: platformio run -e ${{ matrix.platform }}
 
-      - name: Rename binary (${{ matrix.platform}})
-        run: mv .pio/build/${{ matrix.platform }}/firmware.bin $FIRMWARE_NAME
+      - name: Rename binaries (${{ matrix.platform}})
+        run: |
+          mv .pio/build/${{ matrix.platform }}/firmware.bin $FIRMWARE_NAME
+          mv .pio/build/${{ matrix.platform }}/bootloader.bin $BOOTLOADER_NAME
+          mv .pio/build/${{ matrix.platform }}/partitions.bin $PARTITIONS_NAME
+          mv ${{ env.HOME }}.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin $BOOT_APP0_NAME
 
       - name: Upload binary artifact (${{ matrix.platform }})
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.FIRMWARE_NAME }}
-          path: ${{ env.FIRMWARE_NAME }}
+          path: |
+            ${{ env.FIRMWARE_NAME }}
+            ${{ env.BOOTLOADER_NAME }}
+            ${{ env.PARTITIONS_NAME }}
+            ${{ env.BOOT_APP0_NAME }}
           if-no-files-found: error
 
   release:
