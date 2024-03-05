@@ -94,3 +94,36 @@ jobs:
             furble-*.bin
             manifest_*.json
             sha256sum.txt
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    name: Deploy to Cloudflare Pages
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Assemble assets
+        run: |
+          mkdir -p deploy
+          cp web-installer/index.html deploy/index.html
+          mkdir -p deploy/firmware
+          mv manifest*.json deploy/firmware
+          mv furble-*.bin deploy/firmware
+
+      - name: Publish
+        uses: cloudflare/pages-action@1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: furble-web-installer
+          directory: deploy
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
