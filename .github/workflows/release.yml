@@ -52,7 +52,15 @@ jobs:
           mv .pio/build/${{ matrix.platform }}/partitions.bin $PARTITIONS_NAME
           mv ~/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin $BOOT_APP0_NAME
 
-      - name: Upload binary artifact (${{ matrix.platform }})
+      - name: Generate manifest (${{ matrix.platform }})
+        working-directory: ./web-installer
+        env:
+          VERSION: ${{ env.FURBLE_VERSION }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          python generate-manifest.py > manifest_${{ matrix.platform }}.json
+
+      - name: Upload artifacts (${{ matrix.platform }})
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.FIRMWARE_NAME }}
@@ -61,13 +69,14 @@ jobs:
             ${{ env.BOOTLOADER_NAME }}
             ${{ env.PARTITIONS_NAME }}
             ${{ env.BOOT_APP0_NAME }}
+            manifest_${{ matrix.platform.json }}
           if-no-files-found: error
 
   release:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download binary artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           merge-multiple: true
@@ -83,4 +92,5 @@ jobs:
           generate_release_notes: true
           files: |
             furble-*.bin
+            manifest_*.json
             sha256sum.txt
