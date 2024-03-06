@@ -1,0 +1,17 @@
+{
+  "name": "furble",
+  "version": "$VERSION",
+  "new_install_prompt_erase": true,
+  "new_install_improv_wait_time": 0,
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        { "path": "firmware/furble-bootloader-$PLATFORM-$VERSION.bin", "offset": 4096 },
+        { "path": "firmware/furble-partitions-$PLATFORM-$VERSION.bin", "offset": 32768 },
+        { "path": "firmware/furble-boot-app0-$PLATFORM-$VERSION.bin", "offset": 57344 },
+        { "path": "firmware/furble-$PLATFORM-$VERSION.bin", "offset": 65536 }
+      ]
+    }
+  ]
+}
