@@ -54,6 +54,11 @@ class Device {
   virtual bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar) = 0;
 
   /**
+   * Checks if the client is still connected.
+   */
+  virtual bool isConnected(void);
+
+  /**
    * Disconnect from the target.
    */
   virtual void disconnect(void) = 0;

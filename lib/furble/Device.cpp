@@ -180,4 +180,8 @@ void Device::getUUID128(uuid128_t *uuid) {
   }
 }
 
+bool Device::isConnected(void){
+  return m_Client->isConnected();
+}
+
 }  // namespace Furble

@@ -146,7 +146,7 @@ static void remote_interval(Furble::Device *device) {
   ez.msgBox("Interval Release", "", "Stop", false);
   trigger(device, j);
 
-  while (true) {
+  while (device->isConnected()) {
     i++;
 
     M5.update();
@@ -268,7 +268,7 @@ static void remote_control(Furble::Device *device) {
 
     ez.yield();
     delay(50);
-  } while (true);
+  } while (device->isConnected());
 }
 
 /**
@@ -310,7 +310,7 @@ static void menu_remote(Furble::Device *device) {
     if (submenu.pickName() == "Interval") {
       remote_interval(device);
     }
-  } while (submenu.pickName() != "Disconnect");
+  } while (submenu.pickName() != "Disconnect" && device->isConnected());
 
   device->disconnect();
   ez.backlight.inactivity(USER_SET);
