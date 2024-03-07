@@ -25,7 +25,10 @@ static const uint8_t GPS_HEADER_POSITION = CURRENT_POSITION + 1;
 static bool gps_enable = false;
 static bool gps_has_fix = false;
 
-static bool reconnected = false;
+struct FurbleCtx {
+  Furble::Device *device;
+  bool reconnected;
+};
 
 /**
  * BLE Advertisement callback.
@@ -141,7 +144,8 @@ static void trigger(Furble::Device *device, int counter) {
   device->shutterRelease();
 }
 
-static void remote_interval(Furble::Device *device) {
+static void remote_interval(FurbleCtx *fctx) {
+  Furble::Device *device = fctx->device;
   int i = 0;
   int j = 1;
 
@@ -151,9 +155,9 @@ static void remote_interval(Furble::Device *device) {
   while (device->isConnected()) {
     i++;
 
-    if (reconnected) {
+    if (fctx->reconnected) {
       ez.msgBox("Interval Release", String(j), "Stop", false);
-      reconnected = false;
+      fctx->reconnected = false;
     }
 
     M5.update();
@@ -207,7 +211,8 @@ static void show_shutter_control(bool shutter_locked, unsigned long lock_start_m
   }
 }
 
-static void remote_control(Furble::Device *device) {
+static void remote_control(FurbleCtx *fctx) {
+  Furble::Device *device = fctx->device;
   static unsigned long shutter_lock_start_ms = 0;
   static bool shutter_lock = false;
 
@@ -220,9 +225,9 @@ static void remote_control(Furble::Device *device) {
 
     update_geodata(device);
 
-    if (reconnected) {
+    if (fctx->reconnected) {
       show_shutter_control(shutter_lock, shutter_lock_start_ms);
-      reconnected = false;
+      fctx->reconnected = false;
     }
 
     if (M5.BtnPWR.wasClicked() || M5.BtnC.wasPressed()) {
@@ -304,10 +309,8 @@ static void do_saved(void) {
 }
 
 uint16_t disconnectDetect(void *private_data) {
-  Furble::Device *device = (Furble::Device *)private_data;
-
-  if (!device)
-    return 0;
+  FurbleCtx *fctx = (FurbleCtx *)private_data;
+  Furble::Device *device = fctx->device;
 
   if (device->isConnected())
     return 500;
@@ -325,7 +328,7 @@ uint16_t disconnectDetect(void *private_data) {
     ez.header.show(header);
     ez.buttons.show(buttons);
 
-    reconnected = true;
+    fctx->reconnected = true;
 
     ez.redraw();
     return 500;
@@ -335,7 +338,7 @@ uint16_t disconnectDetect(void *private_data) {
   return 0;
 }
 
-static void menu_remote(Furble::Device *device) {
+static void menu_remote(FurbleCtx *fctx) {
   ez.backlight.inactivity(NEVER);
   ezMenu submenu(FURBLE_STR " - Connected");
   submenu.buttons("OK#down");
@@ -344,23 +347,23 @@ static void menu_remote(Furble::Device *device) {
   submenu.addItem("Disconnect");
   submenu.downOnLast("first");
 
-  ez.addEvent(disconnectDetect, device, 500);
+  ez.addEvent(disconnectDetect, fctx, 500);
 
   do {
     submenu.runOnce();
 
     if (submenu.pickName() == "Shutter") {
-      remote_control(device);
+      remote_control(fctx);
     }
 
     if (submenu.pickName() == "Interval") {
-      remote_interval(device);
+      remote_interval(fctx);
     }
   } while (submenu.pickName() != "Disconnect");
 
   ez.removeEvent(disconnectDetect);
 
-  device->disconnect();
+  fctx->device->disconnect();
   ez.backlight.inactivity(USER_SET);
 }
 
@@ -377,17 +380,17 @@ static void menu_connect(bool save) {
   if (i == 0)
     return;
 
-  Furble::Device *device = connect_list[i - 1];
+  FurbleCtx fctx = {connect_list[i - 1], false};
 
-  update_geodata(device);
+  update_geodata(fctx.device);
 
   NimBLEClient *pClient = NimBLEDevice::createClient();
   ezProgressBar progress_bar(FURBLE_STR, "Connecting ...", "");
-  if (device->connect(pClient, progress_bar)) {
+  if (fctx.device->connect(pClient, progress_bar)) {
     if (save) {
-      device->save();
+      fctx.device->save();
     }
-    menu_remote(device);
+    menu_remote(&fctx);
   }
 }
 
