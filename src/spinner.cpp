@@ -1,55 +1,34 @@
 #include <Arduino.h>
-#include <M5ez.h>
 #include <M5Unified.h>
+#include <M5ez.h>
 
 #include "spinner.h"
 
-static const char *unit2str[4] = {
-  "    ", // SPIN_UNIT_NIL
-  "msec", // SPIN_UNIT_MS
-  "secs", // SPIN_UNIT_SEC
-  "mins" }; // SPIN_UNIT_MIN
+static const char *unit2str[5] = {"    ",   // SPIN_UNIT_NIL
+                                  "    ",   // SPIN_UNIT_INF
+                                  "msec",   // SPIN_UNIT_MS
+                                  "secs",   // SPIN_UNIT_SEC
+                                  "mins"};  // SPIN_UNIT_MIN
 
 #define PRESET_NUM 10
 
-static uint16_t spin_preset[PRESET_NUM] = {
-  1,
-  2,
-  4,
-  8,
-  15,
-  30,
-  60,
-  125,
-  250,
-  500 };
-  
+static uint16_t spin_preset[PRESET_NUM] = {1, 2, 4, 8, 15, 30, 60, 125, 250, 500};
 
 #define FMT_NONE_LEN (4)
-static const char *fmt_none[FMT_NONE_LEN] = {
-  " %1u  %1u  %1u ",
-  "[%1u] %1u  %1u ",
-  " %1u [%1u] %1u ",
-  " %1u  %1u [%1u]" };
+static const char *fmt_none[FMT_NONE_LEN] = {" %1u  %1u  %1u ", "[%1u] %1u  %1u ",
+                                             " %1u [%1u] %1u ", " %1u  %1u [%1u]"};
 
 #define FMT_UNIT_LEN (5)
-static const char *fmt_unit[FMT_UNIT_LEN] = {
-  " %1u  %1u  %1u  %4s ",
-  "[%1u] %1u  %1u  %4s ",
-  " %1u [%1u] %1u  %4s ",
-  " %1u  %1u [%1u] %4s ",
-  " %1u  %1u  %1u [%4s]" };
+static const char *fmt_unit[FMT_UNIT_LEN] = {" %1u  %1u  %1u  %4s ", "[%1u] %1u  %1u  %4s ",
+                                             " %1u [%1u] %1u  %4s ", " %1u  %1u [%1u] %4s ",
+                                             " %1u  %1u  %1u [%4s]"};
 
 #define FMT_PRESET_NONE_LEN (2)
-static const char *fmt_preset_none[FMT_PRESET_NONE_LEN] = {
-  " %1u  %1u  %1u ",
-  "[%1u  %1u  %1u]" };
+static const char *fmt_preset_none[FMT_PRESET_NONE_LEN] = {" %1u  %1u  %1u ", "[%1u  %1u  %1u]"};
 
 #define FMT_PRESET_UNIT_LEN (3)
 static const char *fmt_preset_unit[FMT_PRESET_UNIT_LEN] = {
-  " %1u  %1u  %1u  %4s ",
-  "[%1u  %1u  %1u] %4s ",
-  " %1u  %1u  %1u [%4s]" };
+    " %1u  %1u  %1u  %4s ", "[%1u  %1u  %1u] %4s ", " %1u  %1u  %1u [%4s]"};
 
 #define SPIN_ROW_LEN (32)
 
@@ -65,8 +44,14 @@ static uint16_t htu2value(unsigned int h, unsigned int t, unsigned int u) {
   return (h * 100) + (t * 10) + u;
 }
 
-static void display_spinner(const char *title, bool preset, unsigned int index, unsigned int h, unsigned int t, unsigned int u, spin_unit_t unit) {
-  char spin_row[SPIN_ROW_LEN] = { 0x0 };
+static void display_spinner(const char *title,
+                            bool preset,
+                            unsigned int index,
+                            unsigned int h,
+                            unsigned int t,
+                            unsigned int u,
+                            spin_unit_t unit) {
+  char spin_row[SPIN_ROW_LEN] = {0x0};
 
   if (preset) {
     if (unit == SPIN_UNIT_NIL) {
@@ -102,7 +87,7 @@ static void spinner_preset(const char *title, SpinValue *sv) {
   unsigned int u;
 
   // find closest preset equal or lower
-  for (n = (PRESET_NUM-1); n > 0; n--) {
+  for (n = (PRESET_NUM - 1); n > 0; n--) {
     if (value >= spin_preset[n]) {
       break;
     }

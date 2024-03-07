@@ -14,7 +14,7 @@ extern bool gps_enable;
 
 const char *PREFS_TX_POWER = "txpower";
 const char *PREFS_GPS = "gps";
-const char *PREFS_INTERVAL= "interval";
+const char *PREFS_INTERVAL = "interval";
 
 /**
  * Save BLE transmit power to preferences.

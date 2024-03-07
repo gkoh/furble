@@ -2,10 +2,11 @@
 #define SPINNER_H
 
 enum spin_unit_t {
-  SPIN_UNIT_NIL = 0,
-  SPIN_UNIT_MS  = 1,
-  SPIN_UNIT_SEC = 2,
-  SPIN_UNIT_MIN = 3
+  SPIN_UNIT_NIL = 0,  // no units
+  SPIN_UNIT_INF = 1,  // ignore value, assume infinity
+  SPIN_UNIT_MS = 2,   // milliseconds
+  SPIN_UNIT_SEC = 3,  // seconds
+  SPIN_UNIT_MIN = 4   // minutes
 };
 
 struct __attribute__((packed)) SpinValue {
