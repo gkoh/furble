@@ -11,8 +11,6 @@ static NimBLEScan *pScan = nullptr;
 
 static std::vector<Furble::Device *> connect_list;
 
-static Furble::Device *device;
-
 bool load_gps_enable();
 
 static TinyGPSPlus gps;
@@ -42,7 +40,7 @@ class AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
 /**
  * GPS serial event service handler.
  */
-static uint16_t service_grove_gps(void) {
+static uint16_t service_grove_gps(void *private_data) {
   if (!gps_enable) {
     return GPS_SERVICE_MS;
   }
@@ -65,7 +63,7 @@ static uint16_t service_grove_gps(void) {
 /**
  * Update geotag data.
  */
-static void update_geodata() {
+static void update_geodata(Furble::Device *device) {
   if (!gps_enable) {
     return;
   }
@@ -116,7 +114,7 @@ static void current_draw_widget(uint16_t x, uint16_t y) {
   M5.Lcd.drawString(s, x + ez.theme->header_hmargin, ez.theme->header_tmargin + 2);
 }
 
-static uint16_t current_service(void) {
+static uint16_t current_service(void *private_data) {
   ez.header.draw("current");
   return 1000;
 }
@@ -133,7 +131,7 @@ static void about(void) {
   ez.msgBox(FURBLE_STR " - About", "Version: " + version, "Back", true);
 }
 
-static void trigger(int counter) {
+static void trigger(Furble::Device *device, int counter) {
   device->focusPress();
   delay(250);
   device->shutterPress();
@@ -143,14 +141,14 @@ static void trigger(int counter) {
   device->shutterRelease();
 }
 
-static void remote_interval(void) {
+static void remote_interval(Furble::Device *device) {
   int i = 0;
   int j = 1;
 
   ez.msgBox("Interval Release", "", "Stop", false);
-  trigger(j);
+  trigger(device, j);
 
-  while (true) {
+  while (device->isConnected()) {
     i++;
     
     
@@ -169,7 +167,7 @@ static void remote_interval(void) {
       i = 0;
       j++;
 
-      trigger(j);
+      trigger(device, j);
     }
 
     delay(50);
@@ -210,7 +208,7 @@ static void show_shutter_control(bool shutter_locked, unsigned long lock_start_m
   }
 }
 
-static void remote_control(void) {
+static void remote_control(Furble::Device *device) {
   static unsigned long shutter_lock_start_ms = 0;
   static bool shutter_lock = false;
 
@@ -221,7 +219,7 @@ static void remote_control(void) {
   do {
     M5.update();
 
-    update_geodata();
+    update_geodata(device);
     
     if (reconnected){
       show_shutter_control(shutter_lock, shutter_lock_start_ms);
@@ -283,7 +281,7 @@ static void remote_control(void) {
 
     ez.yield();
     delay(50);
-  } while (true);
+  } while (device->isConnected());
 }
 
 /**
@@ -306,7 +304,9 @@ static void do_saved(void) {
   menu_connect(false);
 }
 
-uint16_t disconnectDetect(void) {
+uint16_t disconnectDetect(void *private_data) {
+  Furble::Device *device = (Furble::Device *)private_data;
+
   if (!device) return 0;
   
   if (device->isConnected()) return 500;
@@ -335,7 +335,7 @@ uint16_t disconnectDetect(void) {
   return 0;
 }
 
-static void menu_remote(void) {
+static void menu_remote(Furble::Device *device) {
   ez.backlight.inactivity(NEVER);
   ezMenu submenu(FURBLE_STR " - Connected");
   submenu.buttons("OK#down");
@@ -344,17 +344,17 @@ static void menu_remote(void) {
   submenu.addItem("Disconnect");
   submenu.downOnLast("first");
   
-  ez.addEvent(disconnectDetect, 500);
+  ez.addEvent(disconnectDetect, device, 500);
   
   do {
     submenu.runOnce();
 
     if (submenu.pickName() == "Shutter") {
-      remote_control();
+      remote_control(device);
     }
 
     if (submenu.pickName() == "Interval") {
-      remote_interval();
+      remote_interval(device);
     }
   } while (submenu.pickName() != "Disconnect");
   
@@ -377,9 +377,9 @@ static void menu_connect(bool save) {
   if (i == 0)
     return;
 
-  device = connect_list[i - 1];
+  Furble::Device *device = connect_list[i - 1];
 
-  update_geodata();
+  update_geodata(device);
 
   NimBLEClient *pClient = NimBLEDevice::createClient();
   ezProgressBar progress_bar(FURBLE_STR, "Connecting ...", "");
@@ -387,7 +387,7 @@ static void menu_connect(bool save) {
     if (save) {
       device->save();
     }
-    menu_remote();
+    menu_remote(device);
   }
 }
 
@@ -442,8 +442,8 @@ void setup() {
   uint8_t width = 4 * M5.Lcd.textWidth("5") + ez.theme->header_hmargin * 2;
   ez.header.insert(CURRENT_POSITION, "current", width, current_draw_widget);
   ez.header.insert(GPS_HEADER_POSITION, "gps", ez.theme->header_height * 0.8, gps_draw_widget);
-  ez.addEvent(service_grove_gps, millis() + 500);
-  ez.addEvent(current_service, millis() + 500);
+  ez.addEvent(service_grove_gps, nullptr, millis() + 500);
+  ez.addEvent(current_service, nullptr, millis() + 500);
 
   NimBLEDevice::init(FURBLE_STR);
   NimBLEDevice::setSecurityAuth(true, true, true);

@@ -54,11 +54,6 @@ class Device {
   virtual bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar) = 0;
 
   /**
-   * Checks if the client is still connected.
-   */
-  virtual bool isConnected(void);
-
-  /**
    * Disconnect from the target.
    */
   virtual void disconnect(void) = 0;
@@ -87,6 +82,11 @@ class Device {
    * Update geotagging data.
    */
   virtual void updateGeoData(gps_t &gps, timesync_t &timesync) = 0;
+
+  /**
+   * Checks if the client is still connected.
+   */
+  bool isConnected(void);
 
   const char *getName(void);
   void save(void);
