@@ -321,6 +321,7 @@ class ezButtons {
  public:
   static void begin();
   static void show(String buttons);
+  static String get();
   static void clear(bool wipe = true);
   static void releaseWait();
   static String poll();

@@ -554,6 +554,10 @@ void ezButtons::show(String buttons) {
   }
 }
 
+String ezButtons::get() {
+  return (_btn_a_s + "#" + _btn_b_s + "#" + _btn_c_s);
+}
+
 void ezButtons::clear(bool wipe /* = true */) {
   if (wipe && (_lower_button_row || _upper_button_row)) {
     M5.Lcd.fillRect(0, ez.canvas.bottom() + 1, TFT_H - ez.canvas.bottom() - 1, TFT_W,
@@ -3467,6 +3471,8 @@ ezProgressBar::ezProgressBar(String header /* = "" */,
     bar_color = ez.theme->progressbar_color;
   _bar_color = bar_color;
   ez.screen.clear();
+  M5.Lcd.fillRect(0, 0, TFT_W, TFT_H, ez.screen.background());
+  
   if (header != "")
     ez.header.show(header);
   ez.buttons.show(buttons);
