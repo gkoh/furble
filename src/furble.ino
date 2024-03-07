@@ -315,11 +315,8 @@ uint16_t disconnectDetect(void *private_data) {
   if (device->isConnected())
     return 500;
 
-  String buttons;
-  buttons = ez.buttons.get();
-
-  String header;
-  header = ez.header.title();
+  String buttons = ez.buttons.get();
+  String header = ez.header.title();
 
   NimBLEClient *pClient = NimBLEDevice::createClient();
   ezProgressBar progress_bar(FURBLE_STR, "Reconnecting ...", "");

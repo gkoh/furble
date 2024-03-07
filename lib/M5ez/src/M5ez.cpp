@@ -2255,6 +2255,7 @@ void M5ez::addEvent(uint16_t (*function)(void *private_data),
                     uint32_t when /* = 1 */) {
   event_t n;
   n.function = function;
+  n.private_data = private_data;
   n.when = millis() + when - 1;
   _events.push_back(n);
 }
