@@ -8,7 +8,7 @@ enum spin_unit_t {
   SPIN_UNIT_MIN = 3
 };
 
-struct SpinValue {
+struct __attribute__((packed)) SpinValue {
   uint16_t value;
   spin_unit_t unit;
 };

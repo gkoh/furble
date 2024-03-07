@@ -2,10 +2,11 @@
 #include <cstdint>
 
 #include <Furble.h>
-#include <NimBLEDevice.h>
 #include <Preferences.h>
 #include <TinyGPS++.h>
+#include <esp_bt.h>
 
+#include "interval.h"
 #include "settings.h"
 
 extern TinyGPSPlus gps;
@@ -13,6 +14,7 @@ extern bool gps_enable;
 
 const char *PREFS_TX_POWER = "txpower";
 const char *PREFS_GPS = "gps";
+const char *PREFS_INTERVAL= "interval";
 
 /**
  * Save BLE transmit power to preferences.
@@ -161,4 +163,30 @@ void settings_menu_gps(void) {
   submenu.downOnLast("first");
   submenu.addItem("Back");
   submenu.run();
+}
+
+void settings_load_interval(interval_t *interval) {
+  Preferences prefs;
+
+  prefs.begin(FURBLE_STR, true);
+  size_t len = prefs.getBytes(PREFS_INTERVAL, interval, sizeof(interval_t));
+  if (len != sizeof(interval_t)) {
+    // default values
+    interval->count.value = INTERVAL_DEFAULT_COUNT;
+    interval->count.unit = INTERVAL_DEFAULT_COUNT_UNIT;
+    interval->shutter.value = INTERVAL_DEFAULT_SHUTTER;
+    interval->shutter.unit = INTERVAL_DEFAULT_SHUTTER_UNIT;
+    interval->delay.value = INTERVAL_DEFAULT_DELAY;
+    interval->delay.unit = INTERVAL_DEFAULT_DELAY_UNIT;
+  }
+
+  prefs.end();
+}
+
+void settings_save_interval(interval_t *interval) {
+  Preferences prefs;
+
+  prefs.begin(FURBLE_STR, false);
+  prefs.putBytes(PREFS_INTERVAL, interval, sizeof(interval_t));
+  prefs.end();
 }

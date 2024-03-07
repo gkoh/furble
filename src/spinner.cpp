@@ -119,7 +119,6 @@ static void spinner_preset(const char *title, SpinValue *sv) {
           ok = true;
           break;
         case 1:
-Serial.println(n);
           n++;
           if (n >= PRESET_NUM) {
             n = 0;
