@@ -377,14 +377,9 @@ void setup() {
   pScan->setWindow(6553);
 }
 
-static void test_interval(void) {
-  remote_interval(nullptr);
-}
-
 void loop() {
   ezMenu mainmenu(FURBLE_STR);
   mainmenu.buttons("OK#down");
-  mainmenu.addItem("Interval", test_interval);
   mainmenu.addItem("Connect", do_saved);
   mainmenu.addItem("Scan", do_scan);
   mainmenu.addItem("Delete Saved", menu_delete);

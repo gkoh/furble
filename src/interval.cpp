@@ -131,7 +131,7 @@ static void display_interval_msg(interval_state_t state,
   } else {
     snprintf(hms, 32, "%03u/%03u|%02u:%02u:%02u", count, sv_count->value, rem_h, rem_m, rem_s);
   }
-  Serial.println(hms);
+  // Serial.println(hms);
 
   prev_update_ms = now;
   ez.msgBox((String)statestr, (String)hms, "Stop", false);
@@ -161,8 +161,8 @@ static void do_interval(Furble::Device *device, interval_t *interval) {
     switch (state) {
       case INTERVAL_SHUTTER_OPEN:
         if ((icount < interval->count.value) || (interval->count.unit == SPIN_UNIT_INF)) {
-          // device->shutterPress();
-          Serial.println("Shutter Open");
+          // Serial.println("Shutter Open");
+          device->shutterPress();
           next = now + config_shutter;
           state = INTERVAL_SHUTTER_WAIT;
         } else {
@@ -176,8 +176,8 @@ static void do_interval(Furble::Device *device, interval_t *interval) {
         break;
       case INTERVAL_SHUTTER_CLOSE:
         icount++;
-        // device->shutterRelease();
-        Serial.println("Shutter Release");
+        // Serial.println("Shutter Release");
+        device->shutterRelease();
         next = now + config_delay;
         if ((icount < interval->count.value) || (interval->count.unit == SPIN_UNIT_INF)) {
           state = INTERVAL_DELAY;
@@ -197,8 +197,8 @@ static void do_interval(Furble::Device *device, interval_t *interval) {
 
     if (M5.BtnB.wasClicked()) {
       if (state == INTERVAL_SHUTTER_WAIT) {
-        // device->shutterRelease();
-        Serial.print("Shutter Release");
+        // Serial.print("Shutter Release");
+        device->shutterRelease();
       }
       active = false;
     }
