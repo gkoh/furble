@@ -2250,7 +2250,9 @@ void M5ez::yield() {
 #endif
 }
 
-void M5ez::addEvent(uint16_t (*function)(void *private_data), void *private_data, uint32_t when /* = 1 */) {
+void M5ez::addEvent(uint16_t (*function)(void *private_data),
+                    void *private_data,
+                    uint32_t when /* = 1 */) {
   event_t n;
   n.function = function;
   n.when = millis() + when - 1;
@@ -3472,7 +3474,7 @@ ezProgressBar::ezProgressBar(String header /* = "" */,
   _bar_color = bar_color;
   ez.screen.clear();
   M5.Lcd.fillRect(0, 0, TFT_W, TFT_H, ez.screen.background());
-  
+
   if (header != "")
     ez.header.show(header);
   ez.buttons.show(buttons);

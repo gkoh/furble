@@ -150,13 +150,12 @@ static void remote_interval(Furble::Device *device) {
 
   while (device->isConnected()) {
     i++;
-    
-    
-    if (reconnected){
+
+    if (reconnected) {
       ez.msgBox("Interval Release", String(j), "Stop", false);
       reconnected = false;
     }
-    
+
     M5.update();
 
     if (M5.BtnB.wasReleased()) {
@@ -220,12 +219,12 @@ static void remote_control(Furble::Device *device) {
     M5.update();
 
     update_geodata(device);
-    
-    if (reconnected){
+
+    if (reconnected) {
       show_shutter_control(shutter_lock, shutter_lock_start_ms);
       reconnected = false;
     }
-    
+
     if (M5.BtnPWR.wasClicked() || M5.BtnC.wasPressed()) {
       if (shutter_lock) {
         // ensure shutter is released on exit
@@ -307,30 +306,31 @@ static void do_saved(void) {
 uint16_t disconnectDetect(void *private_data) {
   Furble::Device *device = (Furble::Device *)private_data;
 
-  if (!device) return 0;
-  
-  if (device->isConnected()) return 500;
-  
+  if (!device)
+    return 0;
+
+  if (device->isConnected())
+    return 500;
+
   String buttons;
   buttons = ez.buttons.get();
-  
+
   String header;
   header = ez.header.title();
-  
+
   NimBLEClient *pClient = NimBLEDevice::createClient();
   ezProgressBar progress_bar(FURBLE_STR, "Reconnecting ...", "");
-  if (device->connect(pClient, progress_bar)){
+  if (device->connect(pClient, progress_bar)) {
     ez.screen.clear();
     ez.header.show(header);
     ez.buttons.show(buttons);
-    
+
     reconnected = true;
-    
+
     ez.redraw();
     return 500;
   }
-  
-  
+
   ez.screen.clear();
   return 0;
 }
@@ -343,9 +343,9 @@ static void menu_remote(Furble::Device *device) {
   submenu.addItem("Interval");
   submenu.addItem("Disconnect");
   submenu.downOnLast("first");
-  
+
   ez.addEvent(disconnectDetect, device, 500);
-  
+
   do {
     submenu.runOnce();
 
@@ -357,9 +357,9 @@ static void menu_remote(Furble::Device *device) {
       remote_interval(device);
     }
   } while (submenu.pickName() != "Disconnect");
-  
+
   ez.removeEvent(disconnectDetect);
-  
+
   device->disconnect();
   ez.backlight.inactivity(USER_SET);
 }

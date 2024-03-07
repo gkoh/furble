@@ -744,7 +744,9 @@ class M5ez {
 
   static void yield();
 
-  static void addEvent(uint16_t (*function)(void *), void *private_data = nullptr, uint32_t when = 1);
+  static void addEvent(uint16_t (*function)(void *),
+                       void *private_data = nullptr,
+                       uint32_t when = 1);
   static void removeEvent(uint16_t (*function)(void *private_data));
   static void redraw();
 
