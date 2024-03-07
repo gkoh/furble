@@ -1,3 +1,7 @@
+#include <Arduino.h>
+#include <M5ez.h>
+#include <M5Unified.h>
+
 #include "spinner.h"
 
 static const char *unit2str[4] = {
@@ -238,11 +242,11 @@ void spinner_modify_value(const char *title, bool preset, SpinValue *sv) {
   }
 }
 
-String spinvalue2str(SpinValue *sv) {
+String sv2str(SpinValue *sv) {
   return String(sv->value) + unit2str[sv->unit];
 }
 
-unsigned long spinvalue2ms(SpinValue *sv) {
+unsigned long sv2ms(SpinValue *sv) {
   switch (sv->unit) {
     case SPIN_UNIT_MIN:
       return (sv->value * 60 * 1000);

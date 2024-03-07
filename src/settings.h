@@ -1,3 +1,12 @@
+#ifndef SETTINGS_H
+#define SETTINGS_H
+
+void settings_menu_tx_power(void);
+esp_power_level_t settings_load_esp_tx_power(void);
+void settings_menu_gps(void);
+
+#endif
+#if 0
 const char *PREFS_TX_POWER = "txpower";
 const char *PREFS_GPS = "gps";
 
@@ -28,7 +37,6 @@ static uint8_t load_tx_power() {
 /**
  * Load and map prefs power to ESP power.
  */
-esp_power_level_t settings_load_esp_tx_power() {
   uint8_t power = load_tx_power();
   switch (power) {
     case 0:
@@ -48,7 +56,6 @@ esp_power_level_t settings_load_esp_tx_power() {
  *
  * Options are 1, 2 and 3.
  */
-void settings_menu_tx_power(void) {
   uint8_t power = load_tx_power();
   ezProgressBar power_bar(FURBLE_STR, "Set transmit power", "Adjust#Back");
   power_bar.value(power / 0.03f);
@@ -139,7 +146,6 @@ bool gps_onoff(ezMenu *menu) {
 /**
  * GPS settings menu.
  */
-void settings_menu_gps(void) {
   ezMenu submenu(FURBLE_STR " - GPS settings");
 
   submenu.buttons("OK#down");
@@ -149,3 +155,4 @@ void settings_menu_gps(void) {
   submenu.addItem("Back");
   submenu.run();
 }
+#endif

@@ -13,4 +13,10 @@ struct SpinValue {
   spin_unit_t unit;
 };
 
+void spinner_modify_value(const char *title, bool preset, SpinValue *sv);
+
+String sv2str(SpinValue *sv);
+unsigned long sv2ms(SpinValue *sv);
+void ms2hms(unsigned long ms, unsigned int *h, unsigned int *m, unsigned int *s);
+
 #endif

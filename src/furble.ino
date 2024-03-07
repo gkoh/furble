@@ -5,7 +5,8 @@
 
 #include <M5Unified.h>
 
-#include "spinner.h"
+#include "interval.h"
+#include "settings.h"
 
 const uint32_t SCAN_DURATION = 10;
 
@@ -15,7 +16,7 @@ static std::vector<Furble::Device *> connect_list;
 
 bool load_gps_enable();
 
-static TinyGPSPlus gps;
+TinyGPSPlus gps;
 HardwareSerial GroveSerial(2);
 static const uint32_t GPS_BAUD = 9600;
 static const uint16_t GPS_SERVICE_MS = 250;
@@ -24,7 +25,7 @@ static const uint32_t GPS_MAX_AGE_MS = 60 * 1000;
 static const uint8_t CURRENT_POSITION = LEFTMOST + 1;
 static const uint8_t GPS_HEADER_POSITION = CURRENT_POSITION + 1;
 
-static bool gps_enable = false;
+bool gps_enable = false;
 static bool gps_has_fix = false;
 
 /**
@@ -129,75 +130,6 @@ static void about(void) {
   }
 
   ez.msgBox(FURBLE_STR " - About", "Version: " + version, "Back", true);
-}
-
-static SpinValue interval_count = { 10, SPIN_UNIT_NIL };
-static SpinValue interval_delay = { 10, SPIN_UNIT_SEC };
-static SpinValue interval_shutter = { 50, SPIN_UNIT_MS };
-
-bool configure_count(ezMenu *menu) {
-  spinner_modify_value("Count", false, &interval_count);
-  menu->setCaption("interval_count", "Count\t" + spinvalue2str(&interval_count));
-
-  return true;
-}
-
-bool configure_delay(ezMenu *menu) {
-  spinner_modify_value("Delay", true, &interval_delay);
-  menu->setCaption("interval_delay", "Delay\t" + spinvalue2str(&interval_delay));
-
-  return true;
-}
-
-bool configure_shutter(ezMenu *menu) {
-  spinner_modify_value("Shutter", true, &interval_shutter);
-  menu->setCaption("interval_shutter", "Shutter\t" + spinvalue2str(&interval_shutter));
-
-  return true;
-}
-
-static void do_interval(Furble::Device *device, SpinValue *count, SpinValue *idelay, SpinValue *shutter) {
-  const unsigned int initial_count = count->value;
-  const unsigned long initial_delay = spinvalue2ms(idelay);
-  const unsigned long initial_shutter = spinvalue2ms(shutter);
-
-  bool shooting = true;
-
-  do {
-    ez.yield();
-    delay(10);
-  } while (shooting);
-  device->focusPress();
-  delay(250);
-  device->shutterPress();
-  delay(50);
-
-  ez.msgBox("Interval Release", String(initial_count), "Stop", false);
-  device->shutterRelease();
-}
-
-static void remote_interval(Furble::Device *device) {
-  ezMenu submenu(FURBLE_STR " - Interval");
-  submenu.buttons("OK#down");
-  submenu.addItem("Start");
-  submenu.addItem("interval_count | Count\t" + spinvalue2str(&interval_count), NULL, configure_count);
-  submenu.addItem("interval_delay | Delay\t" + spinvalue2str(&interval_delay), NULL, configure_delay);
-  submenu.addItem("interval_shutter | Shutter\t" + spinvalue2str(&interval_shutter), NULL, configure_shutter);
-  submenu.addItem("Back");
-  submenu.downOnLast("first");
-
-  do {
-    int16_t i = submenu.runOnce();
-
-    if (submenu.pickName() == "Start") {
-      do_interval(device, &interval_count, &interval_delay, &interval_shutter);
-    }
-
-    if (i == 0) {
-      return;
-    }
-
-  } while (submenu.pickName() != "Back");
 }
 
 static void show_shutter_control(bool shutter_locked, unsigned long lock_start_ms) {
