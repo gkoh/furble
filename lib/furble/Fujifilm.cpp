@@ -200,6 +200,7 @@ bool Fujifilm::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
     if (m_Configured) {
       break;
     }
+    progress_bar.value(50.0f + (((float)i/5000.0f) * 10.0f));
     delay(100);
   }
 
@@ -224,6 +225,7 @@ bool Fujifilm::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
       m_GeoRequested = false;
       break;
     }
+    progress_bar.value(90.0f + (((float)i/5000.0f) * 10.0f));
     delay(100);
   }
 
