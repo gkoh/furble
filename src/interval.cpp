@@ -97,13 +97,6 @@ static void display_interval_msg(interval_state_t state,
                                  SpinValue *sv_count,
                                  unsigned long now,
                                  unsigned long next) {
-  static unsigned long prev_update_ms = 0;
-
-  if ((now - prev_update_ms) < 500) {
-    // Don't update if less than 500ms
-    return;
-  }
-
   unsigned int rem_h = 0;
   unsigned int rem_m = 0;
   unsigned int rem_s = 0;
@@ -126,16 +119,22 @@ static void display_interval_msg(interval_state_t state,
   }
 
   ms2hms(rem, &rem_h, &rem_m, &rem_s);
+  static char prev_hms[32] = {0x0};
   char hms[32] = {0x0};
+  int len = 0;
+
   if (sv_count->unit == SPIN_UNIT_INF) {
-    snprintf(hms, 32, "%09u|%02u:%02u:%02u", count, rem_h, rem_m, rem_s);
+    len = snprintf(hms, 32, "%09u|%02u:%02u:%02u", count, rem_h, rem_m, rem_s);
   } else {
-    snprintf(hms, 32, "%03u/%03u|%02u:%02u:%02u", count, sv_count->value, rem_h, rem_m, rem_s);
+    len =
+        snprintf(hms, 32, "%03u/%03u|%02u:%02u:%02u", count, sv_count->value, rem_h, rem_m, rem_s);
   }
   // Serial.println(hms);
 
-  prev_update_ms = now;
-  ez.msgBox((String)statestr, (String)hms, "Stop", false);
+  if ((len > 0) && memcmp(prev_hms, hms, len)) {
+    memcpy(prev_hms, hms, len);
+    ez.msgBox((String)statestr, (String)hms, "Stop", false, NULL, NO_COLOR, false);
+  }
 }
 
 static void do_interval(FurbleCtx *fctx, interval_t *interval) {
