@@ -332,6 +332,8 @@ uint16_t disconnectDetect(void *private_data) {
   }
 
   ez.screen.clear();
+  // no recovery, restart device
+  esp_restart();
   return 0;
 }
 
