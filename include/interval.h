@@ -2,6 +2,8 @@
 #define INTERVAL_H
 
 #include <Furble.h>
+
+#include "furble_ui.h"
 #include "spinner.h"
 
 #define INTERVAL_DEFAULT_COUNT 10
@@ -17,6 +19,6 @@ struct __attribute__((packed)) interval_t {
   SpinValue shutter;
 };
 
-void remote_interval(Furble::Device *device);
+void remote_interval(FurbleCtx *ctx);
 
 #endif

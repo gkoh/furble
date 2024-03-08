@@ -83,6 +83,11 @@ class Device {
    */
   virtual void updateGeoData(gps_t &gps, timesync_t &timesync) = 0;
 
+  /**
+   * Checks if the client is still connected.
+   */
+  bool isConnected(void);
+
   const char *getName(void);
   void save(void);
   void remove(void);

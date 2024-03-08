@@ -25,6 +25,9 @@ jobs:
 
     env:
       FIRMWARE_NAME: furble-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
+      BOOTLOADER_NAME: furble-bootloader-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
+      PARTITIONS_NAME: furble-partitions-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
+      BOOT_APP0_NAME: furble-boot-app0-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
 
     steps:
       - uses: actions/checkout@v4
@@ -42,21 +45,38 @@ jobs:
       - name: Build furble (${{ matrix.platform }})
         run: platformio run -e ${{ matrix.platform }}
 
-      - name: Rename binary (${{ matrix.platform}})
-        run: mv .pio/build/${{ matrix.platform }}/firmware.bin $FIRMWARE_NAME
+      - name: Rename binaries (${{ matrix.platform}})
+        run: |
+          mv .pio/build/${{ matrix.platform }}/firmware.bin $FIRMWARE_NAME
+          mv .pio/build/${{ matrix.platform }}/bootloader.bin $BOOTLOADER_NAME
+          mv .pio/build/${{ matrix.platform }}/partitions.bin $PARTITIONS_NAME
+          mv ~/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin $BOOT_APP0_NAME
 
-      - name: Upload binary artifact (${{ matrix.platform }})
+      - name: Generate manifest (${{ matrix.platform }})
+        working-directory: ./web-installer
+        env:
+          VERSION: ${{ env.FURBLE_VERSION }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          python generate-manifest.py > ../manifest_${{ matrix.platform }}.json
+
+      - name: Upload artifacts (${{ matrix.platform }})
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.FIRMWARE_NAME }}
-          path: ${{ env.FIRMWARE_NAME }}
+          path: |
+            ${{ env.FIRMWARE_NAME }}
+            ${{ env.BOOTLOADER_NAME }}
+            ${{ env.PARTITIONS_NAME }}
+            ${{ env.BOOT_APP0_NAME }}
+            manifest_${{ matrix.platform }}.json
           if-no-files-found: error
 
   release:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download binary artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           merge-multiple: true
@@ -72,4 +92,39 @@ jobs:
           generate_release_notes: true
           files: |
             furble-*.bin
+            manifest_*.json
             sha256sum.txt
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    name: Deploy to Cloudflare Pages
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Assemble assets
+        run: |
+          mkdir -p deploy
+          cp web-installer/index.html deploy/index.html
+          mv manifest*.json deploy/.
+          mkdir -p deploy/firmware
+          mv furble-*.bin deploy/firmware
+
+      - name: Publish
+        uses: cloudflare/pages-action@1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: furble-web-installer
+          directory: deploy
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: main

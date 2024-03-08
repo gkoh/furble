@@ -1,6 +1,7 @@
 #include <Furble.h>
 #include <M5ez.h>
 
+#include "furble_ui.h"
 #include "interval.h"
 #include "settings.h"
 #include "spinner.h"
@@ -137,7 +138,8 @@ static void display_interval_msg(interval_state_t state,
   ez.msgBox((String)statestr, (String)hms, "Stop", false);
 }
 
-static void do_interval(Furble::Device *device, interval_t *interval) {
+static void do_interval(FurbleCtx *fctx, interval_t *interval) {
+  Furble::Device *device = fctx->device;
   const unsigned long config_delay = sv2ms(&interval->delay);
   const unsigned long config_shutter = sv2ms(&interval->shutter);
 
@@ -157,6 +159,10 @@ static void do_interval(Furble::Device *device, interval_t *interval) {
   do {
     now = millis();
     M5.update();
+
+    if (fctx->reconnected) {
+      fctx->reconnected = false;
+    }
 
     switch (state) {
       case INTERVAL_SHUTTER_OPEN:
@@ -206,11 +212,11 @@ static void do_interval(Furble::Device *device, interval_t *interval) {
     ez.yield();
     display_interval_msg(state, icount, &interval->count, now, next);
     delay(10);
-  } while (active);
+  } while (active && device->isConnected());
   ez.backlight.inactivity(USER_SET);
 }
 
-void remote_interval(Furble::Device *device) {
+void remote_interval(FurbleCtx *fctx) {
   settings_load_interval(&interval);
 
   ezMenu submenu(FURBLE_STR " - Interval");
@@ -227,7 +233,7 @@ void remote_interval(Furble::Device *device) {
     int16_t i = submenu.runOnce();
 
     if (submenu.pickName() == "Start") {
-      do_interval(device, &interval);
+      do_interval(fctx, &interval);
     }
 
     if (i == 0) {
