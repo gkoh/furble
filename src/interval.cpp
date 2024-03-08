@@ -6,84 +6,6 @@
 #include "settings.h"
 #include "spinner.h"
 
-static interval_t interval;
-
-static bool configure_count(ezMenu *menu) {
-  ezMenu submenu("Count");
-  submenu.buttons("OK#down");
-  submenu.addItem("Custom");
-  submenu.addItem("Infinite");
-  submenu.downOnLast("first");
-
-  submenu.runOnce();
-  if (submenu.pickName() == "Custom") {
-    interval.count.unit = SPIN_UNIT_NIL;
-    spinner_modify_value("Count", false, &interval.count);
-  }
-
-  if (submenu.pickName() == "Infinite") {
-    interval.count.unit = SPIN_UNIT_INF;
-  }
-
-  String countstr = sv2str(&interval.count);
-  if (interval.count.unit == SPIN_UNIT_INF) {
-    countstr = "INF";
-  }
-
-  menu->setCaption("interval_count", "Count\t" + countstr);
-  settings_save_interval(&interval);
-
-  return true;
-}
-
-static bool configure_delay(ezMenu *menu) {
-  ezMenu submenu("Delay");
-  submenu.buttons("OK#down");
-  submenu.addItem("Custom");
-  submenu.addItem("Preset");
-  submenu.downOnLast("first");
-
-  bool preset;
-
-  submenu.runOnce();
-  if (submenu.pickName() == "Custom") {
-    preset = false;
-  }
-  if (submenu.pickName() == "Preset") {
-    preset = true;
-  }
-
-  spinner_modify_value("Delay", preset, &interval.delay);
-  menu->setCaption("interval_delay", "Delay\t" + sv2str(&interval.delay));
-  settings_save_interval(&interval);
-
-  return true;
-}
-
-static bool configure_shutter(ezMenu *menu) {
-  ezMenu submenu("Shutter");
-  submenu.buttons("OK#down");
-  submenu.addItem("Custom");
-  submenu.addItem("Preset");
-  submenu.downOnLast("first");
-
-  bool preset;
-
-  submenu.runOnce();
-  if (submenu.pickName() == "Custom") {
-    preset = false;
-  }
-  if (submenu.pickName() == "Preset") {
-    preset = true;
-  }
-
-  spinner_modify_value("Shutter", preset, &interval.shutter);
-  menu->setCaption("interval_shutter", "Shutter\t" + sv2str(&interval.shutter));
-  settings_save_interval(&interval);
-
-  return true;
-}
-
 enum interval_state_t {
   INTERVAL_SHUTTER_OPEN = 0,
   INTERVAL_SHUTTER_WAIT = 1,
@@ -216,15 +138,10 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
 }
 
 void remote_interval(FurbleCtx *fctx) {
-  settings_load_interval(&interval);
-
   ezMenu submenu(FURBLE_STR " - Interval");
   submenu.buttons("OK#down");
   submenu.addItem("Start");
-  submenu.addItem("interval_count | Count\t" + sv2str(&interval.count), NULL, configure_count);
-  submenu.addItem("interval_delay | Delay\t" + sv2str(&interval.delay), NULL, configure_delay);
-  submenu.addItem("interval_shutter | Shutter\t" + sv2str(&interval.shutter), NULL,
-                  configure_shutter);
+  settings_add_interval_items(&submenu);
   submenu.addItem("Back");
   submenu.downOnLast("first");
 

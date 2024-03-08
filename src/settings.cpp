@@ -17,6 +17,11 @@ const char *PREFS_GPS = "gps";
 const char *PREFS_INTERVAL = "interval";
 
 /**
+ * Global intervalometer configuration.
+ */
+interval_t interval;
+
+/**
  * Save BLE transmit power to preferences.
  */
 static void save_tx_power(uint8_t tx_power) {
@@ -189,4 +194,98 @@ void settings_save_interval(interval_t *interval) {
   prefs.begin(FURBLE_STR, false);
   prefs.putBytes(PREFS_INTERVAL, interval, sizeof(interval_t));
   prefs.end();
+}
+
+static bool configure_count(ezMenu *menu) {
+  ezMenu submenu("Count");
+  submenu.buttons("OK#down");
+  submenu.addItem("Custom");
+  submenu.addItem("Infinite");
+  submenu.downOnLast("first");
+
+  submenu.runOnce();
+  if (submenu.pickName() == "Custom") {
+    interval.count.unit = SPIN_UNIT_NIL;
+    spinner_modify_value("Count", false, &interval.count);
+  }
+
+  if (submenu.pickName() == "Infinite") {
+    interval.count.unit = SPIN_UNIT_INF;
+  }
+
+  String countstr = sv2str(&interval.count);
+  if (interval.count.unit == SPIN_UNIT_INF) {
+    countstr = "INF";
+  }
+
+  menu->setCaption("interval_count", "Count\t" + countstr);
+  settings_save_interval(&interval);
+
+  return true;
+}
+
+static bool configure_delay(ezMenu *menu) {
+  ezMenu submenu("Delay");
+  submenu.buttons("OK#down");
+  submenu.addItem("Custom");
+  submenu.addItem("Preset");
+  submenu.downOnLast("first");
+
+  bool preset;
+
+  submenu.runOnce();
+  if (submenu.pickName() == "Custom") {
+    preset = false;
+  }
+  if (submenu.pickName() == "Preset") {
+    preset = true;
+  }
+
+  spinner_modify_value("Delay", preset, &interval.delay);
+  menu->setCaption("interval_delay", "Delay\t" + sv2str(&interval.delay));
+  settings_save_interval(&interval);
+
+  return true;
+}
+
+static bool configure_shutter(ezMenu *menu) {
+  ezMenu submenu("Shutter");
+  submenu.buttons("OK#down");
+  submenu.addItem("Custom");
+  submenu.addItem("Preset");
+  submenu.downOnLast("first");
+
+  bool preset;
+
+  submenu.runOnce();
+  if (submenu.pickName() == "Custom") {
+    preset = false;
+  }
+  if (submenu.pickName() == "Preset") {
+    preset = true;
+  }
+
+  spinner_modify_value("Shutter", preset, &interval.shutter);
+  menu->setCaption("interval_shutter", "Shutter\t" + sv2str(&interval.shutter));
+  settings_save_interval(&interval);
+
+  return true;
+}
+
+void settings_add_interval_items(ezMenu *submenu) {
+  settings_load_interval(&interval);
+
+  submenu->addItem("interval_count | Count\t" + sv2str(&interval.count), NULL, configure_count);
+  submenu->addItem("interval_delay | Delay\t" + sv2str(&interval.delay), NULL, configure_delay);
+  submenu->addItem("interval_shutter | Shutter\t" + sv2str(&interval.shutter), NULL,
+                   configure_shutter);
+}
+
+void settings_menu_interval(void) {
+  ezMenu submenu(FURBLE_STR " - Intervalometer settings");
+  submenu.buttons("OK#down");
+  settings_add_interval_items(&submenu);
+  submenu.addItem("Back");
+  submenu.downOnLast("first");
+  submenu.run();
 }

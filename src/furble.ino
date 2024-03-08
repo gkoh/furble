@@ -373,6 +373,7 @@ static void menu_settings(void) {
   submenu.buttons("OK#down");
   submenu.addItem("Backlight", ez.backlight.menu);
   submenu.addItem("GPS", settings_menu_gps);
+  submenu.addItem("Intervalometer", settings_menu_interval);
   submenu.addItem("Theme", ez.theme->menu);
   submenu.addItem("Transmit Power", settings_menu_tx_power);
   submenu.addItem("About", about);
