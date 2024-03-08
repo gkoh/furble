@@ -293,7 +293,7 @@ class ezCanvas: public Print {
       uint8_t c);  // These three are used to inherint print and println from Print class
   virtual size_t write(const char *str);
   virtual size_t write(const uint8_t *buffer, size_t size);
-  static uint16_t loop();
+  static uint16_t loop(void *private_data);
 
  private:
   static std::vector<print_t> _printed;
@@ -321,6 +321,7 @@ class ezButtons {
  public:
   static void begin();
   static void show(String buttons);
+  static String get();
   static void clear(bool wipe = true);
   static void releaseWait();
   static String poll();
@@ -501,7 +502,7 @@ class ezBacklight {
   static void menu();
   static void inactivity(uint8_t half_minutes);
   static void activity();
-  static uint16_t loop();
+  static uint16_t loop(void *private_data);
 
  private:
   static uint8_t _brightness;
@@ -526,7 +527,7 @@ class ezClock {
   static void begin();
   static void restart();
   static void menu();
-  static uint16_t loop();
+  static uint16_t loop(void *private_data);
   static void clear();
   static void draw(uint16_t x, uint16_t w);
   static bool waitForSync(const uint16_t timeout = 0);
@@ -599,7 +600,7 @@ class ezWifi {
   static void readFlash();
   static void writeFlash();
   static void menu();
-  static uint16_t loop();
+  static uint16_t loop(void *private_data);
   static bool update(String url, const char *root_cert, ezProgressBar *pb = NULL);
   static String updateError();
 
@@ -678,7 +679,7 @@ class ezBattery {
   static void readFlash();
   static void writeFlash();
   static void menu();
-  static uint16_t loop();
+  static uint16_t loop(void *private_data);
   static uint8_t getTransformedBatteryLevel();
   static uint16_t getBatteryBarColor(uint8_t batteryLevel);
 
@@ -698,7 +699,8 @@ class ezBattery {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct event_t {
-  uint16_t (*function)();
+  uint16_t (*function)(void *);
+  void *private_data;
   uint32_t when;
 };
 class M5ez {
@@ -742,8 +744,10 @@ class M5ez {
 
   static void yield();
 
-  static void addEvent(uint16_t (*function)(), uint32_t when = 1);
-  static void removeEvent(uint16_t (*function)());
+  static void addEvent(uint16_t (*function)(void *),
+                       void *private_data = nullptr,
+                       uint32_t when = 1);
+  static void removeEvent(uint16_t (*function)(void *private_data));
   static void redraw();
 
   // ez.msgBox

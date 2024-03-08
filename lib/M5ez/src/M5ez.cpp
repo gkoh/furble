@@ -419,7 +419,7 @@ size_t ezCanvas::write(const uint8_t *buffer, size_t size) {
   return size;
 }
 
-uint16_t ezCanvas::loop() {
+uint16_t ezCanvas::loop(void *private_data) {
   if (_next_scroll && millis() >= _next_scroll) {
     ez.setFont(_font);
     uint8_t h = ez.fontHeight();
@@ -552,6 +552,10 @@ void ezButtons::show(String buttons) {
       _drawButtons(buttonVector[0], "", buttonVector[1], "", buttonVector[2], "", "", "", "");
       break;
   }
+}
+
+String ezButtons::get() {
+  return (_btn_a_s + "#" + _btn_b_s + "#" + _btn_c_s);
 }
 
 void ezButtons::clear(bool wipe /* = true */) {
@@ -887,7 +891,7 @@ void ezBacklight::activity() {
   _last_activity = millis();
 }
 
-uint16_t ezBacklight::loop() {
+uint16_t ezBacklight::loop(void *private_data) {
   if (!_backlight_off && _inactivity) {
     if (millis() > _last_activity + 30000 * _inactivity) {
       _backlight_off = true;
@@ -1008,7 +1012,7 @@ void ezClock::menu() {
   }
 }
 
-uint16_t ezClock::loop() {
+uint16_t ezClock::loop(void *private_data) {
   ezt::events();
   if (_starting && timeStatus() != timeNotSet) {
     _starting = false;
@@ -1562,7 +1566,7 @@ void ezWifi::_askAdd() {
   }
 }
 
-uint16_t ezWifi::loop() {
+uint16_t ezWifi::loop(void *private_data) {
   if (millis() > _widget_time + ez.theme->signal_interval) {
     ez.header.draw("wifi");
     _widget_time = millis();
@@ -2109,7 +2113,7 @@ void ezBattery::menu() {
   }
 }
 
-uint16_t ezBattery::loop() {
+uint16_t ezBattery::loop(void *private_data) {
   if (!_on)
     return 0;
   ez.header.draw("battery");
@@ -2232,7 +2236,7 @@ void M5ez::yield() {
   M5.update();
   for (uint8_t n = 0; n < _events.size(); n++) {
     if (millis() > _events[n].when) {
-      uint16_t r = (_events[n].function)();
+      uint16_t r = (_events[n].function)(_events[n].private_data);
       if (r) {
         _events[n].when = millis() + r - 1;
       } else {
@@ -2246,14 +2250,17 @@ void M5ez::yield() {
 #endif
 }
 
-void M5ez::addEvent(uint16_t (*function)(), uint32_t when /* = 1 */) {
+void M5ez::addEvent(uint16_t (*function)(void *private_data),
+                    void *private_data,
+                    uint32_t when /* = 1 */) {
   event_t n;
   n.function = function;
+  n.private_data = private_data;
   n.when = millis() + when - 1;
   _events.push_back(n);
 }
 
-void M5ez::removeEvent(uint16_t (*function)()) {
+void M5ez::removeEvent(uint16_t (*function)(void *private_data)) {
   uint8_t n = 0;
   while (n < _events.size()) {
     if (_events[n].function == function) {
@@ -3467,6 +3474,8 @@ ezProgressBar::ezProgressBar(String header /* = "" */,
     bar_color = ez.theme->progressbar_color;
   _bar_color = bar_color;
   ez.screen.clear();
+  M5.Lcd.fillRect(0, 0, TFT_W, TFT_H, ez.screen.background());
+
   if (header != "")
     ez.header.show(header);
   ez.buttons.show(buttons);
