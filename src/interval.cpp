@@ -60,7 +60,7 @@ static void display_interval_msg(interval_state_t state,
 }
 
 static void do_interval(FurbleCtx *fctx, interval_t *interval) {
-  Furble::Device *device = fctx->device;
+  Furble::Camera *camera = fctx->camera;
   const unsigned long config_delay = sv2ms(&interval->delay);
   const unsigned long config_shutter = sv2ms(&interval->shutter);
 
@@ -89,7 +89,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
       case INTERVAL_SHUTTER_OPEN:
         if ((icount < interval->count.value) || (interval->count.unit == SPIN_UNIT_INF)) {
           // Serial.println("Shutter Open");
-          device->shutterPress();
+          camera->shutterPress();
           next = now + config_shutter;
           state = INTERVAL_SHUTTER_WAIT;
         } else {
@@ -104,7 +104,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
       case INTERVAL_SHUTTER_CLOSE:
         icount++;
         // Serial.println("Shutter Release");
-        device->shutterRelease();
+        camera->shutterRelease();
         next = now + config_delay;
         if ((icount < interval->count.value) || (interval->count.unit == SPIN_UNIT_INF)) {
           state = INTERVAL_DELAY;
@@ -125,7 +125,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
     if (M5.BtnB.wasClicked()) {
       if (state == INTERVAL_SHUTTER_WAIT) {
         // Serial.print("Shutter Release");
-        device->shutterRelease();
+        camera->shutterRelease();
       }
       active = false;
     }
@@ -133,7 +133,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
     ez.yield();
     display_interval_msg(state, icount, &interval->count, now, next);
     delay(10);
-  } while (active && device->isConnected());
+  } while (active && camera->isConnected());
   ez.backlight.inactivity(USER_SET);
 }
 

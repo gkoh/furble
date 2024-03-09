@@ -4,7 +4,7 @@
 #include <NimBLERemoteCharacteristic.h>
 #include <NimBLERemoteService.h>
 
-#include "Furble.h"
+#include "Fujifilm.h"
 
 typedef struct _fujifilm_t {
   char name[MAX_NAME];               /** Human readable device name. */
@@ -143,12 +143,10 @@ bool Fujifilm::matches(NimBLEAdvertisedDevice *pDevice) {
  * is what we use to identify ourselves upfront and during subsequent
  * re-pairing.
  */
-bool Fujifilm::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
+bool Fujifilm::connect(progressFunc pFunc, void *pCtx) {
   using namespace std::placeholders;
 
-  m_Client = pClient;
-
-  progress_bar.value(10.0f);
+  updateProgress(pFunc, pCtx, 10.0f);
 
   NimBLERemoteService *pSvc = nullptr;
   NimBLERemoteCharacteristic *pChr = nullptr;
@@ -158,7 +156,7 @@ bool Fujifilm::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
     return false;
 
   Serial.println("Connected");
-  progress_bar.value(20.0f);
+  updateProgress(pFunc, pCtx, 20.0f);
   pSvc = m_Client->getService(FUJIFILM_SVC_PAIR_UUID);
   if (pSvc == nullptr)
     return false;
@@ -174,7 +172,7 @@ bool Fujifilm::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
   if (!pChr->writeValue(m_Token, FUJIFILM_TOKEN_LEN, true))
     return false;
   Serial.println("Paired!");
-  progress_bar.value(30.0f);
+  updateProgress(pFunc, pCtx, 30.0f);
 
   Serial.println("Identifying");
   pChr = pSvc->getCharacteristic(FUJIFILM_CHR_IDEN_UUID);
@@ -183,14 +181,14 @@ bool Fujifilm::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
   if (!pChr->writeValue(FURBLE_STR, true))
     return false;
   Serial.println("Identified!");
-  progress_bar.value(40.0f);
+  updateProgress(pFunc, pCtx, 40.0f);
 
   Serial.println("Configuring");
   pSvc = m_Client->getService(FUJIFILM_SVC_CONF_UUID);
   // indications
   pSvc->getCharacteristic(FUJIFILM_CHR_IND1_UUID)
       ->subscribe(false, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
-  progress_bar.value(50.0f);
+  updateProgress(pFunc, pCtx, 50.0f);
 
   pSvc->getCharacteristic(FUJIFILM_CHR_IND2_UUID)
       ->subscribe(false, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
@@ -200,24 +198,24 @@ bool Fujifilm::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
     if (m_Configured) {
       break;
     }
-    progress_bar.value(50.0f + (((float)i / 5000.0f) * 10.0f));
+    updateProgress(pFunc, pCtx, 50.0f + (((float)i / 5000.0f) * 10.0f));
     delay(100);
   }
 
-  progress_bar.value(60.0f);
+  updateProgress(pFunc, pCtx, 60.0f);
   // notifications
   pSvc->getCharacteristic(FUJIFILM_CHR_NOT1_UUID)
       ->subscribe(true, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
 
-  progress_bar.value(70.0f);
+  updateProgress(pFunc, pCtx, 70.0f);
   pSvc->getCharacteristic(FUJIFILM_CHR_NOT2_UUID)
       ->subscribe(true, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
 
-  progress_bar.value(80.0f);
+  updateProgress(pFunc, pCtx, 80.0f);
   pSvc->getCharacteristic(FUJIFILM_CHR_IND3_UUID)
       ->subscribe(false, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
 
-  progress_bar.value(90.0f);
+  updateProgress(pFunc, pCtx, 90.0f);
   // wait for up to 5000ms for geotag request
   for (unsigned int i = 0; i < 5000; i += 100) {
     if (m_GeoRequested) {
@@ -225,13 +223,13 @@ bool Fujifilm::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
       m_GeoRequested = false;
       break;
     }
-    progress_bar.value(90.0f + (((float)i / 5000.0f) * 10.0f));
+    updateProgress(pFunc, pCtx, 90.0f + (((float)i / 5000.0f) * 10.0f));
     delay(100);
   }
 
   Serial.println("Configured");
 
-  progress_bar.value(100.0f);
+  updateProgress(pFunc, pCtx, 100.0f);
 
   return true;
 }

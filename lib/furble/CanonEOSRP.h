@@ -18,8 +18,6 @@ class CanonEOSRP: public CanonEOS {
    */
   static bool matches(NimBLEAdvertisedDevice *pDevice);
 
-  bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar);
-
  private:
   device_type_t getDeviceType(void);
 };

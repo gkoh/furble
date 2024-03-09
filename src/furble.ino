@@ -1,6 +1,5 @@
 #include <Furble.h>
 #include <M5ez.h>
-#include <NimBLEDevice.h>
 #include <TinyGPS++.h>
 
 #include <M5Unified.h>
@@ -10,10 +9,6 @@
 #include "settings.h"
 
 const uint32_t SCAN_DURATION = 10;
-
-static NimBLEScan *pScan = nullptr;
-
-static std::vector<Furble::Device *> connect_list;
 
 bool load_gps_enable();
 
@@ -30,13 +25,18 @@ bool gps_enable = false;
 static bool gps_has_fix = false;
 
 /**
+ * Progress bar update function.
+ */
+void update_progress_bar(void *ctx, float value) {
+  ezProgressBar *progress_bar = (ezProgressBar *)ctx;
+  progress_bar->value(value);
+}
+
+/**
  * BLE Advertisement callback.
  */
-class AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
-  void onResult(NimBLEAdvertisedDevice *pDevice) {
-    Furble::Device::match(pDevice, connect_list);
-    ez.msgBox("Scanning", "Found ... " + String(connect_list.size()), "", false);
-  }
+void onScanResult(std::vector<Furble::Camera *> &list) {
+  ez.msgBox("Scanning", "Found ... " + String(list.size()), "", false);
 };
 
 /**
@@ -65,18 +65,18 @@ static uint16_t service_grove_gps(void *private_data) {
 /**
  * Update geotag data.
  */
-static void update_geodata(Furble::Device *device) {
+static void update_geodata(Furble::Camera *camera) {
   if (!gps_enable) {
     return;
   }
 
   if (gps.location.isUpdated() && gps.location.isValid() && gps.date.isUpdated()
       && gps.date.isValid() && gps.time.isValid() && gps.time.isValid()) {
-    Furble::Device::gps_t dgps = {gps.location.lat(), gps.location.lng(), gps.altitude.meters()};
-    Furble::Device::timesync_t timesync = {gps.date.year(), gps.date.month(),  gps.date.day(),
+    Furble::Camera::gps_t dgps = {gps.location.lat(), gps.location.lng(), gps.altitude.meters()};
+    Furble::Camera::timesync_t timesync = {gps.date.year(), gps.date.month(),  gps.date.day(),
                                            gps.time.hour(), gps.time.minute(), gps.time.second()};
 
-    device->updateGeoData(dgps, timesync);
+    camera->updateGeoData(dgps, timesync);
     ez.header.draw("gps");
   }
 }
@@ -168,7 +168,7 @@ static void show_shutter_control(bool shutter_locked, unsigned long lock_start_m
 }
 
 static void remote_control(FurbleCtx *fctx) {
-  Furble::Device *device = fctx->device;
+  Furble::Camera *camera = fctx->camera;
   static unsigned long shutter_lock_start_ms = 0;
   static bool shutter_lock = false;
 
@@ -179,7 +179,7 @@ static void remote_control(FurbleCtx *fctx) {
   do {
     M5.update();
 
-    update_geodata(device);
+    update_geodata(camera);
 
     if (fctx->reconnected) {
       show_shutter_control(shutter_lock, shutter_lock_start_ms);
@@ -189,7 +189,7 @@ static void remote_control(FurbleCtx *fctx) {
     if (M5.BtnPWR.wasClicked() || M5.BtnC.wasPressed()) {
       if (shutter_lock) {
         // ensure shutter is released on exit
-        device->shutterRelease();
+        camera->shutterRelease();
       }
       Serial.println("Exit shutter");
       break;
@@ -199,7 +199,7 @@ static void remote_control(FurbleCtx *fctx) {
       // release shutter if either shutter or focus is pressed
       if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked()) {
         shutter_lock = false;
-        device->shutterRelease();
+        camera->shutterRelease();
         show_shutter_control(false, 0);
         Serial.println("shutterRelease(unlock)");
       } else {
@@ -207,7 +207,7 @@ static void remote_control(FurbleCtx *fctx) {
       }
     } else {
       if (M5.BtnA.wasPressed()) {
-        device->shutterPress();
+        camera->shutterPress();
         Serial.println("shutterPress()");
         continue;
       }
@@ -220,20 +220,20 @@ static void remote_control(FurbleCtx *fctx) {
           show_shutter_control(true, shutter_lock_start_ms);
           Serial.println("shutter lock");
         } else {
-          device->shutterRelease();
+          camera->shutterRelease();
           Serial.println("shutterRelease()");
         }
         continue;
       }
 
       if (M5.BtnB.wasPressed()) {
-        device->focusPress();
+        camera->focusPress();
         Serial.println("focusPress()");
         continue;
       }
 
       if (M5.BtnB.wasReleased()) {
-        device->focusRelease();
+        camera->focusRelease();
         Serial.println("focusRelease()");
         continue;
       }
@@ -241,17 +241,17 @@ static void remote_control(FurbleCtx *fctx) {
 
     ez.yield();
     delay(50);
-  } while (device->isConnected());
+  } while (camera->isConnected());
 }
 
 /**
  * Scan for devices, then present connection menu.
  */
 static void do_scan(void) {
-  connect_list.clear();
-  pScan->clearResults();
+  Furble::CameraList::m_ConnectList.clear();
+  Furble::Scan::clear();
   ez.msgBox("Scanning", "Found ... ", "", false);
-  pScan->start(SCAN_DURATION, false);
+  Furble::Scan::start(SCAN_DURATION);
   menu_connect(true);
 }
 
@@ -259,24 +259,22 @@ static void do_scan(void) {
  * Retrieve saved devices, then present connection menu.
  */
 static void do_saved(void) {
-  connect_list.clear();
-  Furble::Device::loadDevices(connect_list);
+  Furble::CameraList::load();
   menu_connect(false);
 }
 
 uint16_t disconnectDetect(void *private_data) {
   FurbleCtx *fctx = (FurbleCtx *)private_data;
-  Furble::Device *device = fctx->device;
+  Furble::Camera *camera = fctx->camera;
 
-  if (device->isConnected())
+  if (camera->isConnected())
     return 500;
 
   String buttons = ez.buttons.get();
   String header = ez.header.title();
 
-  NimBLEClient *pClient = NimBLEDevice::createClient();
   ezProgressBar progress_bar(FURBLE_STR, "Reconnecting ...", "");
-  if (device->connect(pClient, progress_bar)) {
+  if (camera->connect(&update_progress_bar, &progress_bar)) {
     ez.screen.clear();
     ez.header.show(header);
     ez.buttons.show(buttons);
@@ -318,7 +316,7 @@ static void menu_remote(FurbleCtx *fctx) {
 
   ez.removeEvent(disconnectDetect);
 
-  fctx->device->disconnect();
+  fctx->camera->disconnect();
   ez.backlight.inactivity(USER_SET);
 }
 
@@ -326,8 +324,8 @@ static void menu_connect(bool save) {
   ezMenu submenu(FURBLE_STR " - Connect");
   submenu.buttons("OK#down");
 
-  for (int i = 0; i < connect_list.size(); i++) {
-    submenu.addItem(connect_list[i]->getName());
+  for (int i = 0; i < Furble::CameraList::m_ConnectList.size(); i++) {
+    submenu.addItem(Furble::CameraList::m_ConnectList[i]->getName());
   }
   submenu.addItem("Back");
   submenu.downOnLast("first");
@@ -335,28 +333,26 @@ static void menu_connect(bool save) {
   if (i == 0)
     return;
 
-  FurbleCtx fctx = {connect_list[i - 1], false};
+  FurbleCtx fctx = {Furble::CameraList::m_ConnectList[i - 1], false};
 
-  update_geodata(fctx.device);
+  update_geodata(fctx.camera);
 
-  NimBLEClient *pClient = NimBLEDevice::createClient();
   ezProgressBar progress_bar(FURBLE_STR, "Connecting ...", "");
-  if (fctx.device->connect(pClient, progress_bar)) {
+  if (fctx.camera->connect(&update_progress_bar, &progress_bar)) {
     if (save) {
-      fctx.device->save();
+      Furble::CameraList::save(fctx.camera);
     }
     menu_remote(&fctx);
   }
 }
 
 static void menu_delete(void) {
-  std::vector<Furble::Device *> devices;
   ezMenu submenu(FURBLE_STR " - Delete");
   submenu.buttons("OK#down");
-  Furble::Device::loadDevices(devices);
+  Furble::CameraList::load();
 
-  for (size_t i = 0; i < devices.size(); i++) {
-    submenu.addItem(devices[i]->getName());
+  for (size_t i = 0; i < Furble::CameraList::m_ConnectList.size(); i++) {
+    submenu.addItem(Furble::CameraList::m_ConnectList[i]->getName());
   }
   submenu.addItem("Back");
   submenu.downOnLast("first");
@@ -364,7 +360,7 @@ static void menu_delete(void) {
   int16_t i = submenu.runOnce();
   if (i == 0)
     return;
-  devices[i - 1]->remove();
+  Furble::CameraList::remove(Furble::CameraList::m_ConnectList[i - 1]);
 }
 
 static void menu_settings(void) {
@@ -404,18 +400,11 @@ void setup() {
   ez.addEvent(service_grove_gps, nullptr, millis() + 500);
   ez.addEvent(current_service, nullptr, millis() + 500);
 
-  NimBLEDevice::init(FURBLE_STR);
-  NimBLEDevice::setSecurityAuth(true, true, true);
+  Furble::Scan::init(onScanResult);
 
   // Set BLE transmit power
   esp_power_level_t esp_power = settings_load_esp_tx_power();
-  NimBLEDevice::setPower(esp_power);
-
-  pScan = NimBLEDevice::getScan();
-  pScan->setAdvertisedDeviceCallbacks(new AdvertisedCallback());
-  pScan->setActiveScan(true);
-  pScan->setInterval(6553);
-  pScan->setWindow(6553);
+  Furble::setPower(esp_power);
 }
 
 void loop() {

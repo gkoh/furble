@@ -2,6 +2,7 @@
 #define SETTINGS_H
 
 #include <esp_bt.h>
+#include <M5ez.h>
 
 #include "interval.h"
 

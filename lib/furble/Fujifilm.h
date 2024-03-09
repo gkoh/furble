@@ -3,7 +3,7 @@
 
 #include <NimBLERemoteCharacteristic.h>
 
-#include "Device.h"
+#include "Camera.h"
 
 #define FUJIFILM_TOKEN_LEN (4)
 
@@ -11,7 +11,7 @@ namespace Furble {
 /**
  * Fujifilm X.
  */
-class Fujifilm: public Device {
+class Fujifilm: public Camera {
  public:
   Fujifilm(const void *data, size_t len);
   Fujifilm(NimBLEAdvertisedDevice *pDevice);
@@ -22,7 +22,7 @@ class Fujifilm: public Device {
    */
   static bool matches(NimBLEAdvertisedDevice *pDevice);
 
-  bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar);
+  bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr);
   void shutterPress(void);
   void shutterRelease(void);
   void focusPress(void);

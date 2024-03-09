@@ -4,7 +4,7 @@
 #include <NimBLERemoteCharacteristic.h>
 #include <NimBLERemoteService.h>
 
-#include "Furble.h"
+#include "CanonEOSRP.h"
 
 namespace Furble {
 
@@ -36,16 +36,6 @@ bool CanonEOSRP::matches(NimBLEAdvertisedDevice *pDevice) {
     }
   }
   return false;
-}
-
-/**
- * Connect to a Canon EOS RP.
- *
- * The EOS RP uses the 'just works' BLE bonding to pair, all bond management is
- * handled by the underlying NimBLE and ESP32 libraries.
- */
-bool CanonEOSRP::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
-  return CanonEOS::connect(pClient, progress_bar);
 }
 
 device_type_t CanonEOSRP::getDeviceType(void) {

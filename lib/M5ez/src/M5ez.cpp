@@ -2225,7 +2225,8 @@ bool M5ez::_text_cursor_state;
 long M5ez::_text_cursor_millis;
 
 void M5ez::begin() {
-  M5.begin();
+  auto cfg = M5.config();
+  M5.begin(cfg);
   M5.Lcd.setRotation(3);
   ezTheme::begin();
   ez.screen.begin();

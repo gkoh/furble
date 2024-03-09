@@ -1,16 +1,26 @@
-#ifndef DEVICE_H
-#define DEVICE_H
+#ifndef CAMERA_H
+#define CAMERA_H
+
+#include <NimBLEAddress.h>
+#include <NimBLEClient.h>
+#include <NimBLEDevice.h>
+
+#include "FurbleTypes.h"
 
 #define MAX_NAME (64)
 
 #define UUID128_LEN (16)
 #define UUID128_AS_32_LEN (UUID128_LEN / sizeof(uint32_t))
 
+// Progress update function
+typedef void(progressFunc(void *, float));
+
 namespace Furble {
+
 /**
  * Represents a single target camera.
  */
-class Device {
+class Camera {
  public:
   /**
    * UUID type.
@@ -51,7 +61,7 @@ class Device {
    *
    * @return true if the client is now ready for shutter control
    */
-  virtual bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar) = 0;
+  virtual bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr) = 0;
 
   /**
    * Disconnect from the target.
@@ -83,38 +93,32 @@ class Device {
    */
   virtual void updateGeoData(gps_t &gps, timesync_t &timesync) = 0;
 
+  virtual device_type_t getDeviceType(void) = 0;
+  virtual size_t getSerialisedBytes(void) = 0;
+  virtual bool serialise(void *buffer, size_t bytes) = 0;
+
   /**
    * Checks if the client is still connected.
    */
   bool isConnected(void);
 
   const char *getName(void);
-  void save(void);
-  void remove(void);
-
-  static void loadDevices(std::vector<Furble::Device *> &device_list);
-
-  /**
-   * Add matching devices to the list.
-   */
-  static void match(NimBLEAdvertisedDevice *pDevice, std::vector<Furble::Device *> &list);
 
   /**
    * Generate a device consistent 128-bit UUID.
    */
   static void getUUID128(uuid128_t *uuid);
 
+  void fillSaveName(char *name);
+
  protected:
   NimBLEAddress m_Address = NimBLEAddress("");
-  NimBLEClient *m_Client;
+  NimBLEClient *m_Client = NimBLEDevice::createClient();
   std::string m_Name;
 
- private:
-  virtual device_type_t getDeviceType(void) = 0;
-  virtual size_t getSerialisedBytes(void) = 0;
-  virtual bool serialise(void *buffer, size_t bytes) = 0;
+  void updateProgress(progressFunc pFunc, void *ctx, float value);
 
-  void fillSaveName(char *name);
+ private:
 };
 }  // namespace Furble
 
