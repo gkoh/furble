@@ -159,7 +159,7 @@ uint16_t disconnectDetect(void *private_data) {
   String header = ez.header.title();
 
   ezProgressBar progress_bar(FURBLE_STR, "Reconnecting ...", "");
-  if (camera->connect(&update_progress_bar, &progress_bar)) {
+  if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
     ez.screen.clear();
     ez.header.show(header);
     ez.buttons.show(buttons);
@@ -223,7 +223,7 @@ static void menu_connect(bool save) {
   furble_gps_update_geodata(fctx.camera);
 
   ezProgressBar progress_bar(FURBLE_STR, "Connecting ...", "");
-  if (fctx.camera->connect(&update_progress_bar, &progress_bar)) {
+  if (fctx.camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
     if (save) {
       Furble::CameraList::save(fctx.camera);
     }
@@ -296,11 +296,7 @@ void setup() {
   ez.begin();
   furble_gps_init();
 
-  Furble::Scan::init(onScanResult);
-
-  // Set BLE transmit power
-  esp_power_level_t esp_power = settings_load_esp_tx_power();
-  Furble::setPower(esp_power);
+  Furble::Scan::init(settings_load_esp_tx_power(), onScanResult);
 }
 
 void loop() {

@@ -54,14 +54,9 @@ class Camera {
   } timesync_t;
 
   /**
-   * Connect to the target camera such that it is ready for shutter control.
-   *
-   * This should include connection and pairing as needed for the target
-   * device.
-   *
-   * @return true if the client is now ready for shutter control
+   * Wrapper for protected pure virtual Camera::connect().
    */
-  virtual bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr) = 0;
+  bool connect(esp_power_level_t power, progressFunc pFunc = nullptr, void *pCtx = nullptr);
 
   /**
    * Disconnect from the target.
@@ -112,6 +107,16 @@ class Camera {
   void fillSaveName(char *name);
 
  protected:
+  /**
+   * Connect to the target camera such that it is ready for shutter control.
+   *
+   * This should include connection and pairing as needed for the target
+   * device.
+   *
+   * @return true if the client is now ready for shutter control
+   */
+  virtual bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr) = 0;
+
   NimBLEAddress m_Address = NimBLEAddress("");
   NimBLEClient *m_Client = NimBLEDevice::createClient();
   std::string m_Name;
