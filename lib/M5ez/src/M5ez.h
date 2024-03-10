@@ -756,7 +756,8 @@ class M5ez {
                        String buttons = "OK",
                        const bool blocking = true,
                        const GFXfont *font = NULL,
-                       uint16_t color = NO_COLOR);
+                       uint16_t color = NO_COLOR,
+                       const bool clear = true);
 
   // ez.textInput
   static String textInput(String header = "", String defaultText = "");

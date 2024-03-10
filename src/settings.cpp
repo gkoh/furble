@@ -1,0 +1,291 @@
+#include <cstddef>
+#include <cstdint>
+
+#include <Furble.h>
+#include <Preferences.h>
+#include <TinyGPS++.h>
+#include <esp_bt.h>
+
+#include "interval.h"
+#include "settings.h"
+
+extern TinyGPSPlus gps;
+extern bool gps_enable;
+
+const char *PREFS_TX_POWER = "txpower";
+const char *PREFS_GPS = "gps";
+const char *PREFS_INTERVAL = "interval";
+
+/**
+ * Global intervalometer configuration.
+ */
+interval_t interval;
+
+/**
+ * Save BLE transmit power to preferences.
+ */
+static void save_tx_power(uint8_t tx_power) {
+  Preferences prefs;
+
+  prefs.begin(FURBLE_STR, false);
+  prefs.putUChar(PREFS_TX_POWER, tx_power);
+  prefs.end();
+}
+
+/**
+ * Load BLE transmit power from preferences.
+ */
+static uint8_t load_tx_power() {
+  Preferences prefs;
+
+  prefs.begin(FURBLE_STR, true);
+  uint8_t power = prefs.getUChar(PREFS_TX_POWER, 1);
+  prefs.end();
+
+  return power;
+}
+
+/**
+ * Load and map prefs power to ESP power.
+ */
+esp_power_level_t settings_load_esp_tx_power() {
+  uint8_t power = load_tx_power();
+  switch (power) {
+    case 0:
+      return ESP_PWR_LVL_P3;
+    case 1:
+      return ESP_PWR_LVL_P6;
+    case 2:
+      return ESP_PWR_LVL_P9;
+    default:
+      return ESP_PWR_LVL_P3;
+  }
+  return ESP_PWR_LVL_P3;
+}
+
+/**
+ * Transmit power menu.
+ *
+ * Options are 1, 2 and 3.
+ */
+void settings_menu_tx_power(void) {
+  uint8_t power = load_tx_power();
+  ezProgressBar power_bar(FURBLE_STR, "Set transmit power", "Adjust#Back");
+  power_bar.value(power / 0.03f);
+  while (true) {
+    String b = ez.buttons.poll();
+    if (b == "Adjust") {
+      power++;
+      if (power > 3) {
+        power = 1;
+      }
+      power_bar.value(power / 0.03f);
+    }
+    if (b == "Back") {
+      break;
+    }
+  }
+
+  save_tx_power(power);
+}
+
+/**
+ * Display GPS data.
+ */
+static void show_gps_info(void) {
+  Serial.println("GPS Data");
+  char buffer[256] = {0x0};
+  bool first = true;
+
+  do {
+    bool updated = gps.location.isUpdated() || gps.date.isUpdated() || gps.time.isUpdated();
+
+    snprintf(
+        buffer, 256, "%s (%d) | %.2f, %.2f | %.2f metres | %4u-%02u-%02u %02u:%02u:%02u",
+        gps.location.isValid() && gps.date.isValid() && gps.time.isValid() ? "Valid" : "Invalid",
+        gps.location.age(), gps.location.lat(), gps.location.lng(), gps.altitude.meters(),
+        gps.date.year(), gps.date.month(), gps.date.day(), gps.time.hour(), gps.time.minute(),
+        gps.time.second());
+
+    if (first || updated) {
+      first = false;
+      ez.header.draw("gps");
+      ez.msgBox("GPS Data", buffer, "Back", false);
+    }
+
+    M5.update();
+
+    if (M5.BtnB.wasPressed()) {
+      break;
+    }
+
+    ez.yield();
+    delay(100);
+  } while (true);
+}
+
+/**
+ * Read GPS enable setting.
+ */
+bool load_gps_enable() {
+  Preferences prefs;
+
+  prefs.begin(FURBLE_STR, true);
+  bool enable = prefs.getBool(PREFS_GPS, false);
+  prefs.end();
+
+  return enable;
+}
+
+/**
+ * Save GPS enable setting.
+ */
+static void save_gps_enable(bool enable) {
+  Preferences prefs;
+
+  prefs.begin(FURBLE_STR, false);
+  prefs.putBool(PREFS_GPS, enable);
+  prefs.end();
+}
+
+bool gps_onoff(ezMenu *menu) {
+  gps_enable = !gps_enable;
+  menu->setCaption("onoff", "GPS\t" + (String)(gps_enable ? "ON" : "OFF"));
+  save_gps_enable(gps_enable);
+
+  return true;
+}
+
+/**
+ * GPS settings menu.
+ */
+void settings_menu_gps(void) {
+  ezMenu submenu(FURBLE_STR " - GPS settings");
+
+  submenu.buttons("OK#down");
+  submenu.addItem("onoff | GPS\t" + (String)(gps_enable ? "ON" : "OFF"), NULL, gps_onoff);
+  submenu.addItem("GPS Data", show_gps_info);
+  submenu.downOnLast("first");
+  submenu.addItem("Back");
+  submenu.run();
+}
+
+void settings_load_interval(interval_t *interval) {
+  Preferences prefs;
+
+  prefs.begin(FURBLE_STR, true);
+  size_t len = prefs.getBytes(PREFS_INTERVAL, interval, sizeof(interval_t));
+  if (len != sizeof(interval_t)) {
+    // default values
+    interval->count.value = INTERVAL_DEFAULT_COUNT;
+    interval->count.unit = INTERVAL_DEFAULT_COUNT_UNIT;
+    interval->shutter.value = INTERVAL_DEFAULT_SHUTTER;
+    interval->shutter.unit = INTERVAL_DEFAULT_SHUTTER_UNIT;
+    interval->delay.value = INTERVAL_DEFAULT_DELAY;
+    interval->delay.unit = INTERVAL_DEFAULT_DELAY_UNIT;
+  }
+
+  prefs.end();
+}
+
+void settings_save_interval(interval_t *interval) {
+  Preferences prefs;
+
+  prefs.begin(FURBLE_STR, false);
+  prefs.putBytes(PREFS_INTERVAL, interval, sizeof(interval_t));
+  prefs.end();
+}
+
+static bool configure_count(ezMenu *menu) {
+  ezMenu submenu("Count");
+  submenu.buttons("OK#down");
+  submenu.addItem("Custom");
+  submenu.addItem("Infinite");
+  submenu.downOnLast("first");
+
+  submenu.runOnce();
+  if (submenu.pickName() == "Custom") {
+    interval.count.unit = SPIN_UNIT_NIL;
+    spinner_modify_value("Count", false, &interval.count);
+  }
+
+  if (submenu.pickName() == "Infinite") {
+    interval.count.unit = SPIN_UNIT_INF;
+  }
+
+  String countstr = sv2str(&interval.count);
+  if (interval.count.unit == SPIN_UNIT_INF) {
+    countstr = "INF";
+  }
+
+  menu->setCaption("interval_count", "Count\t" + countstr);
+  settings_save_interval(&interval);
+
+  return true;
+}
+
+static bool configure_delay(ezMenu *menu) {
+  ezMenu submenu("Delay");
+  submenu.buttons("OK#down");
+  submenu.addItem("Custom");
+  submenu.addItem("Preset");
+  submenu.downOnLast("first");
+
+  bool preset;
+
+  submenu.runOnce();
+  if (submenu.pickName() == "Custom") {
+    preset = false;
+  }
+  if (submenu.pickName() == "Preset") {
+    preset = true;
+  }
+
+  spinner_modify_value("Delay", preset, &interval.delay);
+  menu->setCaption("interval_delay", "Delay\t" + sv2str(&interval.delay));
+  settings_save_interval(&interval);
+
+  return true;
+}
+
+static bool configure_shutter(ezMenu *menu) {
+  ezMenu submenu("Shutter");
+  submenu.buttons("OK#down");
+  submenu.addItem("Custom");
+  submenu.addItem("Preset");
+  submenu.downOnLast("first");
+
+  bool preset;
+
+  submenu.runOnce();
+  if (submenu.pickName() == "Custom") {
+    preset = false;
+  }
+  if (submenu.pickName() == "Preset") {
+    preset = true;
+  }
+
+  spinner_modify_value("Shutter", preset, &interval.shutter);
+  menu->setCaption("interval_shutter", "Shutter\t" + sv2str(&interval.shutter));
+  settings_save_interval(&interval);
+
+  return true;
+}
+
+void settings_add_interval_items(ezMenu *submenu) {
+  settings_load_interval(&interval);
+
+  submenu->addItem("interval_count | Count\t" + sv2str(&interval.count), NULL, configure_count);
+  submenu->addItem("interval_delay | Delay\t" + sv2str(&interval.delay), NULL, configure_delay);
+  submenu->addItem("interval_shutter | Shutter\t" + sv2str(&interval.shutter), NULL,
+                   configure_shutter);
+}
+
+void settings_menu_interval(void) {
+  ezMenu submenu(FURBLE_STR " - Intervalometer settings");
+  submenu.buttons("OK#down");
+  settings_add_interval_items(&submenu);
+  submenu.addItem("Back");
+  submenu.downOnLast("first");
+  submenu.run();
+}

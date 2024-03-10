@@ -547,6 +547,7 @@ void ezButtons::show(String buttons) {
       break;
     case 2:
       _drawButtons(buttonVector[0], "", buttonVector[1], "", "", "", "", "", "");
+      break;
     case 3:
       // Three elements, so shortpress only
       _drawButtons(buttonVector[0], "", buttonVector[1], "", buttonVector[2], "", "", "", "");
@@ -2307,13 +2308,16 @@ String M5ez::msgBox(String header,
                     String buttons /* = "OK" */,
                     const bool blocking /* = true */,
                     const GFXfont *font /* = NULL */,
-                    uint16_t color /* = NO_COLOR */) {
+                    uint16_t color /* = NO_COLOR */,
+                    const bool clear /* = true */) {
   if (ez.header.title() != header) {
     ez.screen.clear();
     if (header != "")
       ez.header.show(header);
   } else {
-    ez.canvas.clear();
+    if (clear) {
+      ez.canvas.clear();
+    }
   }
   if (!font)
     font = ez.theme->msg_font;
@@ -2330,6 +2334,9 @@ String M5ez::msgBox(String header,
   for (int8_t n = 0; n < lines.size(); n++) {
     int16_t y =
         ez.canvas.top() + ez.canvas.height() / 2 - ((lines.size() - 1) * font_h / 2) + n * font_h;
+    if (!clear) {
+      M5.Lcd.fillRect(0, y - font_h / 2, TFT_W, font_h, ez.theme->background);
+    }
     M5.Lcd.drawString(lines[n].line, TFT_W / 2, y);
   }
   if (buttons != "" && blocking) {

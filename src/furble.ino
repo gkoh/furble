@@ -5,6 +5,10 @@
 
 #include <M5Unified.h>
 
+#include "furble_ui.h"
+#include "interval.h"
+#include "settings.h"
+
 const uint32_t SCAN_DURATION = 10;
 
 static NimBLEScan *pScan = nullptr;
@@ -13,7 +17,7 @@ static std::vector<Furble::Device *> connect_list;
 
 bool load_gps_enable();
 
-static TinyGPSPlus gps;
+TinyGPSPlus gps;
 HardwareSerial GroveSerial(2);
 static const uint32_t GPS_BAUD = 9600;
 static const uint16_t GPS_SERVICE_MS = 250;
@@ -22,13 +26,8 @@ static const uint32_t GPS_MAX_AGE_MS = 60 * 1000;
 static const uint8_t CURRENT_POSITION = LEFTMOST + 1;
 static const uint8_t GPS_HEADER_POSITION = CURRENT_POSITION + 1;
 
-static bool gps_enable = false;
+bool gps_enable = false;
 static bool gps_has_fix = false;
-
-struct FurbleCtx {
-  Furble::Device *device;
-  bool reconnected;
-};
 
 /**
  * BLE Advertisement callback.
@@ -132,49 +131,6 @@ static void about(void) {
   }
 
   ez.msgBox(FURBLE_STR " - About", "Version: " + version, "Back", true);
-}
-
-static void trigger(Furble::Device *device, int counter) {
-  device->focusPress();
-  delay(250);
-  device->shutterPress();
-  delay(50);
-
-  ez.msgBox("Interval Release", String(counter), "Stop", false);
-  device->shutterRelease();
-}
-
-static void remote_interval(FurbleCtx *fctx) {
-  Furble::Device *device = fctx->device;
-  int i = 0;
-  int j = 1;
-
-  ez.msgBox("Interval Release", "", "Stop", false);
-  trigger(device, j);
-
-  while (device->isConnected()) {
-    i++;
-
-    if (fctx->reconnected) {
-      ez.msgBox("Interval Release", String(j), "Stop", false);
-      fctx->reconnected = false;
-    }
-
-    M5.update();
-
-    if (M5.BtnB.wasReleased()) {
-      break;
-    }
-
-    if (i > 50) {
-      i = 0;
-      j++;
-
-      trigger(device, j);
-    }
-
-    delay(50);
-  }
 }
 
 static void show_shutter_control(bool shutter_locked, unsigned long lock_start_ms) {
@@ -417,6 +373,7 @@ static void menu_settings(void) {
   submenu.buttons("OK#down");
   submenu.addItem("Backlight", ez.backlight.menu);
   submenu.addItem("GPS", settings_menu_gps);
+  submenu.addItem("Intervalometer", settings_menu_interval);
   submenu.addItem("Theme", ez.theme->menu);
   submenu.addItem("Transmit Power", settings_menu_tx_power);
   submenu.addItem("About", about);
