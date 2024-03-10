@@ -1,8 +1,8 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
-#include <esp_bt.h>
 #include <M5ez.h>
+#include <esp_bt.h>
 
 #include "interval.h"
 
