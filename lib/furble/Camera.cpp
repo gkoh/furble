@@ -4,6 +4,16 @@
 
 namespace Furble {
 
+bool Camera::connect(esp_power_level_t power, progressFunc pFunc, void *pCtx) {
+  bool connected = this->connect(pFunc, pCtx);
+  if (connected) {
+    // Set BLE transmit power after connection is established.
+    NimBLEDevice::setPower(power);
+  }
+
+  return connected;
+}
+
 const char *Camera::getName(void) {
   return m_Name.c_str();
 }

@@ -4,6 +4,7 @@
 #include <NimBLEAdvertisedDevice.h>
 #include <NimBLEClient.h>
 #include <Preferences.h>
+#include <esp_bt.h>
 #include <vector>
 
 #include "CameraList.h"
@@ -26,7 +27,7 @@ class Scan {
   /**
    * Initialise the BLE scanner with a callback function when a matching result is encountered.
    */
-  static void init(scanResultCallback scanCallBack);
+  static void init(esp_power_level_t power, scanResultCallback scanCallBack);
 
   /**
    * Start the scan for BLE advertisements.
@@ -47,10 +48,6 @@ class Scan {
   static scanResultCallback *m_ScanResultCallback;
 };
 
-/**
- * Set the BLE transmit power.
- */
-void setPower(esp_power_level_t power);
 }  // namespace Furble
 
 #endif

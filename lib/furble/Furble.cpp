@@ -20,9 +20,10 @@ class Scan::AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
   }
 };
 
-void Scan::init(scanResultCallback scanCallback) {
+void Scan::init(esp_power_level_t power, scanResultCallback scanCallback) {
   m_ScanResultCallback = scanCallback;
   NimBLEDevice::init(FURBLE_STR);
+  NimBLEDevice::setPower(power);
   NimBLEDevice::setSecurityAuth(true, true, true);
   Scan::m_Scan = NimBLEDevice::getScan();
   m_Scan->setAdvertisedDeviceCallbacks(new AdvertisedCallback());
@@ -37,9 +38,5 @@ void Scan::start(const uint32_t scanDuration) {
 
 void Scan::clear(void) {
   m_Scan->clearResults();
-}
-
-void setPower(esp_power_level_t power) {
-  NimBLEDevice::setPower(power);
 }
 }  // namespace Furble
