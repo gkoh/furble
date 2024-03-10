@@ -1,12 +1,17 @@
 #include <NimBLEAdvertisedDevice.h>
 #include <Preferences.h>
 
-#include "Furble.h"
+#include "CanonEOSM6.h"
+#include "CanonEOSRP.h"
+#include "Fujifilm.h"
+
+#include "CameraList.h"
 
 #define FURBLE_PREF_INDEX "index"
 
 namespace Furble {
 
+std::vector<Furble::Camera *> CameraList::m_ConnectList;
 static Preferences m_Prefs;
 
 /**
@@ -62,23 +67,19 @@ static void add_index(std::vector<index_entry_t> &index, index_entry_t &entry) {
   }
 }
 
-const char *Device::getName(void) {
-  return m_Name.c_str();
-}
-
-void Device::save(void) {
+void CameraList::save(Camera *pCamera) {
   m_Prefs.begin(FURBLE_STR, false);
   std::vector<index_entry_t> index = load_index();
 
   index_entry_t entry = {0};
-  fillSaveName(entry.name);
-  entry.type = getDeviceType();
+  pCamera->fillSaveName(entry.name);
+  entry.type = pCamera->getDeviceType();
 
   add_index(index, entry);
 
-  size_t dbytes = getSerialisedBytes();
+  size_t dbytes = pCamera->getSerialisedBytes();
   uint8_t dbuffer[dbytes] = {0};
-  serialise(dbuffer, dbytes);
+  pCamera->serialise(dbuffer, dbytes);
 
   // Store the entry and the index
   m_Prefs.putBytes(entry.name, dbuffer, dbytes);
@@ -90,12 +91,12 @@ void Device::save(void) {
   m_Prefs.end();
 }
 
-void Device::remove(void) {
+void CameraList::remove(Camera *pCamera) {
   m_Prefs.begin(FURBLE_STR, false);
   std::vector<index_entry_t> index = load_index();
 
   index_entry_t entry = {0};
-  fillSaveName(entry.name);
+  pCamera->fillSaveName(entry.name);
 
   size_t i = 0;
   for (i = 0; i < index.size(); i++) {
@@ -115,14 +116,15 @@ void Device::remove(void) {
 }
 
 /**
- * Load the list of saved devices.
+ * Load the list of saved cameras.
  *
  * The Arduino-ESP32 NVS library does not expose an entry iterator even though
  * the underlying library supports it. We work around this by managing a simple
  * index with a known name and storing target devices in separate entries.
  */
-void Device::loadDevices(std::vector<Furble::Device *> &device_list) {
+void CameraList::load(void) {
   m_Prefs.begin(FURBLE_STR, true);
+  m_ConnectList.clear();
   std::vector<index_entry_t> index = load_index();
   for (size_t i = 0; i < index.size(); i++) {
     size_t dbytes = m_Prefs.getBytesLength(index[i].name);
@@ -134,54 +136,27 @@ void Device::loadDevices(std::vector<Furble::Device *> &device_list) {
 
     switch (index[i].type) {
       case FURBLE_FUJIFILM:
-        device_list.push_back(new Fujifilm(dbuffer, dbytes));
+        m_ConnectList.push_back(new Fujifilm(dbuffer, dbytes));
         break;
       case FURBLE_CANON_EOS_M6:
-        device_list.push_back(new CanonEOSM6(dbuffer, dbytes));
+        m_ConnectList.push_back(new CanonEOSM6(dbuffer, dbytes));
         break;
       case FURBLE_CANON_EOS_RP:
-        device_list.push_back(new CanonEOSRP(dbuffer, dbytes));
+        m_ConnectList.push_back(new CanonEOSRP(dbuffer, dbytes));
         break;
     }
   }
   m_Prefs.end();
 }
 
-void Device::fillSaveName(char *name) {
-  snprintf(name, 16, "%08llX", (uint64_t)m_Address);
-}
-
-void Device::match(NimBLEAdvertisedDevice *pDevice, std::vector<Furble::Device *> &list) {
+void CameraList::match(NimBLEAdvertisedDevice *pDevice) {
   if (Fujifilm::matches(pDevice)) {
-    list.push_back(new Furble::Fujifilm(pDevice));
+    m_ConnectList.push_back(new Furble::Fujifilm(pDevice));
   } else if (CanonEOSM6::matches(pDevice)) {
-    list.push_back(new Furble::CanonEOSM6(pDevice));
+    m_ConnectList.push_back(new Furble::CanonEOSM6(pDevice));
   } else if (CanonEOSRP::matches(pDevice)) {
-    list.push_back(new Furble::CanonEOSRP(pDevice));
+    m_ConnectList.push_back(new Furble::CanonEOSRP(pDevice));
   }
-}
-
-/**
- * Generate a 32-bit PRNG.
- */
-static uint32_t xorshift(uint32_t x) {
-  /* Algorithm "xor" from p. 4 of Marsaglia, "Xorshift RNGs" */
-  x ^= x << 13;
-  x ^= x << 17;
-  x ^= x << 5;
-  return x;
-}
-
-void Device::getUUID128(uuid128_t *uuid) {
-  uint32_t chip_id = (uint32_t)ESP.getEfuseMac();
-  for (size_t i = 0; i < UUID128_AS_32_LEN; i++) {
-    chip_id = xorshift(chip_id);
-    uuid->uint32[i] = chip_id;
-  }
-}
-
-bool Device::isConnected(void) {
-  return m_Client->isConnected();
 }
 
 }  // namespace Furble

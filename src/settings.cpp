@@ -6,11 +6,9 @@
 #include <TinyGPS++.h>
 #include <esp_bt.h>
 
+#include "furble_gps.h"
 #include "interval.h"
 #include "settings.h"
-
-extern TinyGPSPlus gps;
-extern bool gps_enable;
 
 const char *PREFS_TX_POWER = "txpower";
 const char *PREFS_GPS = "gps";
@@ -98,14 +96,17 @@ static void show_gps_info(void) {
   bool first = true;
 
   do {
-    bool updated = gps.location.isUpdated() || gps.date.isUpdated() || gps.time.isUpdated();
+    bool updated = furble_gps.location.isUpdated() || furble_gps.date.isUpdated()
+                   || furble_gps.time.isUpdated();
 
-    snprintf(
-        buffer, 256, "%s (%d) | %.2f, %.2f | %.2f metres | %4u-%02u-%02u %02u:%02u:%02u",
-        gps.location.isValid() && gps.date.isValid() && gps.time.isValid() ? "Valid" : "Invalid",
-        gps.location.age(), gps.location.lat(), gps.location.lng(), gps.altitude.meters(),
-        gps.date.year(), gps.date.month(), gps.date.day(), gps.time.hour(), gps.time.minute(),
-        gps.time.second());
+    snprintf(buffer, 256, "%s (%d) | %.2f, %.2f | %.2f metres | %4u-%02u-%02u %02u:%02u:%02u",
+             furble_gps.location.isValid() && furble_gps.date.isValid() && furble_gps.time.isValid()
+                 ? "Valid"
+                 : "Invalid",
+             furble_gps.location.age(), furble_gps.location.lat(), furble_gps.location.lng(),
+             furble_gps.altitude.meters(), furble_gps.date.year(), furble_gps.date.month(),
+             furble_gps.date.day(), furble_gps.time.hour(), furble_gps.time.minute(),
+             furble_gps.time.second());
 
     if (first || updated) {
       first = false;
@@ -127,7 +128,7 @@ static void show_gps_info(void) {
 /**
  * Read GPS enable setting.
  */
-bool load_gps_enable() {
+bool settings_load_gps() {
   Preferences prefs;
 
   prefs.begin(FURBLE_STR, true);
@@ -140,7 +141,7 @@ bool load_gps_enable() {
 /**
  * Save GPS enable setting.
  */
-static void save_gps_enable(bool enable) {
+static void settings_save_gps(bool enable) {
   Preferences prefs;
 
   prefs.begin(FURBLE_STR, false);
@@ -148,10 +149,10 @@ static void save_gps_enable(bool enable) {
   prefs.end();
 }
 
-bool gps_onoff(ezMenu *menu) {
-  gps_enable = !gps_enable;
-  menu->setCaption("onoff", "GPS\t" + (String)(gps_enable ? "ON" : "OFF"));
-  save_gps_enable(gps_enable);
+bool settings_gps_onoff(ezMenu *menu) {
+  furble_gps_enable = !furble_gps_enable;
+  menu->setCaption("onoff", "GPS\t" + (String)(furble_gps_enable ? "ON" : "OFF"));
+  settings_save_gps(furble_gps_enable);
 
   return true;
 }
@@ -163,7 +164,8 @@ void settings_menu_gps(void) {
   ezMenu submenu(FURBLE_STR " - GPS settings");
 
   submenu.buttons("OK#down");
-  submenu.addItem("onoff | GPS\t" + (String)(gps_enable ? "ON" : "OFF"), NULL, gps_onoff);
+  submenu.addItem("onoff | GPS\t" + (String)(furble_gps_enable ? "ON" : "OFF"), NULL,
+                  settings_gps_onoff);
   submenu.addItem("GPS Data", show_gps_info);
   submenu.downOnLast("first");
   submenu.addItem("Back");

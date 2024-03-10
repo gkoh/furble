@@ -4,7 +4,7 @@
 #include <NimBLERemoteCharacteristic.h>
 #include <NimBLERemoteService.h>
 
-#include "Furble.h"
+#include "CanonEOSM6.h"
 
 namespace Furble {
 
@@ -36,16 +36,6 @@ bool CanonEOSM6::matches(NimBLEAdvertisedDevice *pDevice) {
     }
   }
   return false;
-}
-
-/**
- * Connect to a Canon EOS M6.
- *
- * The EOS M6 uses the 'just works' BLE bonding to pair, all bond management is
- * handled by the underlying NimBLE and ESP32 libraries.
- */
-bool CanonEOSM6::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
-  return CanonEOS::connect(pClient, progress_bar);
 }
 
 device_type_t CanonEOSM6::getDeviceType(void) {

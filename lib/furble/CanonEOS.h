@@ -1,13 +1,13 @@
 #ifndef CANONEOS_H
 #define CANONEOS_H
 
-#include "Device.h"
+#include "Camera.h"
 
 namespace Furble {
 /**
  * Canon EOS Partial Abstract Base.
  */
-class CanonEOS: public Device {
+class CanonEOS: public Camera {
  public:
   CanonEOS(const void *data, size_t len);
   CanonEOS(NimBLEAdvertisedDevice *pDevice);
@@ -55,7 +55,7 @@ class CanonEOS: public Device {
                     uint8_t *data,
                     size_t length);
 
-  bool connect(NimBLEClient *pClient, ezProgressBar &progress_bar);
+  bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr);
   void shutterPress(void);
   void shutterRelease(void);
   void focusPress(void);

@@ -4,7 +4,7 @@
 #include <NimBLERemoteCharacteristic.h>
 #include <NimBLERemoteService.h>
 
-#include "Furble.h"
+#include "CanonEOS.h"
 
 namespace Furble {
 
@@ -25,7 +25,7 @@ CanonEOS::CanonEOS(NimBLEAdvertisedDevice *pDevice) {
   m_Address = pDevice->getAddress();
   Serial.println("Name = " + String(m_Name.c_str()));
   Serial.println("Address = " + String(m_Address.toString().c_str()));
-  Device::getUUID128(&m_Uuid);
+  getUUID128(&m_Uuid);
 }
 
 CanonEOS::~CanonEOS(void) {
@@ -76,9 +76,7 @@ bool CanonEOS::write_prefix(NimBLEClient *pClient,
  * The EOS uses the 'just works' BLE bonding to pair, all bond management is
  * handled by the underlying NimBLE and ESP32 libraries.
  */
-bool CanonEOS::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
-  m_Client = pClient;
-
+bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
   if (NimBLEDevice::isBonded(m_Address)) {
     // Already bonded? Assume pair acceptance!
     pair_result = CANON_EOS_PAIR_ACCEPT;
@@ -93,16 +91,16 @@ bool CanonEOS::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
   }
 
   Serial.println("Connected");
-  progress_bar.value(10.0f);
+  updateProgress(pFunc, pCtx, 10.0f);
 
   Serial.println("Securing");
   if (!m_Client->secureConnection()) {
     return false;
   }
   Serial.println("Secured!");
-  progress_bar.value(20.0f);
+  updateProgress(pFunc, pCtx, 20.0f);
 
-  NimBLERemoteService *pSvc = pClient->getService(CANON_EOS_SVC_IDEN_UUID);
+  NimBLERemoteService *pSvc = m_Client->getService(CANON_EOS_SVC_IDEN_UUID);
   if (pSvc) {
     NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(CANON_EOS_CHR_NAME_UUID);
     if ((pChr != nullptr) && pChr->canIndicate()) {
@@ -116,21 +114,21 @@ bool CanonEOS::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
                     (uint8_t *)FURBLE_STR, strlen(FURBLE_STR)))
     return false;
 
-  progress_bar.value(30.0f);
+  updateProgress(pFunc, pCtx, 30.0f);
 
   Serial.println("Identifying 2!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x03, m_Uuid.uint8,
                     UUID128_LEN))
     return false;
 
-  progress_bar.value(40.0f);
+  updateProgress(pFunc, pCtx, 40.0f);
 
   Serial.println("Identifying 3!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x04,
                     (uint8_t *)FURBLE_STR, strlen(FURBLE_STR)))
     return false;
 
-  progress_bar.value(50.0f);
+  updateProgress(pFunc, pCtx, 50.0f);
 
   Serial.println("Identifying 4!");
 
@@ -138,7 +136,7 @@ bool CanonEOS::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x05, &x, 1))
     return false;
 
-  progress_bar.value(60.0f);
+  updateProgress(pFunc, pCtx, 60.0f);
 
   Serial.println("Identifying 5!");
 
@@ -151,7 +149,7 @@ bool CanonEOS::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
   Serial.println("Waiting for user to confirm/deny pairing.");
   for (unsigned int i = 0; i < 60; i++) {
     float progress = 70.0f + (float(i) / 6.0f);
-    progress_bar.value(progress);
+    updateProgress(pFunc, pCtx, progress);
     if (pair_result != 0x00) {
       break;
     }
@@ -169,7 +167,7 @@ bool CanonEOS::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
   if (!write_value(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, &x, 1))
     return false;
 
-  progress_bar.value(80.0f);
+  updateProgress(pFunc, pCtx, 80.0f);
 
   Serial.println("Identifying 6!");
 
@@ -179,7 +177,7 @@ bool CanonEOS::connect(NimBLEClient *pClient, ezProgressBar &progress_bar) {
     return false;
 
   Serial.println("Paired!");
-  progress_bar.value(100.0f);
+  updateProgress(pFunc, pCtx, 100.0f);
 
   return true;
 }
