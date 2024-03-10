@@ -244,25 +244,6 @@ static void remote_control(FurbleCtx *fctx) {
   } while (camera->isConnected());
 }
 
-/**
- * Scan for devices, then present connection menu.
- */
-static void do_scan(void) {
-  Furble::CameraList::m_ConnectList.clear();
-  Furble::Scan::clear();
-  ez.msgBox("Scanning", "Found ... ", "", false);
-  Furble::Scan::start(SCAN_DURATION);
-  menu_connect(true);
-}
-
-/**
- * Retrieve saved devices, then present connection menu.
- */
-static void do_saved(void) {
-  Furble::CameraList::load();
-  menu_connect(false);
-}
-
 uint16_t disconnectDetect(void *private_data) {
   FurbleCtx *fctx = (FurbleCtx *)private_data;
   Furble::Camera *camera = fctx->camera;
@@ -344,6 +325,25 @@ static void menu_connect(bool save) {
     }
     menu_remote(&fctx);
   }
+}
+
+/**
+ * Scan for devices, then present connection menu.
+ */
+static void do_scan(void) {
+  Furble::CameraList::m_ConnectList.clear();
+  Furble::Scan::clear();
+  ez.msgBox("Scanning", "Found ... ", "", false);
+  Furble::Scan::start(SCAN_DURATION);
+  menu_connect(true);
+}
+
+/**
+ * Retrieve saved devices, then present connection menu.
+ */
+static void do_saved(void) {
+  Furble::CameraList::load();
+  menu_connect(false);
 }
 
 static void menu_delete(void) {
