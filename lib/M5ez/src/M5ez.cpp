@@ -901,8 +901,11 @@ uint16_t ezBacklight::loop(void *private_data) {
         if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked())
           break;
         ez.yield();
-        // delay(100);
+#if M5STACK_CORE2
+        delay(100);
+#else
         M5.Power.lightSleep(100000);
+#endif
       }
       ez.buttons.releaseWait();  // Make sure the key pressed to wake display gets ignored
       M5.Display.setBrightness(_brightness);
@@ -2859,10 +2862,8 @@ void M5ez::setFont(const GFXfont *font) {
 }
 
 int16_t M5ez::fontHeight() {
-#if M5STICKC_PLUS
+#if M5STICKC_PLUS || M5STACK_CORE2
   return M5.Lcd.fontHeight(M5.Lcd.getFont());
-#elif M5STACK_CORE2
-  return 26;
 #else
   return 11;
 #endif

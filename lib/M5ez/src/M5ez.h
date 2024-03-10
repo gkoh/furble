@@ -82,9 +82,9 @@
 #ifdef M5STACK_CORE2
 #define TFT_W 320
 #define TFT_H 240
-#define TFT_FONT sans16
+#define TFT_FONT (&FreeMono12pt7b)
 #define TFT_HEADER_HEIGHT 23
-#define TFT_BUTTON_HEIGHT 19
+#define TFT_BUTTON_HEIGHT 24
 #define TFT_RADIUS 8
 #endif
 
