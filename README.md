@@ -61,9 +61,9 @@ More details are on the wiki: [PlatformIO](https://github.com/gkoh/furble/wiki/L
 ## Usage
 
 The top level menu has the following entries:
-- `Connect`
+- `Connect` (if there are saved connections)
 - `Scan`
-- `Delete Saved`
+- `Delete Saved` (if there are saved connections)
 - `Settings`
 - `Power Off`
 
