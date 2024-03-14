@@ -14,7 +14,7 @@ const uint32_t SCAN_DURATION = 10;
  * Progress bar update function.
  */
 void update_progress_bar(void *ctx, float value) {
-  ezProgressBar *progress_bar = (ezProgressBar *)ctx;
+  ezProgressBar *progress_bar = static_cast<ezProgressBar *>(ctx);
   progress_bar->value(value);
 }
 
@@ -149,7 +149,7 @@ static void remote_control(FurbleCtx *fctx) {
 }
 
 uint16_t disconnectDetect(void *private_data) {
-  FurbleCtx *fctx = (FurbleCtx *)private_data;
+  FurbleCtx *fctx = static_cast<FurbleCtx *>(private_data);
   Furble::Camera *camera = fctx->camera;
 
   if (camera->isConnected())

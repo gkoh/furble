@@ -93,7 +93,7 @@ Fujifilm::Fujifilm(const void *data, size_t len) {
   if (len != sizeof(fujifilm_t))
     throw;
 
-  const fujifilm_t *fujifilm = (fujifilm_t *)data;
+  const fujifilm_t *fujifilm = static_cast<const fujifilm_t *>(data);
   m_Name = std::string(fujifilm->name);
   m_Address = NimBLEAddress(fujifilm->address, fujifilm->type);
   memcpy(m_Token, fujifilm->token, FUJIFILM_TOKEN_LEN);
@@ -323,7 +323,7 @@ bool Fujifilm::serialise(void *buffer, size_t bytes) {
   if (bytes != sizeof(fujifilm_t)) {
     return false;
   }
-  fujifilm_t *x = (fujifilm_t *)buffer;
+  fujifilm_t *x = static_cast<fujifilm_t *>(buffer);
   strncpy(x->name, m_Name.c_str(), 64);
   x->address = (uint64_t)m_Address;
   x->type = m_Address.getType();

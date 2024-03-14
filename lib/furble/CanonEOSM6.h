@@ -9,9 +9,8 @@ namespace Furble {
  */
 class CanonEOSM6: public CanonEOS {
  public:
-  CanonEOSM6(const void *data, size_t len);
-  CanonEOSM6(NimBLEAdvertisedDevice *pDevice);
-  ~CanonEOSM6(void);
+  CanonEOSM6(const void *data, size_t len) : CanonEOS(data, len){};
+  CanonEOSM6(NimBLEAdvertisedDevice *pDevice) : CanonEOS(pDevice){};
 
   /**
    * Determine if the advertised BLE device is a Canon EOS M6.

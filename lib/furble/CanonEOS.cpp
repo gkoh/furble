@@ -8,13 +8,11 @@
 
 namespace Furble {
 
-static volatile uint8_t pair_result = 0x00;
-
 CanonEOS::CanonEOS(const void *data, size_t len) {
   if (len != sizeof(eos_t))
     throw;
 
-  const eos_t *eos = (eos_t *)data;
+  const eos_t *eos = static_cast<const eos_t *>(data);
   m_Name = std::string(eos->name);
   m_Address = NimBLEAddress(eos->address, eos->type);
   memcpy(&m_Uuid, &eos->uuid, sizeof(uuid128_t));
@@ -34,13 +32,13 @@ CanonEOS::~CanonEOS(void) {
 }
 
 // Handle pairing notification
-static void pairResultCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
-                               uint8_t *pData,
-                               size_t length,
-                               bool isNotify) {
+void CanonEOS::pairCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
+                            uint8_t *pData,
+                            size_t length,
+                            bool isNotify) {
   if (!isNotify && (length > 0)) {
     Serial.printf("Got pairing callback: 0x%02x\n", pData[0]);
-    pair_result = pData[0];
+    m_PairResult = pData[0];
   }
 }
 
@@ -77,11 +75,13 @@ bool CanonEOS::write_prefix(NimBLEClient *pClient,
  * handled by the underlying NimBLE and ESP32 libraries.
  */
 bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
+  using namespace std::placeholders;
+
   if (NimBLEDevice::isBonded(m_Address)) {
     // Already bonded? Assume pair acceptance!
-    pair_result = CANON_EOS_PAIR_ACCEPT;
+    m_PairResult = CANON_EOS_PAIR_ACCEPT;
   } else {
-    pair_result = 0x00;
+    m_PairResult = 0x00;
   }
 
   Serial.println("Connecting");
@@ -105,7 +105,7 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
     NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(CANON_EOS_CHR_NAME_UUID);
     if ((pChr != nullptr) && pChr->canIndicate()) {
       Serial.println("Subscribed for pairing indication");
-      pChr->subscribe(false, pairResultCallback);
+      pChr->subscribe(false, std::bind(&CanonEOS::pairCallback, this, _1, _2, _3, _4));
     }
   }
 
@@ -150,13 +150,13 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
   for (unsigned int i = 0; i < 60; i++) {
     float progress = 70.0f + (float(i) / 6.0f);
     updateProgress(pFunc, pCtx, progress);
-    if (pair_result != 0x00) {
+    if (m_PairResult != 0x00) {
       break;
     }
     delay(1000);
   }
 
-  if (pair_result != CANON_EOS_PAIR_ACCEPT) {
+  if (m_PairResult != CANON_EOS_PAIR_ACCEPT) {
     bool deleted = NimBLEDevice::deleteBond(m_Address);
     Serial.printf("Rejected, delete pairing: %d\n", deleted);
     return false;
@@ -219,7 +219,7 @@ bool CanonEOS::serialise(void *buffer, size_t bytes) {
   if (bytes != sizeof(eos_t)) {
     return false;
   }
-  eos_t *x = (eos_t *)buffer;
+  eos_t *x = static_cast<eos_t *>(buffer);
   strncpy(x->name, m_Name.c_str(), MAX_NAME);
   x->address = (uint64_t)m_Address;
   x->type = m_Address.getType();

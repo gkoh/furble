@@ -66,6 +66,11 @@ class CanonEOS: public Camera {
   bool serialise(void *buffer, size_t bytes);
 
   uuid128_t m_Uuid;
+
+ private:
+  volatile uint8_t m_PairResult = 0x00;
+
+  void pairCallback(NimBLERemoteCharacteristic *, uint8_t *, size_t, bool);
 };
 
 }  // namespace Furble
