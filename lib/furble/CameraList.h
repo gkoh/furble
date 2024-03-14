@@ -25,6 +25,11 @@ class CameraList {
   static void load(void);
 
   /**
+   * Get number of saved connections.
+   */
+  static size_t getSaveCount(void);
+
+  /**
    * Add matching devices to the list.
    */
   static void match(NimBLEAdvertisedDevice *pDevice);

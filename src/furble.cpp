@@ -303,13 +303,22 @@ void setup() {
 }
 
 void loop() {
+  size_t save_count = Furble::CameraList::getSaveCount();
+
   ezMenu mainmenu(FURBLE_STR);
   mainmenu.buttons("OK#down");
-  mainmenu.addItem("Connect", do_saved);
+  if (save_count > 0) {
+    mainmenu.addItem("Connect", do_saved);
+  }
   mainmenu.addItem("Scan", do_scan);
-  mainmenu.addItem("Delete Saved", menu_delete);
+  if (save_count > 0) {
+    mainmenu.addItem("Delete Saved", menu_delete);
+  }
   mainmenu.addItem("Settings", menu_settings);
   mainmenu.addItem("Power Off", mainmenu_poweroff);
   mainmenu.downOnLast("first");
-  mainmenu.run();
+
+  do {
+    mainmenu.runOnce();
+  } while (Furble::CameraList::getSaveCount() == save_count);
 }
