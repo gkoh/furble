@@ -61,7 +61,7 @@
 
 #define NO_COLOR TFT_TRANSPARENT
 
-#ifdef M5STICKC_PLUS
+#if defined(ARDUINO_M5STICK_C_PLUS)
 #define TFT_W 240
 #define TFT_H 135
 #define TFT_FONT sans16
@@ -70,7 +70,7 @@
 #define TFT_RADIUS 8
 #endif
 
-#ifdef M5STICKC
+#if defined(ARDUINO_M5STICK_C)
 #define TFT_W 160
 #define TFT_H 80
 #define TFT_FONT hzk16
@@ -79,7 +79,7 @@
 #define TFT_RADIUS 3
 #endif
 
-#ifdef M5STACK_CORE2
+#if defined(ARDUINO_M5STACK_CORE_ESP32) || defined(ARDUINO_M5STACK_CORE2)
 #define TFT_W 320
 #define TFT_H 240
 #define TFT_FONT (&FreeMono12pt7b)

@@ -12,7 +12,7 @@
     "url": "https://github.com/ropg/M5ez"
   },
   "dependencies": {
-  	"name": "M5Stack"
+    "name": "M5Unified"
   },
   "version": "2.1.2",
   "framework": "arduino",

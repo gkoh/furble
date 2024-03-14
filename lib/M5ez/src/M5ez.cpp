@@ -764,10 +764,6 @@ void ezSettings::begin() {
     ez.settings.menuObj.addItem("Theme chooser", ez.theme->menu);
   }
   ez.settings.menuObj.addItem("Factory defaults", ez.settings.defaults);
-
-#ifdef M5STACK_CORE2
-  M5.Lcd.setRotation(1);
-#endif
 }
 
 void ezSettings::menu() {
@@ -836,7 +832,6 @@ void ezBacklight::menu() {
               _brightness = 48;
           }
           float p = float(_brightness) / 2.48;
-          Serial.println(_brightness);
           bl.value(p);
           M5.Display.setBrightness(_brightness);
           if (b == "Back")
@@ -901,11 +896,7 @@ uint16_t ezBacklight::loop(void *private_data) {
         if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked())
           break;
         ez.yield();
-#if M5STACK_CORE2
-        delay(100);
-#else
         M5.Power.lightSleep(100000);
-#endif
       }
       ez.buttons.releaseWait();  // Make sure the key pressed to wake display gets ignored
       M5.Display.setBrightness(_brightness);
@@ -2229,8 +2220,13 @@ long M5ez::_text_cursor_millis;
 
 void M5ez::begin() {
   auto cfg = M5.config();
+  cfg.internal_imu = false;
+  cfg.internal_spk = false;
+  cfg.internal_mic = false;
   M5.begin(cfg);
+#if defined(ARDUINO_M5STICK_C) || defined(ARDUINO_M5STICK_C_PLUS)
   M5.Lcd.setRotation(3);
+#endif
   ezTheme::begin();
   ez.screen.begin();
   ez.settings.begin();
@@ -2862,7 +2858,7 @@ void M5ez::setFont(const GFXfont *font) {
 }
 
 int16_t M5ez::fontHeight() {
-#if M5STICKC_PLUS || M5STACK_CORE2
+#if ARDUINO_M5STICK_C_PLUS || ARDUINO_M5STACK_CORE_ESP32
   return M5.Lcd.fontHeight(M5.Lcd.getFont());
 #else
   return 11;
