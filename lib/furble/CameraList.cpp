@@ -26,7 +26,11 @@ typedef struct {
 } index_entry_t;
 
 static void save_index(std::vector<index_entry_t> &index) {
-  m_Prefs.putBytes(FURBLE_PREF_INDEX, index.data(), sizeof(index[0]) * index.size());
+  if (index.size() > 0) {
+    m_Prefs.putBytes(FURBLE_PREF_INDEX, index.data(), sizeof(index[0]) * index.size());
+  } else {
+    m_Prefs.remove(FURBLE_PREF_INDEX);
+  }
 }
 
 static std::vector<index_entry_t> load_index(void) {
@@ -147,6 +151,14 @@ void CameraList::load(void) {
     }
   }
   m_Prefs.end();
+}
+
+size_t CameraList::getSaveCount(void) {
+  m_Prefs.begin(FURBLE_STR, false);
+  auto index = load_index();
+  m_Prefs.end();
+
+  return index.size();
 }
 
 void CameraList::match(NimBLEAdvertisedDevice *pDevice) {
