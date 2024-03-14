@@ -9,9 +9,6 @@
 
 #define MAX_NAME (64)
 
-#define UUID128_LEN (16)
-#define UUID128_AS_32_LEN (UUID128_LEN / sizeof(uint32_t))
-
 // Progress update function
 typedef void(progressFunc(void *, float));
 
@@ -22,16 +19,6 @@ namespace Furble {
  */
 class Camera {
  public:
-  /**
-   * UUID type.
-   */
-  typedef struct _uuid128_t {
-    union {
-      uint32_t uint32[UUID128_AS_32_LEN];
-      uint8_t uint8[UUID128_LEN];
-    };
-  } uuid128_t;
-
   /**
    * GPS data type.
    */
@@ -98,11 +85,6 @@ class Camera {
   bool isConnected(void);
 
   const char *getName(void);
-
-  /**
-   * Generate a device consistent 128-bit UUID.
-   */
-  static void getUUID128(uuid128_t *uuid);
 
   void fillSaveName(char *name);
 

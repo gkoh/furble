@@ -9,9 +9,8 @@ namespace Furble {
  */
 class CanonEOSRP: public CanonEOS {
  public:
-  CanonEOSRP(const void *data, size_t len);
-  CanonEOSRP(NimBLEAdvertisedDevice *pDevice);
-  ~CanonEOSRP(void);
+  CanonEOSRP(const void *data, size_t len) : CanonEOS(data, len){};
+  CanonEOSRP(NimBLEAdvertisedDevice *pDevice) : CanonEOS(pDevice){};
 
   /**
    * Determine if the advertised BLE device is a Canon EOS RP.

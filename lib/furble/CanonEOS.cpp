@@ -5,19 +5,18 @@
 #include <NimBLERemoteService.h>
 
 #include "CanonEOS.h"
+#include "Device.h"
 
 namespace Furble {
-
-static volatile uint8_t pair_result = 0x00;
 
 CanonEOS::CanonEOS(const void *data, size_t len) {
   if (len != sizeof(eos_t))
     throw;
 
-  const eos_t *eos = (eos_t *)data;
+  const eos_t *eos = static_cast<const eos_t *>(data);
   m_Name = std::string(eos->name);
   m_Address = NimBLEAddress(eos->address, eos->type);
-  memcpy(&m_Uuid, &eos->uuid, sizeof(uuid128_t));
+  memcpy(&m_Uuid, &eos->uuid, sizeof(Device::uuid128_t));
 }
 
 CanonEOS::CanonEOS(NimBLEAdvertisedDevice *pDevice) {
@@ -25,7 +24,7 @@ CanonEOS::CanonEOS(NimBLEAdvertisedDevice *pDevice) {
   m_Address = pDevice->getAddress();
   Serial.println("Name = " + String(m_Name.c_str()));
   Serial.println("Address = " + String(m_Address.toString().c_str()));
-  getUUID128(&m_Uuid);
+  Device::getUUID128(&m_Uuid);
 }
 
 CanonEOS::~CanonEOS(void) {
@@ -34,13 +33,13 @@ CanonEOS::~CanonEOS(void) {
 }
 
 // Handle pairing notification
-static void pairResultCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
-                               uint8_t *pData,
-                               size_t length,
-                               bool isNotify) {
+void CanonEOS::pairCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
+                            uint8_t *pData,
+                            size_t length,
+                            bool isNotify) {
   if (!isNotify && (length > 0)) {
     Serial.printf("Got pairing callback: 0x%02x\n", pData[0]);
-    pair_result = pData[0];
+    m_PairResult = pData[0];
   }
 }
 
@@ -77,11 +76,13 @@ bool CanonEOS::write_prefix(NimBLEClient *pClient,
  * handled by the underlying NimBLE and ESP32 libraries.
  */
 bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
+  using namespace std::placeholders;
+
   if (NimBLEDevice::isBonded(m_Address)) {
     // Already bonded? Assume pair acceptance!
-    pair_result = CANON_EOS_PAIR_ACCEPT;
+    m_PairResult = CANON_EOS_PAIR_ACCEPT;
   } else {
-    pair_result = 0x00;
+    m_PairResult = 0x00;
   }
 
   Serial.println("Connecting");
@@ -105,13 +106,14 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
     NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(CANON_EOS_CHR_NAME_UUID);
     if ((pChr != nullptr) && pChr->canIndicate()) {
       Serial.println("Subscribed for pairing indication");
-      pChr->subscribe(false, pairResultCallback);
+      pChr->subscribe(false, std::bind(&CanonEOS::pairCallback, this, _1, _2, _3, _4));
     }
   }
 
   Serial.println("Identifying 1!");
+  const char *name = Device::getStringID();
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_NAME_UUID, 0x01,
-                    (uint8_t *)FURBLE_STR, strlen(FURBLE_STR)))
+                    (uint8_t *)name, strlen(name)))
     return false;
 
   updateProgress(pFunc, pCtx, 30.0f);
@@ -125,7 +127,7 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
 
   Serial.println("Identifying 3!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x04,
-                    (uint8_t *)FURBLE_STR, strlen(FURBLE_STR)))
+                    (uint8_t *)name, strlen(name)))
     return false;
 
   updateProgress(pFunc, pCtx, 50.0f);
@@ -150,13 +152,13 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
   for (unsigned int i = 0; i < 60; i++) {
     float progress = 70.0f + (float(i) / 6.0f);
     updateProgress(pFunc, pCtx, progress);
-    if (pair_result != 0x00) {
+    if (m_PairResult != 0x00) {
       break;
     }
     delay(1000);
   }
 
-  if (pair_result != CANON_EOS_PAIR_ACCEPT) {
+  if (m_PairResult != CANON_EOS_PAIR_ACCEPT) {
     bool deleted = NimBLEDevice::deleteBond(m_Address);
     Serial.printf("Rejected, delete pairing: %d\n", deleted);
     return false;
@@ -219,11 +221,11 @@ bool CanonEOS::serialise(void *buffer, size_t bytes) {
   if (bytes != sizeof(eos_t)) {
     return false;
   }
-  eos_t *x = (eos_t *)buffer;
+  eos_t *x = static_cast<eos_t *>(buffer);
   strncpy(x->name, m_Name.c_str(), MAX_NAME);
   x->address = (uint64_t)m_Address;
   x->type = m_Address.getType();
-  memcpy(&x->uuid, &m_Uuid, sizeof(uuid128_t));
+  memcpy(&x->uuid, &m_Uuid, sizeof(Device::uuid128_t));
 
   return true;
 }

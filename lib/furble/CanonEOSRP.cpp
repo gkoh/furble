@@ -8,12 +8,6 @@
 
 namespace Furble {
 
-CanonEOSRP::CanonEOSRP(const void *data, size_t len) : CanonEOS(data, len) {}
-
-CanonEOSRP::CanonEOSRP(NimBLEAdvertisedDevice *pDevice) : CanonEOS(pDevice) {}
-
-CanonEOSRP::~CanonEOSRP(void) {}
-
 const size_t CANON_EOS_RP_ADV_DATA_LEN = 8;
 const uint8_t CANON_EOS_RP_ID_0 = 0xa9;
 const uint8_t CANON_EOS_RP_ID_1 = 0x01;

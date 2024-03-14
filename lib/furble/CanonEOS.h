@@ -2,6 +2,7 @@
 #define CANONEOS_H
 
 #include "Camera.h"
+#include "Device.h"
 
 namespace Furble {
 /**
@@ -15,10 +16,10 @@ class CanonEOS: public Camera {
 
  protected:
   typedef struct _eos_t {
-    char name[MAX_NAME]; /** Human readable device name. */
-    uint64_t address;    /** Device MAC address. */
-    uint8_t type;        /** Address type. */
-    uuid128_t uuid;      /** Our UUID. */
+    char name[MAX_NAME];    /** Human readable device name. */
+    uint64_t address;       /** Device MAC address. */
+    uint8_t type;           /** Address type. */
+    Device::uuid128_t uuid; /** Our UUID. */
   } eos_t;
 
   const char *CANON_EOS_SVC_IDEN_UUID = "00010000-0000-1000-0000-d8492fffa821";
@@ -65,7 +66,12 @@ class CanonEOS: public Camera {
   size_t getSerialisedBytes(void);
   bool serialise(void *buffer, size_t bytes);
 
-  uuid128_t m_Uuid;
+  Device::uuid128_t m_Uuid;
+
+ private:
+  volatile uint8_t m_PairResult = 0x00;
+
+  void pairCallback(NimBLERemoteCharacteristic *, uint8_t *, size_t, bool);
 };
 
 }  // namespace Furble
