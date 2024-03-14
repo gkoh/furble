@@ -4,6 +4,7 @@
 #include <NimBLERemoteCharacteristic.h>
 #include <NimBLERemoteService.h>
 
+#include "Device.h"
 #include "Fujifilm.h"
 
 typedef struct _fujifilm_t {
@@ -178,7 +179,7 @@ bool Fujifilm::connect(progressFunc pFunc, void *pCtx) {
   pChr = pSvc->getCharacteristic(FUJIFILM_CHR_IDEN_UUID);
   if (!pChr->canWrite())
     return false;
-  if (!pChr->writeValue(FURBLE_STR, true))
+  if (!pChr->writeValue(Device::getStringID(), true))
     return false;
   Serial.println("Identified!");
   updateProgress(pFunc, pCtx, 40.0f);

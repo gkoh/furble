@@ -1,3 +1,4 @@
+#include <Device.h>
 #include <Furble.h>
 #include <M5ez.h>
 
@@ -34,7 +35,8 @@ static void about(void) {
     version = "unknown";
   }
 
-  ez.msgBox(FURBLE_STR " - About", "Version: " + version, "Back", true);
+  ez.msgBox(FURBLE_STR " - About", "Version: " + version + "|ID: " + Furble::Device::getStringID(),
+            "Back", true);
 }
 
 static void show_shutter_control(bool shutter_locked, unsigned long lock_start_ms) {
@@ -294,6 +296,7 @@ void setup() {
 #include <themes/mono_furble.h>
 
   ez.begin();
+  Furble::Device::init();
   furble_gps_init();
 
   Furble::Scan::init(settings_load_esp_tx_power(), onScanResult);

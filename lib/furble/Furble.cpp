@@ -1,6 +1,7 @@
 #include <NimBLEAdvertisedDevice.h>
 #include <NimBLEDevice.h>
 
+#include "Device.h"
 #include "Furble.h"
 
 namespace Furble {
@@ -22,7 +23,7 @@ class Scan::AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
 
 void Scan::init(esp_power_level_t power, scanResultCallback scanCallback) {
   m_ScanResultCallback = scanCallback;
-  NimBLEDevice::init(FURBLE_STR);
+  NimBLEDevice::init(Device::getStringID());
   NimBLEDevice::setPower(power);
   NimBLEDevice::setSecurityAuth(true, true, true);
   Scan::m_Scan = NimBLEDevice::getScan();

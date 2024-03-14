@@ -5,6 +5,7 @@
 #include <NimBLERemoteService.h>
 
 #include "CanonEOS.h"
+#include "Device.h"
 
 namespace Furble {
 
@@ -15,7 +16,7 @@ CanonEOS::CanonEOS(const void *data, size_t len) {
   const eos_t *eos = static_cast<const eos_t *>(data);
   m_Name = std::string(eos->name);
   m_Address = NimBLEAddress(eos->address, eos->type);
-  memcpy(&m_Uuid, &eos->uuid, sizeof(uuid128_t));
+  memcpy(&m_Uuid, &eos->uuid, sizeof(Device::uuid128_t));
 }
 
 CanonEOS::CanonEOS(NimBLEAdvertisedDevice *pDevice) {
@@ -23,7 +24,7 @@ CanonEOS::CanonEOS(NimBLEAdvertisedDevice *pDevice) {
   m_Address = pDevice->getAddress();
   Serial.println("Name = " + String(m_Name.c_str()));
   Serial.println("Address = " + String(m_Address.toString().c_str()));
-  getUUID128(&m_Uuid);
+  Device::getUUID128(&m_Uuid);
 }
 
 CanonEOS::~CanonEOS(void) {
@@ -110,8 +111,9 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
   }
 
   Serial.println("Identifying 1!");
+  const char *name = Device::getStringID();
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_NAME_UUID, 0x01,
-                    (uint8_t *)FURBLE_STR, strlen(FURBLE_STR)))
+                    (uint8_t *)name, strlen(name)))
     return false;
 
   updateProgress(pFunc, pCtx, 30.0f);
@@ -125,7 +127,7 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
 
   Serial.println("Identifying 3!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x04,
-                    (uint8_t *)FURBLE_STR, strlen(FURBLE_STR)))
+                    (uint8_t *)name, strlen(name)))
     return false;
 
   updateProgress(pFunc, pCtx, 50.0f);
@@ -223,7 +225,7 @@ bool CanonEOS::serialise(void *buffer, size_t bytes) {
   strncpy(x->name, m_Name.c_str(), MAX_NAME);
   x->address = (uint64_t)m_Address;
   x->type = m_Address.getType();
-  memcpy(&x->uuid, &m_Uuid, sizeof(uuid128_t));
+  memcpy(&x->uuid, &m_Uuid, sizeof(Device::uuid128_t));
 
   return true;
 }
