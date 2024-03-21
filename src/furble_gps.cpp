@@ -8,6 +8,13 @@
 #include "settings.h"
 
 static const uint32_t GPS_BAUD = 9600;
+#if ARDUINO_M5STACK_CORE_ESP32 || ARDUINO_M5STACK_CORE2
+static const int8_t   GPS_RX = 22;
+static const int8_t   GPS_TX = 21;
+#else
+static const int8_t   GPS_RX = 33;
+static const int8_t   GPS_TX = 32;
+#endif
 static const uint16_t GPS_SERVICE_MS = 250;
 static const uint32_t GPS_MAX_AGE_MS = 60 * 1000;
 
@@ -106,7 +113,7 @@ static uint16_t current_service(void *private_data) {
 
 void furble_gps_init(void) {
   furble_gps_enable = settings_load_gps();
-  Serial2.begin(GPS_BAUD, SERIAL_8N1, 33, 32);
+  Serial2.begin(GPS_BAUD, SERIAL_8N1, GPS_RX, GPS_TX);
 
   uint8_t width = 4 * M5.Lcd.textWidth("5") + ez.theme->header_hmargin * 2;
   ez.header.insert(CURRENT_POSITION, "current", width, current_draw_widget);

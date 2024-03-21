@@ -887,18 +887,44 @@ void ezBacklight::activity() {
   _last_activity = millis();
 }
 
+void changeCpuPower(bool reduce) {
+  switch (M5.getBoard()) {
+    case m5::board_t::board_M5StickC:
+    case m5::board_t::board_M5StickCPlus:
+      // do nothing, lightSleep() works with backlight control
+      break;
+    default:
+      // Backlight is PWM controlled, lightSleep() stops PWM
+      if (reduce) {
+        setCpuFrequencyMhz(10);
+      } else {
+        setCpuFrequencyMhz(80);
+      }
+  }
+}
+
 uint16_t ezBacklight::loop(void *private_data) {
   if (!_backlight_off && _inactivity) {
     if (millis() > _last_activity + 30000 * _inactivity) {
       _backlight_off = true;
       M5.Display.setBrightness(64);
+      changeCpuPower(true);
       while (true) {
         if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked())
           break;
         ez.yield();
-        M5.Power.lightSleep(100000);
+	switch (M5.getBoard()) {
+          case m5::board_t::board_M5StickC:
+          case m5::board_t::board_M5StickCPlus:
+            M5.Power.lightSleep(100000);
+	    break;
+	  default:
+            // PWM inactive during lightSleep, thus display backlight not controlled
+	    delay(100);
+	}
       }
       ez.buttons.releaseWait();  // Make sure the key pressed to wake display gets ignored
+      changeCpuPower(false);
       M5.Display.setBrightness(_brightness);
       activity();
       _backlight_off = false;
@@ -2224,7 +2250,7 @@ void M5ez::begin() {
   cfg.internal_spk = false;
   cfg.internal_mic = false;
   M5.begin(cfg);
-#if defined(ARDUINO_M5STICK_C) || defined(ARDUINO_M5STICK_C_PLUS)
+#if ARDUINO_M5STICK_C || ARDUINO_M5STICK_C_PLUS
   M5.Lcd.setRotation(3);
 #endif
   ezTheme::begin();
