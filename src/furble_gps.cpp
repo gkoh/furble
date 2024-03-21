@@ -9,11 +9,11 @@
 
 static const uint32_t GPS_BAUD = 9600;
 #if ARDUINO_M5STACK_CORE_ESP32 || ARDUINO_M5STACK_CORE2
-static const int8_t   GPS_RX = 22;
-static const int8_t   GPS_TX = 21;
+static const int8_t GPS_RX = 22;
+static const int8_t GPS_TX = 21;
 #else
-static const int8_t   GPS_RX = 33;
-static const int8_t   GPS_TX = 32;
+static const int8_t GPS_RX = 33;
+static const int8_t GPS_TX = 32;
 #endif
 static const uint16_t GPS_SERVICE_MS = 250;
 static const uint32_t GPS_MAX_AGE_MS = 60 * 1000;

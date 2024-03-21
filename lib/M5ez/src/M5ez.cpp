@@ -913,15 +913,15 @@ uint16_t ezBacklight::loop(void *private_data) {
         if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked())
           break;
         ez.yield();
-	switch (M5.getBoard()) {
+        switch (M5.getBoard()) {
           case m5::board_t::board_M5StickC:
           case m5::board_t::board_M5StickCPlus:
             M5.Power.lightSleep(100000);
-	    break;
-	  default:
+            break;
+          default:
             // PWM inactive during lightSleep, thus display backlight not controlled
-	    delay(100);
-	}
+            delay(100);
+        }
       }
       ez.buttons.releaseWait();  // Make sure the key pressed to wake display gets ignored
       changeCpuPower(false);
