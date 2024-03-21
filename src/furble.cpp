@@ -55,17 +55,17 @@ static void show_shutter_control(bool shutter_locked, unsigned long lock_start_m
     unsigned long seconds = (total_ms / 1000) % 60;
     prev_update_ms = now;
 
-    char duration[8] = {0x0};
-    snprintf(duration, 8, "%02lu:%02lu", minutes, seconds);
+    char duration[16] = {0x0};
+    snprintf(duration, 16, "%02lu:%02lu", minutes, seconds);
 
-#ifdef M5STACK_CORE2
+#if ARDUINO_M5STACK_CORE_ESP32 || ARDUINO_M5STACK_CORE2
     ez.msgBox("Remote Shutter", "Shutter Locked|" + String(duration), "Unlock#Unlock#Back", false);
 #else
     ez.msgBox("Remote Shutter", "Shutter Locked|" + String(duration) + "||Back: Power",
               "Unlock#Unlock", false);
 #endif
   } else {
-#ifdef M5STACK_CORE2
+#if ARDUINO_M5STACK_CORE_ESP32 || ARDUINO_M5STACK_CORE2
     ez.msgBox("Remote Shutter", "Lock: Focus+Release", "Release#Focus#Back", false);
 #else
     ez.msgBox("Remote Shutter", "Lock: Focus+Release|Back: Power", "Release#Focus", false);

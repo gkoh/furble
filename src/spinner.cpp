@@ -238,6 +238,8 @@ unsigned long sv2ms(SpinValue *sv) {
       return (sv->value * 1000);
     case SPIN_UNIT_MS:
       return (sv->value);
+    default:
+      return 0;
   }
   return 0;
 }

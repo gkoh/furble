@@ -33,6 +33,8 @@ static void display_interval_msg(interval_state_t state,
     case INTERVAL_DELAY:
       statestr = "DELAY";
       break;
+    case INTERVAL_EXIT:
+      break;
   }
 
   unsigned long rem = next - now;
@@ -65,8 +67,6 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
   const unsigned long config_shutter = sv2ms(&interval->shutter);
 
   unsigned int icount = 0;
-  unsigned long idelay = 0;
-  unsigned long ishutter = 0;
 
   interval_state_t state = INTERVAL_SHUTTER_OPEN;
 
