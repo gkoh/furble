@@ -1,1 +1,1 @@
-platformio==6.1.5
+platformio==6.1.13
