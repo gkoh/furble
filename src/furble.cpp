@@ -66,9 +66,11 @@ static void show_shutter_control(bool shutter_locked, unsigned long lock_start_m
 #endif
   } else {
 #if ARDUINO_M5STACK_CORE_ESP32 || ARDUINO_M5STACK_CORE2
-    ez.msgBox("Remote Shutter", "Lock: Focus+Release", "Release#Focus#Back", false);
+    ez.msgBox("Remote Shutter", "Lock: Release (long press)|Lock: Focus+Release",
+              "Release#Focus#Back", false);
 #else
-    ez.msgBox("Remote Shutter", "Lock: Focus+Release|Back: Power", "Release#Focus", false);
+    ez.msgBox("Remote Shutter", "Lock: Release (long press)|Lock: Focus+Release|Back: Power",
+              "Release#Focus", false);
 #endif
   }
 }
@@ -118,17 +120,19 @@ static void remote_control(FurbleCtx *fctx) {
         continue;
       }
 
+      // check for shutter lock
+      if (M5.BtnA.pressedFor(500) ||                           // shutter hold 500ms
+          ((M5.BtnA.wasReleased()) && M5.BtnB.isPressed())) {  // focus + shutter
+        shutter_lock = true;
+        shutter_lock_start_ms = millis();
+        show_shutter_control(true, shutter_lock_start_ms);
+        Serial.println("shutter lock");
+        continue;
+      }
+
       if (M5.BtnA.wasReleased()) {
-        // focus + shutter = shutter lock
-        if (M5.BtnB.isPressed()) {
-          shutter_lock = true;
-          shutter_lock_start_ms = millis();
-          show_shutter_control(true, shutter_lock_start_ms);
-          Serial.println("shutter lock");
-        } else {
-          camera->shutterRelease();
-          Serial.println("shutterRelease()");
-        }
+        camera->shutterRelease();
+        Serial.println("shutterRelease()");
         continue;
       }
 
