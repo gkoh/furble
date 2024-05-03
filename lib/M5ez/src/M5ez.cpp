@@ -2999,6 +2999,10 @@ bool ezMenu::deleteItem(String name) {
   return deleteItem(getItemNum(name));
 }
 
+int16_t ezMenu::countItems(void) {
+  return _items.size();
+}
+
 bool ezMenu::setCaption(int16_t index, String caption) {
   if (index < 1 || index > _items.size())
     return false;
@@ -3054,7 +3058,7 @@ void ezMenu::run() {
   }
 }
 
-int16_t ezMenu::runOnce() {
+int16_t ezMenu::runOnce(bool dynamic) {
   if (_items.size() == 0)
     return 0;
   if (_selected == -1)
@@ -3065,10 +3069,17 @@ int16_t ezMenu::runOnce() {
     if (_items[n].image != NULL || _items[n].fs != NULL)
       return _runImagesOnce();
   }
-  return _runTextOnce();
+
+  int16_t r;
+
+  do {
+    r = _runTextOnce(dynamic);
+  } while (r < 0);
+
+  return r;
 }
 
-int16_t ezMenu::_runTextOnce() {
+int16_t ezMenu::_runTextOnce(bool dynamic) {
   if (_buttons == "")
     _buttons = "up # select # down";
   ez.screen.clear();
@@ -3093,8 +3104,12 @@ int16_t ezMenu::_runTextOnce() {
     String pressed;
     while (true) {
       pressed = ez.buttons.poll();
-      if (M5ez::_redraw)
+      if (M5ez::_redraw) {
         _drawItems();
+        if (dynamic) {
+          return -1;
+        }
+      }
       if (pressed != "")
         break;
     }

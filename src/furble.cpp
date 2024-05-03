@@ -9,7 +9,7 @@
 #include "interval.h"
 #include "settings.h"
 
-const uint32_t SCAN_DURATION = 10;
+const uint32_t SCAN_DURATION = 60;
 
 /**
  * Progress bar update function.
@@ -18,13 +18,6 @@ void update_progress_bar(void *ctx, float value) {
   ezProgressBar *progress_bar = static_cast<ezProgressBar *>(ctx);
   progress_bar->value(value);
 }
-
-/**
- * BLE Advertisement callback.
- */
-void onScanResult(std::vector<Furble::Camera *> &list) {
-  ez.msgBox("Scanning", "Found ... " + String(list.size()), "", false);
-};
 
 /**
  * Display the version.
@@ -207,26 +200,52 @@ static void menu_remote(FurbleCtx *fctx) {
   ez.backlight.inactivity(USER_SET);
 }
 
-static void menu_connect(bool save) {
-  ezMenu submenu(FURBLE_STR " - Connect");
-  submenu.buttons("OK#down");
+/**
+ * Scan callback to update connection menu with new devices.
+ */
+void updateConnectItems(void *private_data) {
+  ezMenu *submenu = (ezMenu *)private_data;
 
-  for (int i = 0; i < Furble::CameraList::m_ConnectList.size(); i++) {
-    submenu.addItem(Furble::CameraList::m_ConnectList[i]->getName());
+  submenu->deleteItem("Back");
+  for (int i = submenu->countItems(); i < Furble::CameraList::size(); i++) {
+    submenu->addItem(Furble::CameraList::get(i)->getName());
   }
+  submenu->addItem("Back");
+}
+
+static void menu_connect(bool scan) {
+  String header = FURBLE_STR " - ";
+  if (scan) {
+    header += "Scanning";
+  } else {
+    header += "Connect";
+  }
+
+  ezMenu submenu(header);
+  if (scan) {
+    Furble::Scan::start(SCAN_DURATION, updateConnectItems, &submenu);
+  }
+
+  submenu.buttons("OK#down");
   submenu.addItem("Back");
   submenu.downOnLast("first");
-  int16_t i = submenu.runOnce();
+
+  submenu.runOnce(true);
+  if (scan) {
+    Furble::Scan::stop();
+  }
+
+  int16_t i = submenu.pick();
   if (i == 0)
     return;
 
-  FurbleCtx fctx = {Furble::CameraList::m_ConnectList[i - 1], false};
+  FurbleCtx fctx = {Furble::CameraList::get(i - 1), false};
 
   furble_gps_update_geodata(fctx.camera);
 
   ezProgressBar progress_bar(FURBLE_STR, "Connecting ...", "");
   if (fctx.camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
-    if (save) {
+    if (scan) {
       Furble::CameraList::save(fctx.camera);
     }
     menu_remote(&fctx);
@@ -237,10 +256,8 @@ static void menu_connect(bool save) {
  * Scan for devices, then present connection menu.
  */
 static void do_scan(void) {
-  Furble::CameraList::m_ConnectList.clear();
+  Furble::CameraList::clear();
   Furble::Scan::clear();
-  ez.msgBox("Scanning", "Found ... ", "", false);
-  Furble::Scan::start(SCAN_DURATION);
   menu_connect(true);
 }
 
@@ -257,8 +274,8 @@ static void menu_delete(void) {
   submenu.buttons("OK#down");
   Furble::CameraList::load();
 
-  for (size_t i = 0; i < Furble::CameraList::m_ConnectList.size(); i++) {
-    submenu.addItem(Furble::CameraList::m_ConnectList[i]->getName());
+  for (size_t i = 0; i < Furble::CameraList::size(); i++) {
+    submenu.addItem(Furble::CameraList::get(i)->getName());
   }
   submenu.addItem("Back");
   submenu.downOnLast("first");
@@ -266,7 +283,7 @@ static void menu_delete(void) {
   int16_t i = submenu.runOnce();
   if (i == 0)
     return;
-  Furble::CameraList::remove(Furble::CameraList::m_ConnectList[i - 1]);
+  Furble::CameraList::remove(Furble::CameraList::get(i - 1));
 }
 
 static void menu_settings(void) {
@@ -299,7 +316,7 @@ void setup() {
   Furble::Device::init();
   furble_gps_init();
 
-  Furble::Scan::init(settings_load_esp_tx_power(), onScanResult);
+  Furble::Scan::init(settings_load_esp_tx_power());
 }
 
 void loop() {

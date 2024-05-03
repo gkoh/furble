@@ -161,14 +161,35 @@ size_t CameraList::getSaveCount(void) {
   return index.size();
 }
 
-void CameraList::match(NimBLEAdvertisedDevice *pDevice) {
+size_t CameraList::size(void) {
+  return m_ConnectList.size();
+}
+
+void CameraList::clear(void) {
+  m_ConnectList.clear();
+}
+
+Furble::Camera *CameraList::get(size_t n) {
+  return m_ConnectList[n];
+}
+
+Furble::Camera *CameraList::back(void) {
+  return m_ConnectList.back();
+}
+
+bool CameraList::match(NimBLEAdvertisedDevice *pDevice) {
   if (Fujifilm::matches(pDevice)) {
     m_ConnectList.push_back(new Furble::Fujifilm(pDevice));
+    return true;
   } else if (CanonEOSM6::matches(pDevice)) {
     m_ConnectList.push_back(new Furble::CanonEOSM6(pDevice));
+    return true;
   } else if (CanonEOSRP::matches(pDevice)) {
     m_ConnectList.push_back(new Furble::CanonEOSRP(pDevice));
+    return true;
   }
+
+  return false;
 }
 
 }  // namespace Furble

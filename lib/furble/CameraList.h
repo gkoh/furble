@@ -31,9 +31,32 @@ class CameraList {
 
   /**
    * Add matching devices to the list.
+   *
+   * @return true if device matches
    */
-  static void match(NimBLEAdvertisedDevice *pDevice);
+  static bool match(NimBLEAdvertisedDevice *pDevice);
 
+  /**
+   * Number of connectable devices.
+   */
+  static size_t size(void);
+
+  /**
+   * Clear connectable devices.
+   */
+  static void clear(void);
+
+  /**
+   * Retrieve device by index.
+   */
+  static Furble::Camera *get(size_t n);
+
+  /**
+   * Retrieve last entry.
+   */
+  static Camera *back(void);
+
+ private:
   /**
    * List of connectable devices.
    */

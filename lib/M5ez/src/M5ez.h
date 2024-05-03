@@ -376,6 +376,7 @@ class ezMenu {
       void (*drawFunction)(ezMenu *callingMenu, int16_t x, int16_t y, int16_t w, int16_t h) = NULL);
   bool deleteItem(int16_t index);
   bool deleteItem(String name);
+  int16_t countItems(void);
   bool setCaption(int16_t index, String caption);
   bool setCaption(String name, String caption);
   void setSortFunction(bool (*sortFunction)(const char *s1, const char *s2));
@@ -388,7 +389,7 @@ class ezMenu {
   int16_t pick();
   String pickName(), pickCaption(), pickButton();
   void run();
-  int16_t runOnce();
+  int16_t runOnce(bool dynamic = false);
   void txtBig();
   void txtSmall();
   void txtFont(const GFXfont *font);
@@ -431,7 +432,7 @@ class ezMenu {
   void _drawCaption();
   const GFXfont *_font;
   int16_t _runImagesOnce();
-  int16_t _runTextOnce();
+  int16_t _runTextOnce(bool dynamic = false);
   void _fixOffset();
   void _drawItems();
   void _drawItem(int16_t n, String text, bool selected);
