@@ -82,7 +82,7 @@ class Camera {
   /**
    * Checks if the client is still connected.
    */
-  bool isConnected(void);
+  virtual bool isConnected(void);
 
   const char *getName(void);
 

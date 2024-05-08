@@ -9,7 +9,7 @@
 #include "interval.h"
 #include "settings.h"
 
-const uint32_t SCAN_DURATION = 60;
+const uint32_t SCAN_DURATION = (60 * 5);
 
 /**
  * Progress bar update function.
@@ -223,16 +223,22 @@ static void menu_connect(bool scan) {
 
   ezMenu submenu(header);
   if (scan) {
+    ez.backlight.inactivity(NEVER);
     Furble::Scan::start(SCAN_DURATION, updateConnectItems, &submenu);
+  } else {
+    updateConnectItems(&submenu);
   }
 
   submenu.buttons("OK#down");
-  submenu.addItem("Back");
+  if (submenu.getItemNum("Back") == 0) {
+    submenu.addItem("Back");
+  }
   submenu.downOnLast("first");
 
   submenu.runOnce(true);
   if (scan) {
     Furble::Scan::stop();
+    ez.backlight.inactivity(USER_SET);
   }
 
   int16_t i = submenu.pick();

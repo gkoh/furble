@@ -1,14 +1,15 @@
 #ifndef FURBLE_H
 #define FURBLE_H
 
-#include <NimBLEAdvertisedDevice.h>
-#include <NimBLEClient.h>
+//#include <NimBLEAdvertisedDevice.h>
+//#include <NimBLEClient.h>
 #include <Preferences.h>
 #include <esp_bt.h>
 #include <vector>
 
 #include "CameraList.h"
 #include "FurbleTypes.h"
+#include "HIDServer.h"
 
 #ifndef FURBLE_VERSION
 #define FURBLE_VERSION "unknown"
@@ -52,9 +53,12 @@ class Scan {
 
  private:
   class AdvertisedCallback;
+  class HIDServerCallback;
+
   static NimBLEScan *m_Scan;
   static scanResultCallback *m_ScanResultCallback;
   static void *m_ScanResultPrivateData;
+  static HIDServer *m_HIDServer;
 };
 
 }  // namespace Furble

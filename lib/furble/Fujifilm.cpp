@@ -325,7 +325,7 @@ bool Fujifilm::serialise(void *buffer, size_t bytes) {
     return false;
   }
   fujifilm_t *x = static_cast<fujifilm_t *>(buffer);
-  strncpy(x->name, m_Name.c_str(), 64);
+  strncpy(x->name, m_Name.c_str(), MAX_NAME);
   x->address = (uint64_t)m_Address;
   x->type = m_Address.getType();
   memcpy(x->token, m_Token, FUJIFILM_TOKEN_LEN);

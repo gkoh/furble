@@ -2,6 +2,7 @@
 #define CAMERALIST_H
 
 #include "Camera.h"
+#include "MobileDevice.h"
 
 namespace Furble {
 
@@ -35,6 +36,11 @@ class CameraList {
    * @return true if device matches
    */
   static bool match(NimBLEAdvertisedDevice *pDevice);
+
+  /**
+   * Add mobile device to the list.
+   */
+  static void add(NimBLEAddress address);
 
   /**
    * Number of connectable devices.
