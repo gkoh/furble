@@ -1,10 +1,6 @@
 #ifndef FURBLE_H
 #define FURBLE_H
 
-//#include <NimBLEAdvertisedDevice.h>
-//#include <NimBLEClient.h>
-#include <Preferences.h>
-#include <esp_bt.h>
 #include <vector>
 
 #include "CameraList.h"

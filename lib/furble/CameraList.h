@@ -2,7 +2,6 @@
 #define CAMERALIST_H
 
 #include "Camera.h"
-#include "MobileDevice.h"
 
 namespace Furble {
 

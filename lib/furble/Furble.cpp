@@ -1,6 +1,5 @@
 #include <NimBLEAdvertisedDevice.h>
 #include <NimBLEDevice.h>
-#include <nimble/nimble/host/services/gap/include/services/gap/ble_svc_gap.h>
 
 #include "Device.h"
 #include "Furble.h"
