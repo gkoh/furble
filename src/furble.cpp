@@ -236,6 +236,7 @@ static void menu_connect(bool scan) {
   submenu.downOnLast("first");
 
   submenu.runOnce(true);
+
   if (scan) {
     Furble::Scan::stop();
     ez.backlight.inactivity(USER_SET);

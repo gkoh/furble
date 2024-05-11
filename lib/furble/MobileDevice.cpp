@@ -7,7 +7,6 @@
 #include "Device.h"
 #include "MobileDevice.h"
 
-
 namespace Furble {
 
 MobileDevice::MobileDevice(const void *data, size_t len) {
@@ -28,16 +27,6 @@ MobileDevice::MobileDevice(NimBLEAddress address) {
 
 MobileDevice::~MobileDevice(void) {}
 
-void MobileDevice::onConnect(NimBLEAddress address) {
-  Serial.printf("onConnect from: %s", address.toString().c_str());
-  Serial.println();
-}
-
-void MobileDevice::onComplete(NimBLEAddress address) {
-  Serial.printf("onComplete from: %s", address.toString().c_str());
-  Serial.println();
-}
-
 /**
  * Determine if the advertised BLE device is a mobile device.
  */
@@ -54,18 +43,27 @@ bool MobileDevice::matches(NimBLEAdvertisedDevice *pDevice) {
  * All this logic is encapsulated in the HIDServer class.
  */
 bool MobileDevice::connect(progressFunc pFunc, void *pCtx) {
-  updateProgress(pFunc, pCtx, 0.0f);
-  if (!NimBLEDevice::isBonded(m_Address)) {
+  float progress = 0.0f;
+  updateProgress(pFunc, pCtx, progress);
+
+  m_HIDServer->start(60, nullptr, &m_Address);
+
+  unsigned int timeout = 60;
+
+  Serial.println("Waiting for connection.");
+  while (--timeout && !isConnected()) {
+    progress += 1.0f;
+    updateProgress(pFunc, pCtx, progress);
+    delay(1000);
+  };
+
+  if (timeout == 0) {
+    Serial.println("Connection timed out.");
     return false;
   }
 
-  m_HIDServer->start(60, this, &m_Address);
-
-  for (int i = 0; i < 100; i++) {
-    delay(50);
-  }
-
-  updateProgress(pFunc, pCtx, 100.0f);
+  progress = 100.0f;
+  updateProgress(pFunc, pCtx, progress);
   m_HIDServer->stop();
   return true;
 }
@@ -97,11 +95,10 @@ void MobileDevice::updateGeoData(gps_t &gps, timesync_t &timesync) {
 
 void MobileDevice::disconnect(void) {
   m_HIDServer->disconnect(m_Address);
-
 }
 
 bool MobileDevice::isConnected(void) {
-  return true;
+  return m_HIDServer->isConnected();
 }
 
 device_type_t MobileDevice::getDeviceType(void) {

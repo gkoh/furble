@@ -33,14 +33,13 @@ class Scan::AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
  * HID server callback.
  */
 class Scan::HIDServerCallback: public HIDServerCallbacks {
-  void onConnect(NimBLEAddress address) {
+  void onConnect(NimBLEAddress address) { return; }
+
+  void onComplete(NimBLEAddress address) {
     CameraList::add(address);
     if (m_ScanResultCallback != nullptr) {
       (m_ScanResultCallback)(m_ScanResultPrivateData);
     }
-  }
-
-  void onComplete(NimBLEAddress address) {
   }
 };
 
@@ -67,35 +66,6 @@ void Scan::start(const uint32_t scanDuration,
   m_ScanResultCallback = scanCallback;
   m_ScanResultPrivateData = scanPrivateData;
   m_Scan->start(scanDuration, scanEndCB, false);
-
-#if 0
-  do {
-    //NimBLEClient *pClient = NimBLEDevice::getClientByPeerAddress(addr);
-    if (pClient) {
-      Serial.println("Got client");
-    } else {
-      Serial.println("Client is null");
-      continue;
-    }
-    pClient->connect();
-    if (pClient->isConnected()) {
-      Serial.println("Client is connected");
-      NimBLERemoteService* pSvc = nullptr;
-      NimBLERemoteCharacteristic* pChr = nullptr;
-
-      pSvc = pClient->getService(NimBLEUUID((uint16_t)BLE_SVC_GAP_UUID16));
-      if (pSvc) {
-        pChr = pSvc->getCharacteristic(NimBLEUUID((uint16_t)BLE_SVC_GAP_CHR_UUID16_DEVICE_NAME));
-	if (pChr && pChr->canRead()) {
-          Serial.println(pChr->readValue().c_str());
-	}
-      }
-    } else {
-      Serial.println("Client not connected");
-    }
-    delay(10);
-  } while (true);
-#endif
 }
 
 void Scan::stop(void) {

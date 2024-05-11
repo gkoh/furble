@@ -10,7 +10,7 @@ namespace Furble {
  *
  * Supports the camera application on both iOS and Android devices.
  */
-class MobileDevice: public Camera, public HIDServerCallbacks {
+class MobileDevice: public Camera {
  public:
   MobileDevice(const void *data, size_t len);
   MobileDevice(NimBLEAddress address);
@@ -34,9 +34,6 @@ class MobileDevice: public Camera, public HIDServerCallbacks {
     uint64_t address;    /** BLE address. */
     uint8_t type;        /** Address type. */
   } mobile_device_t;
-
-  void onConnect(NimBLEAddress address);
-  void onComplete(NimBLEAddress address);
 
   device_type_t getDeviceType(void);
   size_t getSerialisedBytes(void);

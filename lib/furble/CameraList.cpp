@@ -150,8 +150,8 @@ void CameraList::load(void) {
         m_ConnectList.push_back(new CanonEOSRP(dbuffer, dbytes));
         break;
       case FURBLE_MOBILE_DEVICE:
-	m_ConnectList.push_back(new MobileDevice(dbuffer, dbytes));
-	break;
+        m_ConnectList.push_back(new MobileDevice(dbuffer, dbytes));
+        break;
     }
   }
   m_Prefs.end();

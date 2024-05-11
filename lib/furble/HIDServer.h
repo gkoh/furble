@@ -29,23 +29,28 @@ class HIDServer: public NimBLEServerCallbacks {
    *
    * @param[in] address If specified, start directed advertising.
    */
-  void start(unsigned int duration, HIDServerCallbacks *hidCallbacks, NimBLEAddress *address = nullptr);
+  void start(unsigned int duration,
+             HIDServerCallbacks *hidCallbacks,
+             NimBLEAddress *address = nullptr);
 
   void stop(void);
 
   NimBLECharacteristic *getInput(void);
   NimBLEConnInfo getConnInfo(NimBLEAddress &address);
   void disconnect(NimBLEAddress &address);
+  bool isConnected(void);
 
  private:
   HIDServer();
   ~HIDServer();
 
-  static HIDServer *hidServer; // singleton
+  static HIDServer *hidServer;  // singleton
 
   void onConnect(NimBLEServer *pServer, ble_gap_conn_desc *desc);
+  void onDisconnect(NimBLEServer *pServer, ble_gap_conn_desc *desc);
   void onAuthenticationComplete(ble_gap_conn_desc *desc);
 
+  bool m_Connected = false;
   NimBLEServer *m_Server = nullptr;
   NimBLEHIDDevice *m_HID = nullptr;
   NimBLECharacteristic *m_Input = nullptr;
