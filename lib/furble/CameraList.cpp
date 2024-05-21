@@ -4,6 +4,7 @@
 #include "CanonEOSM6.h"
 #include "CanonEOSRP.h"
 #include "Fujifilm.h"
+#include "MobileDevice.h"
 
 #include "CameraList.h"
 
@@ -83,14 +84,14 @@ void CameraList::save(Camera *pCamera) {
 
   size_t dbytes = pCamera->getSerialisedBytes();
   uint8_t dbuffer[dbytes] = {0};
-  pCamera->serialise(dbuffer, dbytes);
-
-  // Store the entry and the index
-  m_Prefs.putBytes(entry.name, dbuffer, dbytes);
-  Serial.println("Saved " + String(entry.name));
-  save_index(index);
-  Serial.print("Index entries: ");
-  Serial.println(index.size());
+  if (pCamera->serialise(dbuffer, dbytes)) {
+    // Store the entry and the index if serialisation succeeds
+    m_Prefs.putBytes(entry.name, dbuffer, dbytes);
+    Serial.println("Saved " + String(entry.name));
+    save_index(index);
+    Serial.print("Index entries: ");
+    Serial.println(index.size());
+  }
 
   m_Prefs.end();
 }
@@ -148,6 +149,9 @@ void CameraList::load(void) {
       case FURBLE_CANON_EOS_RP:
         m_ConnectList.push_back(new CanonEOSRP(dbuffer, dbytes));
         break;
+      case FURBLE_MOBILE_DEVICE:
+        m_ConnectList.push_back(new MobileDevice(dbuffer, dbytes));
+        break;
     }
   }
   m_Prefs.end();
@@ -161,14 +165,39 @@ size_t CameraList::getSaveCount(void) {
   return index.size();
 }
 
-void CameraList::match(NimBLEAdvertisedDevice *pDevice) {
+size_t CameraList::size(void) {
+  return m_ConnectList.size();
+}
+
+void CameraList::clear(void) {
+  m_ConnectList.clear();
+}
+
+Furble::Camera *CameraList::get(size_t n) {
+  return m_ConnectList[n];
+}
+
+Furble::Camera *CameraList::back(void) {
+  return m_ConnectList.back();
+}
+
+bool CameraList::match(NimBLEAdvertisedDevice *pDevice) {
   if (Fujifilm::matches(pDevice)) {
     m_ConnectList.push_back(new Furble::Fujifilm(pDevice));
+    return true;
   } else if (CanonEOSM6::matches(pDevice)) {
     m_ConnectList.push_back(new Furble::CanonEOSM6(pDevice));
+    return true;
   } else if (CanonEOSRP::matches(pDevice)) {
     m_ConnectList.push_back(new Furble::CanonEOSRP(pDevice));
+    return true;
   }
+
+  return false;
+}
+
+void CameraList::add(NimBLEAddress address) {
+  m_ConnectList.push_back(new Furble::MobileDevice(address));
 }
 
 }  // namespace Furble

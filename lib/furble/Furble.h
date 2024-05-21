@@ -1,20 +1,17 @@
 #ifndef FURBLE_H
 #define FURBLE_H
 
-#include <NimBLEAdvertisedDevice.h>
-#include <NimBLEClient.h>
-#include <Preferences.h>
-#include <esp_bt.h>
 #include <vector>
 
 #include "CameraList.h"
 #include "FurbleTypes.h"
+#include "HIDServer.h"
 
 #ifndef FURBLE_VERSION
 #define FURBLE_VERSION "unknown"
 #endif
 
-typedef void(scanResultCallback(std::vector<Furble::Camera *> &list));
+typedef void(scanResultCallback(void *private_data));
 
 namespace Furble {
 /**
@@ -25,14 +22,22 @@ namespace Furble {
 class Scan {
  public:
   /**
-   * Initialise the BLE scanner with a callback function when a matching result is encountered.
+   * Initialise the BLE scanner.
    */
-  static void init(esp_power_level_t power, scanResultCallback scanCallBack);
+  static void init(esp_power_level_t power);
 
   /**
-   * Start the scan for BLE advertisements.
+   * Start the scan for BLE advertisements with a callback function when a matching reseult is
+   * encountered.
    */
-  static void start(const uint32_t scanDuration);
+  static void start(const uint32_t scanDuration,
+                    scanResultCallback scanCallBack,
+                    void *scanResultPrivateData);
+
+  /**
+   * Stop the scan.
+   */
+  static void stop(void);
 
   /**
    * Clear the scan list.
@@ -44,8 +49,12 @@ class Scan {
 
  private:
   class AdvertisedCallback;
+  class HIDServerCallback;
+
   static NimBLEScan *m_Scan;
   static scanResultCallback *m_ScanResultCallback;
+  static void *m_ScanResultPrivateData;
+  static HIDServer *m_HIDServer;
 };
 
 }  // namespace Furble
