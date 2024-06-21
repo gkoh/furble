@@ -25,6 +25,7 @@ static bool furble_gps_has_fix = false;
 
 TinyGPSPlus furble_gps;
 bool furble_gps_enable = false;
+SpinValue furble_gps_interval;
 
 /**
  * GPS serial event service handler.
@@ -72,6 +73,17 @@ void furble_gps_update_geodata(Furble::Camera *camera) {
 }
 
 /**
+ * Event timer for updating geotag data.
+ */
+uint16_t furble_gps_update_service(void *private_data) {
+  Furble::Camera *camera = static_cast<Furble::Camera *>(private_data);
+
+  furble_gps_update_geodata(camera);
+
+  return sv2ms(&furble_gps_interval);
+}
+
+/**
  * Draw GPS enable/fix widget.
  */
 static void gps_draw_widget(uint16_t x, uint16_t y) {
@@ -113,6 +125,7 @@ static uint16_t current_service(void *private_data) {
 
 void furble_gps_init(void) {
   furble_gps_enable = settings_load_gps();
+  settings_load_gps_interval(&furble_gps_interval);
   Serial2.begin(GPS_BAUD, SERIAL_8N1, GPS_RX, GPS_TX);
 
   uint8_t width = 4 * M5.Lcd.textWidth("5") + ez.theme->header_hmargin * 2;

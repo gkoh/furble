@@ -65,7 +65,6 @@ class Fujifilm: public Camera {
 
   bool m_Configured = false;
 
-  bool m_GeoDataValid = false;
   gps_t m_GPS = {0};
   timesync_t m_TimeSync = {0};
 

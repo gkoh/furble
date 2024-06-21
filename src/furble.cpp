@@ -78,8 +78,6 @@ static void remote_control(FurbleCtx *fctx) {
   do {
     M5.update();
 
-    furble_gps_update_geodata(camera);
-
     if (fctx->reconnected) {
       show_shutter_control(shutter_lock, shutter_lock_start_ms);
       fctx->reconnected = false;
@@ -181,6 +179,7 @@ static void menu_remote(FurbleCtx *fctx) {
   submenu.downOnLast("first");
 
   ez.addEvent(disconnectDetect, fctx, 500);
+  ez.addEvent(furble_gps_update_service, fctx->camera, 1000);
 
   do {
     submenu.runOnce();
@@ -194,6 +193,7 @@ static void menu_remote(FurbleCtx *fctx) {
     }
   } while (submenu.pickName() != "Disconnect");
 
+  ez.removeEvent(furble_gps_update_service);
   ez.removeEvent(disconnectDetect);
 
   fctx->camera->disconnect();

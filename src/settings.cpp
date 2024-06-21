@@ -12,6 +12,7 @@
 
 const char *PREFS_TX_POWER = "txpower";
 const char *PREFS_GPS = "gps";
+const char *PREFS_GPS_INTERVAL = "gps_interval";
 const char *PREFS_INTERVAL = "interval";
 
 /**
@@ -128,7 +129,7 @@ static void show_gps_info(void) {
 /**
  * Read GPS enable setting.
  */
-bool settings_load_gps() {
+bool settings_load_gps(void) {
   Preferences prefs;
 
   prefs.begin(FURBLE_STR, true);
@@ -158,14 +159,53 @@ bool settings_gps_onoff(ezMenu *menu) {
 }
 
 /**
+ * Read GPS interval setting.
+ */
+void settings_load_gps_interval(SpinValue *sv) {
+  Preferences prefs;
+
+  prefs.begin(FURBLE_STR, true);
+  size_t len = prefs.getBytes(PREFS_GPS_INTERVAL, sv, sizeof(SpinValue));
+  if (len != sizeof(SpinValue)) {
+    // default values
+    sv->value = INTERVAL_DEFAULT_GPS;
+    sv->unit = INTERVAL_DEFAULT_GPS_UNIT;
+  }
+  prefs.end();
+}
+
+/**
+ * Save GPS interval setting.
+ */
+void settings_save_gps_interval(SpinValue *sv) {
+  Preferences prefs;
+
+  prefs.begin(FURBLE_STR, false);
+  prefs.putBytes(PREFS_GPS_INTERVAL, sv, sizeof(SpinValue));
+  prefs.end();
+}
+
+static bool settings_gps_interval(ezMenu *menu) {
+  spinner_modify_value("GPS Update Interval", true, &furble_gps_interval);
+  menu->setCaption("gpsinterval", "GPS Update Interval\t" + sv2str(&furble_gps_interval));
+  settings_save_gps_interval(&furble_gps_interval);
+
+  return true;
+}
+
+/**
  * GPS settings menu.
  */
 void settings_menu_gps(void) {
   ezMenu submenu(FURBLE_STR " - GPS settings");
 
+  settings_load_gps_interval(&furble_gps_interval);
+
   submenu.buttons("OK#down");
   submenu.addItem("onoff | GPS\t" + (String)(furble_gps_enable ? "ON" : "OFF"), NULL,
                   settings_gps_onoff);
+  submenu.addItem("gpsinterval | GPS Update Interval\t" + sv2str(&furble_gps_interval), NULL,
+                  settings_gps_interval);
   submenu.addItem("GPS Data", show_gps_info);
   submenu.downOnLast("first");
   submenu.addItem("Back");
