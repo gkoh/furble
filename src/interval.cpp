@@ -1,6 +1,7 @@
 #include <Furble.h>
 #include <M5ez.h>
 
+#include "furble_gps.h"
 #include "furble_ui.h"
 #include "interval.h"
 #include "settings.h"
@@ -80,6 +81,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
   do {
     now = millis();
     M5.update();
+    furble_gps_update_geodata(camera);
 
     if (fctx->reconnected) {
       fctx->reconnected = false;
