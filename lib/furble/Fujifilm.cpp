@@ -75,7 +75,7 @@ void Fujifilm::notify(BLERemoteCharacteristic *pChr, uint8_t *pData, size_t leng
       m_Configured = true;
     }
   } else if (pChr->getUUID() == FUJIFILM_GEOTAG_UPDATE) {
-    if ((length >= 2) && (pData[0] == 0x01) && (pData[1] == 0x00) && m_GeoDataValid) {
+    if ((length >= 2) && (pData[0] == 0x01) && (pData[1] == 0x00)) {
       m_GeoRequested = true;
     }
   } else {
@@ -272,11 +272,9 @@ void Fujifilm::sendGeoData(void) {
 void Fujifilm::updateGeoData(gps_t &gps, timesync_t &timesync) {
   m_GPS = gps;
   m_TimeSync = timesync;
-  m_GeoDataValid = true;
 
   if (m_GeoRequested) {
     sendGeoData();
-    m_GeoDataValid = false;
     m_GeoRequested = false;
   }
 }
