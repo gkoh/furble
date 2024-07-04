@@ -241,40 +241,37 @@ void Fujifilm::focusRelease(void) {
   shutterRelease();
 }
 
-void Fujifilm::sendGeoData(void) {
+void Fujifilm::sendGeoData(gps_t &gps, timesync_t &timesync) {
   NimBLERemoteService *pSvc = m_Client->getService(FUJIFILM_SVC_GEOTAG_UUID);
   NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(FUJIFILM_CHR_GEOTAG_UUID);
 
-  geotag_t geotag = {.latitude = (int32_t)(m_GPS.latitude * 10000000),
-                     .longitude = (int32_t)(m_GPS.longitude * 10000000),
-                     .altitude = (int32_t)m_GPS.altitude,
+  geotag_t geotag = {.latitude = (int32_t)(gps.latitude * 10000000),
+                     .longitude = (int32_t)(gps.longitude * 10000000),
+                     .altitude = (int32_t)gps.altitude,
                      .pad = {0},
                      .gps_time = {
-                         .year = (uint16_t)m_TimeSync.year,
-                         .day = (uint8_t)m_TimeSync.day,
-                         .month = (uint8_t)m_TimeSync.month,
-                         .hour = (uint8_t)m_TimeSync.hour,
-                         .minute = (uint8_t)m_TimeSync.minute,
-                         .second = (uint8_t)m_TimeSync.second,
+                         .year = (uint16_t)timesync.year,
+                         .day = (uint8_t)timesync.day,
+                         .month = (uint8_t)timesync.month,
+                         .hour = (uint8_t)timesync.hour,
+                         .minute = (uint8_t)timesync.minute,
+                         .second = (uint8_t)timesync.second,
                      }};
 
   if (pChr->canWrite()) {
     Serial.printf("Sending geotag data (%u bytes) to 0x%04x\r\n", sizeof(geotag),
                   pChr->getHandle());
-    Serial.printf("  lat: %f, %d\r\n", m_GPS.latitude, geotag.latitude);
-    Serial.printf("  lon: %f, %d\r\n", m_GPS.longitude, geotag.longitude);
-    Serial.printf("  alt: %f, %d\r\n", m_GPS.altitude, geotag.altitude);
+    Serial.printf("  lat: %f, %d\r\n", gps.latitude, geotag.latitude);
+    Serial.printf("  lon: %f, %d\r\n", gps.longitude, geotag.longitude);
+    Serial.printf("  alt: %f, %d\r\n", gps.altitude, geotag.altitude);
 
     pChr->writeValue((uint8_t *)&geotag, sizeof(geotag), true);
   }
 }
 
 void Fujifilm::updateGeoData(gps_t &gps, timesync_t &timesync) {
-  m_GPS = gps;
-  m_TimeSync = timesync;
-
   if (m_GeoRequested) {
-    sendGeoData();
+    sendGeoData(gps, timesync);
     m_GeoRequested = false;
   }
 }
