@@ -22,8 +22,8 @@ CanonEOS::CanonEOS(const void *data, size_t len) {
 CanonEOS::CanonEOS(NimBLEAdvertisedDevice *pDevice) {
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
-  Serial.println("Name = " + String(m_Name.c_str()));
-  Serial.println("Address = " + String(m_Address.toString().c_str()));
+  Serial.printf("Name = %s\r\n", m_Name.c_str());
+  Serial.printf("Address = %s\r\n", m_Address.toString().c_str());
   Device::getUUID128(&m_Uuid);
 }
 

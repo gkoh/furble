@@ -41,12 +41,12 @@ static std::vector<index_entry_t> load_index(void) {
   if (bytes > 0 && (bytes % sizeof(index_entry_t) == 0)) {
     uint8_t buffer[bytes] = {0};
     size_t count = bytes / sizeof(index_entry_t);
-    Serial.println("Index entries: " + String(count));
+    Serial.printf("Index entries: %d\r\n", count);
     m_Prefs.getBytes(FURBLE_PREF_INDEX, buffer, bytes);
     index_entry_t *entry = (index_entry_t *)buffer;
 
     for (int i = 0; i < count; i++) {
-      Serial.println("Loading index entry: " + String(entry[i].name));
+      Serial.printf("Loading index entry: %s\r\n", entry[i].name);
       index.push_back(entry[i]);
     }
   }
@@ -57,7 +57,7 @@ static std::vector<index_entry_t> load_index(void) {
 static void add_index(std::vector<index_entry_t> &index, index_entry_t &entry) {
   bool exists = false;
   for (size_t i = 0; i < index.size(); i++) {
-    Serial.println("[" + String(i) + "] " + String(index[i].name) + " : " + String(entry.name));
+    Serial.printf("[%d] %s : %s\r\n", i, index[i].name, entry.name);
     if (strcmp(index[i].name, entry.name) == 0) {
       Serial.println("Overwriting existing entry");
       index[i] = entry;
@@ -87,10 +87,9 @@ void CameraList::save(Camera *pCamera) {
   if (pCamera->serialise(dbuffer, dbytes)) {
     // Store the entry and the index if serialisation succeeds
     m_Prefs.putBytes(entry.name, dbuffer, dbytes);
-    Serial.println("Saved " + String(entry.name));
+    Serial.printf("Saved %s\r\n", entry.name);
     save_index(index);
-    Serial.print("Index entries: ");
-    Serial.println(index.size());
+    Serial.printf("Index entries: %d\r\n", index.size());
   }
 
   m_Prefs.end();
