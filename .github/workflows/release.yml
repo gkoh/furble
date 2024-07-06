@@ -127,3 +127,4 @@ jobs:
           projectName: furble-web-installer
           directory: deploy
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.event.release.prerelease && github.ref_name || 'main' }}
