@@ -57,8 +57,7 @@ static const uint8_t FUJIFILM_SHUTTER_FOCUS[2] = {0x03, 0x00};
 namespace Furble {
 
 static void print_token(const uint8_t *token) {
-  Serial.println("Token = " + String(token[0], HEX) + String(token[1], HEX) + String(token[2], HEX)
-                 + String(token[3], HEX));
+  Serial.printf("Token = %02x%02x%02x%02x\r\n", token[0], token[1], token[2], token[3]);
 }
 
 void Fujifilm::notify(BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
@@ -101,8 +100,8 @@ Fujifilm::Fujifilm(NimBLEAdvertisedDevice *pDevice) {
   m_Token[1] = data[4];
   m_Token[2] = data[5];
   m_Token[3] = data[6];
-  Serial.println("Name = " + String(m_Name.c_str()));
-  Serial.println("Address = " + String(m_Address.toString().c_str()));
+  Serial.printf("Name = %s\r\n", m_Name.c_str());
+  Serial.printf("Address = %s\r\n", m_Address.toString().c_str());
   print_token(m_Token);
 }
 
@@ -181,11 +180,21 @@ bool Fujifilm::connect(progressFunc pFunc, void *pCtx) {
   pSvc = m_Client->getService(FUJIFILM_SVC_CONF_UUID);
   // indications
   pSvc->getCharacteristic(FUJIFILM_CHR_IND1_UUID)
-      ->subscribe(false, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
+      ->subscribe(
+          false,
+          [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
+            this->notify(pChr, pData, length, isNotify);
+          },
+          true);
   updateProgress(pFunc, pCtx, 50.0f);
 
   pSvc->getCharacteristic(FUJIFILM_CHR_IND2_UUID)
-      ->subscribe(false, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
+      ->subscribe(
+          false,
+          [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
+            this->notify(pChr, pData, length, isNotify);
+          },
+          true);
 
   // wait for up to 5000ms callback
   for (unsigned int i = 0; i < 5000; i += 100) {
@@ -199,16 +208,30 @@ bool Fujifilm::connect(progressFunc pFunc, void *pCtx) {
   updateProgress(pFunc, pCtx, 60.0f);
   // notifications
   pSvc->getCharacteristic(FUJIFILM_CHR_NOT1_UUID)
-      ->subscribe(true, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
+      ->subscribe(
+          true,
+          [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
+            this->notify(pChr, pData, length, isNotify);
+          },
+          true);
 
   updateProgress(pFunc, pCtx, 70.0f);
   pSvc->getCharacteristic(FUJIFILM_CHR_NOT2_UUID)
-      ->subscribe(true, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
+      ->subscribe(
+          true,
+          [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
+            this->notify(pChr, pData, length, isNotify);
+          },
+          true);
 
   updateProgress(pFunc, pCtx, 80.0f);
   pSvc->getCharacteristic(FUJIFILM_CHR_IND3_UUID)
-      ->subscribe(false, std::bind(&Fujifilm::notify, this, _1, _2, _3, _4), true);
-
+      ->subscribe(
+          false,
+          [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
+            this->notify(pChr, pData, length, isNotify);
+          },
+          true);
   Serial.println("Configured");
 
   updateProgress(pFunc, pCtx, 100.0f);
@@ -284,12 +307,9 @@ void Fujifilm::updateGeoData(gps_t &gps, timesync_t &timesync) {
 }
 
 void Fujifilm::print(void) {
-  Serial.print("Name: ");
-  Serial.println(m_Name.c_str());
-  Serial.print("Address: ");
-  Serial.println(m_Address.toString().c_str());
-  Serial.print("Type: ");
-  Serial.println(m_Address.getType());
+  Serial.printf("Name: %s\r\n", m_Name.c_str());
+  Serial.printf("Address: %s\r\n", m_Address.toString().c_str());
+  Serial.printf("Type: %d\r\n", m_Address.getType());
 }
 
 void Fujifilm::disconnect(void) {
