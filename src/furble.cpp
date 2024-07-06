@@ -76,7 +76,7 @@ static void remote_control(FurbleCtx *fctx) {
   show_shutter_control(false, 0);
 
   do {
-    M5.update();
+    ez.yield();
 
     furble_gps_update_geodata(camera);
 
@@ -137,9 +137,6 @@ static void remote_control(FurbleCtx *fctx) {
         continue;
       }
     }
-
-    ez.yield();
-    delay(50);
   } while (camera->isConnected());
 }
 
