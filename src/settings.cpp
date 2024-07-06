@@ -96,6 +96,10 @@ static void show_gps_info(void) {
   bool first = true;
 
   do {
+    if (M5.BtnB.wasReleased()) {
+      break;
+    }
+
     bool updated = furble_gps.location.isUpdated() || furble_gps.date.isUpdated()
                    || furble_gps.time.isUpdated();
 
@@ -114,14 +118,7 @@ static void show_gps_info(void) {
       ez.msgBox("GPS Data", buffer, "Back", false);
     }
 
-    M5.update();
-
-    if (M5.BtnB.wasPressed()) {
-      break;
-    }
-
     ez.yield();
-    delay(100);
   } while (true);
 }
 
