@@ -126,4 +126,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy deploy --project-name=furble-web-installer --event=${{ github.event.release.prerelease == true }} --branch=${{ !github.event.release.prerelease && 'main' || 'HEAD' }}
+          command: pages deploy deploy --project-name=furble-web-installer --event=${{ github.event.release.prerelease == 'true' }} --branch=${{ !github.event.release.prerelease && 'main' || 'HEAD' }}
