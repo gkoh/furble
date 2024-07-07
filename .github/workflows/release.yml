@@ -120,11 +120,11 @@ jobs:
           mv furble-*.bin deploy/firmware
 
       - name: Publish
-        uses: cloudflare/pages-action@1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: furble-web-installer
-          directory: deploy
+          workingDirectory: deploy
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
+          branch: ${{ github.event.release.prerelease && github.ref_name || 'main' }}
