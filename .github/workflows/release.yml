@@ -75,6 +75,8 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    name: Generate release artifacts
+
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -124,4 +126,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy deploy --project-name=furble-web-installer
+          command: pages deploy deploy --project-name=furble-web-installer --branch=${{ github.event.release.prerelease && github.ref_name || 'main' }}
