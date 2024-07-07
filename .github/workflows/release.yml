@@ -1,9 +1,8 @@
 name: Release furble
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
 
 env:
   FURBLE_VERSION: ${{ github.ref_name }}+${{ github.run_attempt }}
@@ -75,6 +74,8 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    name: Generate release artifacts
+
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -87,16 +88,15 @@ jobs:
           sha256sum furble-*.bin > sha256sum.txt
 
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
           files: |
             furble-*.bin
             manifest_*.json
             sha256sum.txt
 
   deploy:
-    needs: build
+    needs: release
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -120,11 +120,8 @@ jobs:
           mv furble-*.bin deploy/firmware
 
       - name: Publish
-        uses: cloudflare/pages-action@1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: furble-web-installer
-          directory: deploy
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
+          command: pages deploy deploy --project-name=furble-web-installer --branch=${{ !github.event.release.prerelease && 'main' || 'HEAD' }}
