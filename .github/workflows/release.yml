@@ -124,7 +124,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: furble-web-installer
-          workingDirectory: deploy
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.event.release.prerelease && github.ref_name || 'main' }}
+          command: pages deploy deploy --project-name=furble-web-installer
