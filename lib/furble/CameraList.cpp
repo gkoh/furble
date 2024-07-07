@@ -195,8 +195,8 @@ bool CameraList::match(NimBLEAdvertisedDevice *pDevice) {
   return false;
 }
 
-void CameraList::add(NimBLEAddress address) {
-  m_ConnectList.push_back(new Furble::MobileDevice(address));
+void CameraList::add(NimBLEAddress address, const std::string &name) {
+  m_ConnectList.push_back(new Furble::MobileDevice(address, name));
 }
 
 }  // namespace Furble

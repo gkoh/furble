@@ -39,6 +39,7 @@ HIDServer::HIDServer() {
   m_Server = NimBLEDevice::createServer();
   m_Server->setCallbacks(this);
   m_Server->advertiseOnDisconnect(false);
+  m_Server->getPeerNameOnConnect(true);
 
   m_HID = new NimBLEHIDDevice(m_Server);
   m_Input = m_HID->inputReport(1);
@@ -84,21 +85,19 @@ void HIDServer::stop(void) {
   m_Server->stopAdvertising();
 }
 
-void HIDServer::onConnect(NimBLEServer *pServer, ble_gap_conn_desc *desc) {
-  NimBLEAddress address = NimBLEAddress(desc->peer_ota_addr);
+void HIDServer::onConnect(NimBLEServer *pServer, NimBLEConnInfo &connInfo, std::string &name) {
   if (m_hidCallbacks != nullptr) {
-    m_hidCallbacks->onConnect(address);
+    m_hidCallbacks->onConnect(connInfo.getAddress(), name);
   }
 }
 
-void HIDServer::onDisconnect(NimBLEServer *pServer, ble_gap_conn_desc *desc) {
+void HIDServer::onDisconnect(NimBLEServer *pServer, NimBLEConnInfo &connInfo, int reason) {
   m_Connected = false;
 }
 
-void HIDServer::onAuthenticationComplete(ble_gap_conn_desc *desc) {
-  NimBLEAddress address = NimBLEAddress(desc->peer_ota_addr);
+void HIDServer::onAuthenticationComplete(const NimBLEConnInfo &connInfo, const std::string &name) {
   if (m_hidCallbacks != nullptr) {
-    m_hidCallbacks->onComplete(address);
+    m_hidCallbacks->onComplete(connInfo.getAddress(), name);
   }
   m_Connected = true;
 }

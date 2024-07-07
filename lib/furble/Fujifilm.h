@@ -22,13 +22,13 @@ class Fujifilm: public Camera {
    */
   static bool matches(NimBLEAdvertisedDevice *pDevice);
 
-  bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr);
-  void shutterPress(void);
-  void shutterRelease(void);
-  void focusPress(void);
-  void focusRelease(void);
-  void updateGeoData(gps_t &gps, timesync_t &timesync);
-  void disconnect(void);
+  bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr) override;
+  void shutterPress(void) override;
+  void shutterRelease(void) override;
+  void focusPress(void) override;
+  void focusRelease(void) override;
+  void updateGeoData(gps_t &gps, timesync_t &timesync) override;
+  void disconnect(void) override;
   void print(void);
 
  private:
@@ -55,9 +55,9 @@ class Fujifilm: public Camera {
     fujifilm_time_t gps_time;
   } geotag_t;
 
-  device_type_t getDeviceType(void);
-  size_t getSerialisedBytes(void);
-  bool serialise(void *buffer, size_t bytes);
+  device_type_t getDeviceType(void) override;
+  size_t getSerialisedBytes(void) override;
+  bool serialise(void *buffer, size_t bytes) override;
   void notify(NimBLERemoteCharacteristic *, uint8_t *, size_t, bool);
   void sendGeoData(gps_t &gps, timesync_t &timesync);
 

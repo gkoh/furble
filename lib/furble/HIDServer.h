@@ -13,8 +13,8 @@ class HIDServer;
  */
 class HIDServerCallbacks {
  public:
-  virtual void onConnect(NimBLEAddress address);
-  virtual void onComplete(NimBLEAddress address);
+  virtual void onConnect(NimBLEAddress address, std::string &name);
+  virtual void onComplete(NimBLEAddress address, const std::string &name);
 };
 
 /**
@@ -46,9 +46,9 @@ class HIDServer: public NimBLEServerCallbacks {
 
   static HIDServer *hidServer;  // singleton
 
-  void onConnect(NimBLEServer *pServer, ble_gap_conn_desc *desc);
-  void onDisconnect(NimBLEServer *pServer, ble_gap_conn_desc *desc);
-  void onAuthenticationComplete(ble_gap_conn_desc *desc);
+  void onConnect(NimBLEServer *pServer, NimBLEConnInfo &connInfo, std::string &name) override;
+  void onDisconnect(NimBLEServer *pServer, NimBLEConnInfo &connInfo, int reason) override;
+  void onAuthenticationComplete(const NimBLEConnInfo &connInfo, const std::string &name) override;
 
   bool m_Connected = false;
   NimBLEServer *m_Server = nullptr;

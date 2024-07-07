@@ -19,8 +19,8 @@ MobileDevice::MobileDevice(const void *data, size_t len) {
   m_HIDServer = HIDServer::getInstance();
 }
 
-MobileDevice::MobileDevice(NimBLEAddress address) {
-  m_Name = address.toString();
+MobileDevice::MobileDevice(NimBLEAddress address, const std::string &name) {
+  m_Name = name;
   m_Address = address;
   m_HIDServer = HIDServer::getInstance();
 }

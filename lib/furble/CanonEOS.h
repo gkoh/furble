@@ -56,15 +56,15 @@ class CanonEOS: public Camera {
                     uint8_t *data,
                     size_t length);
 
-  bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr);
-  void shutterPress(void);
-  void shutterRelease(void);
-  void focusPress(void);
-  void focusRelease(void);
-  void updateGeoData(gps_t &gps, timesync_t &timesync);
-  void disconnect(void);
-  size_t getSerialisedBytes(void);
-  bool serialise(void *buffer, size_t bytes);
+  bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr) override;
+  void shutterPress(void) override;
+  void shutterRelease(void) override;
+  void focusPress(void) override;
+  void focusRelease(void) override;
+  void updateGeoData(gps_t &gps, timesync_t &timesync) override;
+  void disconnect(void) override;
+  size_t getSerialisedBytes(void) override;
+  bool serialise(void *buffer, size_t bytes) override;
 
   Device::uuid128_t m_Uuid;
 

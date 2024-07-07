@@ -11,14 +11,10 @@ scanResultCallback *Scan::m_ScanResultCallback = nullptr;
 void *Scan::m_ScanResultPrivateData = nullptr;
 HIDServer *Scan::m_HIDServer = nullptr;
 
-void scanEndCB(NimBLEScanResults results) {
-  Serial.println("Scan ended");
-}
-
 /**
  * BLE Advertisement callback.
  */
-class Scan::AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
+class Scan::Callback: public NimBLEScanCallbacks {
   void onResult(NimBLEAdvertisedDevice *pDevice) {
     if (CameraList::match(pDevice)) {
       if (m_ScanResultCallback != nullptr) {
@@ -32,10 +28,10 @@ class Scan::AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
  * HID server callback.
  */
 class Scan::HIDServerCallback: public HIDServerCallbacks {
-  void onConnect(NimBLEAddress address) { return; }
+  void onConnect(NimBLEAddress address, std::string &name) { return; }
 
-  void onComplete(NimBLEAddress address) {
-    CameraList::add(address);
+  void onComplete(NimBLEAddress address, const std::string &name) {
+    CameraList::add(address, name);
     if (m_ScanResultCallback != nullptr) {
       (m_ScanResultCallback)(m_ScanResultPrivateData);
     }
@@ -51,7 +47,7 @@ void Scan::init(esp_power_level_t power) {
   m_HIDServer = HIDServer::getInstance();
 
   Scan::m_Scan = NimBLEDevice::getScan();
-  m_Scan->setAdvertisedDeviceCallbacks(new AdvertisedCallback());
+  m_Scan->setScanCallbacks(new Callback());
   m_Scan->setActiveScan(true);
   m_Scan->setInterval(6553);
   m_Scan->setWindow(6553);
@@ -64,7 +60,7 @@ void Scan::start(const uint32_t scanDuration,
 
   m_ScanResultCallback = scanCallback;
   m_ScanResultPrivateData = scanPrivateData;
-  m_Scan->start(scanDuration, scanEndCB, false);
+  m_Scan->start(scanDuration, false);
 }
 
 void Scan::stop(void) {
