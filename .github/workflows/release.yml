@@ -96,7 +96,7 @@ jobs:
             sha256sum.txt
 
   deploy:
-    needs: build
+    needs: release
     runs-on: ubuntu-latest
     permissions:
       contents: read
