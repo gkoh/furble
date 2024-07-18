@@ -59,15 +59,11 @@ class Fujifilm: public Camera {
   size_t getSerialisedBytes(void);
   bool serialise(void *buffer, size_t bytes);
   void notify(NimBLERemoteCharacteristic *, uint8_t *, size_t, bool);
-  void sendGeoData();
+  void sendGeoData(gps_t &gps, timesync_t &timesync);
 
   uint8_t m_Token[FUJIFILM_TOKEN_LEN] = {0};
 
   bool m_Configured = false;
-
-  bool m_GeoDataValid = false;
-  gps_t m_GPS = {0};
-  timesync_t m_TimeSync = {0};
 
   volatile bool m_GeoRequested = false;
 };

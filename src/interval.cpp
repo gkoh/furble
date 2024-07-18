@@ -1,6 +1,7 @@
 #include <Furble.h>
 #include <M5ez.h>
 
+#include "furble_gps.h"
 #include "furble_ui.h"
 #include "interval.h"
 #include "settings.h"
@@ -78,8 +79,9 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
   ez.backlight.inactivity(NEVER);
 
   do {
+    ez.yield();
+    furble_gps_update_geodata(camera);
     now = millis();
-    M5.update();
 
     if (fctx->reconnected) {
       fctx->reconnected = false;
@@ -130,9 +132,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
       active = false;
     }
 
-    ez.yield();
     display_interval_msg(state, icount, &interval->count, now, next);
-    delay(10);
   } while (active && camera->isConnected());
   ez.backlight.inactivity(USER_SET);
 }
