@@ -29,13 +29,24 @@ The following devices have actually been tested and confirmed to work:
 
 ## What Works
 
+Currently supported features in `furble`:
 - scanning for supported cameras
 - initial pairing
 - saving pairing data
 - connecting to previously paired camera
 - shutter release
-- focus (Fujifilm)
-- GPS location tagging (Fujifilm)
+- focus
+- GPS location tagging
+- intervalometer
+
+### Table of Features
+
+| &nbsp; | Fujifilm X & GFX | Canon EOS M6 | Canon EOS RP | Android & iOS |
+| --- | :---: | :---: | :---: | :---: |
+| Scanning & Pairing | ✔️ | ✔️ | ✔️ | ✔️ |
+| Shutter Release | ✔️ | ✔️ | ✔️ | ✔️ |
+| Focus | ✔️ (see [#99](https://github.com/gkoh/furble/discussions/99)) | :x: | :x: (see [#29](https://github.com/gkoh/furble/issues/29)) | :x: |
+| GPS location tagging | ✔️ | :x: | :x: | :x: |
 
 ## Installation
 
