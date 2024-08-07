@@ -2,8 +2,11 @@
 
 ![PlatformIO CI](https://github.com/gkoh/furble/workflows/PlatformIO%20CI/badge.svg)
 
-A wireless remote shutter release originally targeted at Fujifilm mirrorless
+A Bluetooth wireless remote shutter release originally targeted at Fujifilm mirrorless
 cameras.
+
+![furble - M5StickC-Plus2](https://github.com/user-attachments/assets/e0eebd87-3ac0-4a8b-871a-014eb8c71395)
+
 
 The remote uses the camera's native Bluetooth Low Energy interface so additional
 adapters are not required.
