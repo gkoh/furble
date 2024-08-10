@@ -907,7 +907,7 @@ uint16_t ezBacklight::loop(void *private_data) {
   if (!_backlight_off && _inactivity) {
     if (millis() > _last_activity + 30000 * _inactivity) {
       _backlight_off = true;
-      M5.Display.setBrightness(64);
+      M5.Display.setBrightness(0);
       changeCpuPower(true);
       while (true) {
         if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked())
