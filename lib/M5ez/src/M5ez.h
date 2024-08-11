@@ -509,6 +509,7 @@ class ezBacklight {
   static uint8_t _brightness;
   static uint8_t _inactivity;
   static uint32_t _last_activity;
+  static uint8_t _MinimumBrightness;
   static bool _backlight_off;
   //
 };

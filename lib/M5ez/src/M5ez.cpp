@@ -793,6 +793,7 @@ void ezSettings::defaults() {
 uint8_t ezBacklight::_brightness;
 uint8_t ezBacklight::_inactivity;
 uint32_t ezBacklight::_last_activity;
+uint8_t ezBacklight::_MinimumBrightness;
 bool ezBacklight::_backlight_off = false;
 
 void ezBacklight::begin() {
@@ -801,7 +802,19 @@ void ezBacklight::begin() {
   Preferences prefs;
   prefs.begin("M5ez", true);  // read-only
   _brightness = prefs.getUChar("brightness", 128);
-  if (_brightness < 48) {
+  switch (M5.getBoard()) {
+    case m5::board_t::board_M5StickCPlus2:
+    case m5::board_t::board_M5StackCore2:
+      _MinimumBrightness = 16;
+      break;
+    case m5::board_t::board_M5StickCPlus:
+    case m5::board_t::board_M5StickC:
+      _MinimumBrightness = 48;
+      break;
+    default:
+      _MinimumBrightness = 64;
+  }
+  if (_brightness < _MinimumBrightness) {
     _brightness = 100;
   }
   _inactivity = prefs.getUChar("inactivity", 1);
@@ -826,10 +839,10 @@ void ezBacklight::menu() {
         while (true) {
           String b = ez.buttons.poll();
           if (b == "Adjust") {
-            if (_brightness >= 48 && _brightness < 248)
-              _brightness += 20;
+            if (_brightness >= _MinimumBrightness && _brightness < (255 - _MinimumBrightness))
+              _brightness += (255 - _MinimumBrightness) / 8;
             else
-              _brightness = 48;
+              _brightness = _MinimumBrightness + (255 - _MinimumBrightness) / 8;
           }
           float p = float(_brightness) / 2.48;
           bl.value(p);
@@ -907,7 +920,7 @@ uint16_t ezBacklight::loop(void *private_data) {
   if (!_backlight_off && _inactivity) {
     if (millis() > _last_activity + 30000 * _inactivity) {
       _backlight_off = true;
-      M5.Display.setBrightness(64);
+      M5.Display.setBrightness(_MinimumBrightness);
       changeCpuPower(true);
       while (true) {
         if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked())
