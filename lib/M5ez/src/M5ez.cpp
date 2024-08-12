@@ -840,11 +840,11 @@ void ezBacklight::menu() {
           String b = ez.buttons.poll();
           if (b == "Adjust") {
             if (_brightness >= _MinimumBrightness && _brightness < (255 - _MinimumBrightness))
-              _brightness += (255 - _MinimumBrightness) / 8;
+              _brightness += (255 - _MinimumBrightness) / 7;
             else
-              _brightness = _MinimumBrightness + (255 - _MinimumBrightness) / 8;
+              _brightness = _MinimumBrightness;
           }
-          float p = float(_brightness) / 2.48;
+          float p = float(_brightness - _MinimumBrightness) / (255 - _MinimumBrightness) * 100;
           bl.value(p);
           M5.Display.setBrightness(_brightness);
           if (b == "Back")
