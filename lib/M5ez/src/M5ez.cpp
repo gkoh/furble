@@ -834,7 +834,8 @@ void ezBacklight::menu() {
   blmenu.addItem("Inactivity timeout");
   blmenu.addItem("Back");
   blmenu.downOnLast("first");
-  _Step = (_brightness - _MinimumBrightness) * (_MaxSteps) / (256 - _MinimumBrightness); // Calculate step from brightness
+  _Step = (_brightness - _MinimumBrightness) * _MaxSteps
+          / (256 - _MinimumBrightness);  // Calculate step from brightness
   while (true) {
     switch (blmenu.runOnce()) {
       case 1: {
@@ -842,13 +843,11 @@ void ezBacklight::menu() {
         while (true) {
           String b = ez.buttons.poll();
           if (b == "Adjust") {
-            if (_brightness >= _MinimumBrightness && _Step < _MaxSteps - 1)
-            {
+            if (_brightness >= _MinimumBrightness && _Step < _MaxSteps - 1) {
               _Step++;
-              _brightness = _MinimumBrightness + (_Step * (255 - _MinimumBrightness) / (_MaxSteps - 1));
-            }
-            else
-            {
+              _brightness =
+                  _MinimumBrightness + (_Step * (255 - _MinimumBrightness) / (_MaxSteps - 1));
+            } else {
               _Step = 0;
               _brightness = _MinimumBrightness;
             }
