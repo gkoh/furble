@@ -794,6 +794,8 @@ uint8_t ezBacklight::_brightness;
 uint8_t ezBacklight::_inactivity;
 uint32_t ezBacklight::_last_activity;
 uint8_t ezBacklight::_MinimumBrightness;
+uint8_t ezBacklight::_Step = 0;
+uint8_t ezBacklight::_MaxSteps = 8;
 bool ezBacklight::_backlight_off = false;
 
 void ezBacklight::begin() {
@@ -832,6 +834,7 @@ void ezBacklight::menu() {
   blmenu.addItem("Inactivity timeout");
   blmenu.addItem("Back");
   blmenu.downOnLast("first");
+  _Step = (_brightness - _MinimumBrightness) * (_MaxSteps) / (256 - _MinimumBrightness); // Calculate step from brightness
   while (true) {
     switch (blmenu.runOnce()) {
       case 1: {
@@ -839,12 +842,18 @@ void ezBacklight::menu() {
         while (true) {
           String b = ez.buttons.poll();
           if (b == "Adjust") {
-            if (_brightness >= _MinimumBrightness && _brightness < (255 - _MinimumBrightness))
-              _brightness += (255 - _MinimumBrightness) / 7;
+            if (_brightness >= _MinimumBrightness && _Step < _MaxSteps - 1)
+            {
+              _Step++;
+              _brightness = _MinimumBrightness + (_Step * (255 - _MinimumBrightness) / (_MaxSteps - 1));
+            }
             else
+            {
+              _Step = 0;
               _brightness = _MinimumBrightness;
+            }
           }
-          float p = float(_brightness - _MinimumBrightness) / (255 - _MinimumBrightness) * 100;
+          float p = ((float)_Step / (_MaxSteps - 1)) * 100.0f;
           bl.value(p);
           M5.Display.setBrightness(_brightness);
           if (b == "Back")
