@@ -207,6 +207,12 @@ the following libraries:
   the M5StickC boots quickly)
 - improve the device matching and connection abstractions
   - especially if more cameras get supported
+- Support more camera makes and models
+   - Complete support for newer Canon EOS (eg. RP)
+   - Get access to and support the following:
+     - Sony
+     - Nikon
+     - Others?
 
 # Links
 
