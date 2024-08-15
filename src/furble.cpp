@@ -78,8 +78,6 @@ static void remote_control(FurbleCtx *fctx) {
   do {
     ez.yield();
 
-    furble_gps_update_geodata(camera);
-
     if (fctx->reconnected) {
       show_shutter_control(shutter_lock, shutter_lock_start_ms);
       fctx->reconnected = false;
@@ -140,12 +138,19 @@ static void remote_control(FurbleCtx *fctx) {
   } while (camera->isConnected());
 }
 
-uint16_t disconnectDetect(void *private_data) {
+/**
+ * Refresh the camera connection status, this includes:
+ * * disconnect detection
+ * * geotag updates
+ */
+static uint16_t statusRefresh(void *private_data) {
   FurbleCtx *fctx = static_cast<FurbleCtx *>(private_data);
   Furble::Camera *camera = fctx->camera;
 
-  if (camera->isConnected())
+  if (camera->isConnected()) {
+    furble_gps_update_geodata(camera);
     return 500;
+  }
 
   String buttons = ez.buttons.get();
   String header = ez.header.title();
@@ -177,7 +182,7 @@ static void menu_remote(FurbleCtx *fctx) {
   submenu.addItem("Disconnect");
   submenu.downOnLast("first");
 
-  ez.addEvent(disconnectDetect, fctx, 500);
+  ez.addEvent(statusRefresh, fctx, 500);
 
   do {
     submenu.runOnce();
@@ -191,7 +196,7 @@ static void menu_remote(FurbleCtx *fctx) {
     }
   } while (submenu.pickName() != "Disconnect");
 
-  ez.removeEvent(disconnectDetect);
+  ez.removeEvent(statusRefresh);
 
   fctx->camera->disconnect();
   ez.backlight.inactivity(USER_SET);
@@ -244,8 +249,6 @@ static void menu_connect(bool scan) {
     return;
 
   FurbleCtx fctx = {Furble::CameraList::get(i - 1), false};
-
-  furble_gps_update_geodata(fctx.camera);
 
   ezProgressBar progress_bar(FURBLE_STR, "Connecting ...", "");
   if (fctx.camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
