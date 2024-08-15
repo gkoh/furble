@@ -29,6 +29,9 @@ The following devices have actually been tested and confirmed to work:
 - Canon
    - Canon EOS M6 ([@tardisx](https://github.com/tardisx))
    - Canon EOS RP ([@wolcano](https://github.com/wolcano))
+- Mobile Devices (beta)
+   - Android
+   - iOS
 
 ## What Works
 
@@ -90,6 +93,16 @@ Upon subsequent use it should be enough to hit `Connect`, selecting the
 previously paired device and leads to the remote menu.
 
 From the remote menu you may choose to disconnect or control the shutter.
+
+### Mobile Devices
+
+Android and iOS devices are supported. `furble` connects as a Bluetooth HID keyboard and sends the _Volume Up_ key stroke to trigger the shutter.
+Connection to mobile devices is a little iffy:
+- hit `Scan`
+- on the mobile device:
+   - pair with `furble`
+- on `furble` the mobile device bluetooth MAC address should appear as a connectable target
+   - fixing the target name is tracked in [#100](https://github.com/gkoh/furble/issues/100).
 
 ### GPS Location Tagging
 
