@@ -5,6 +5,8 @@
 namespace Furble {
 
 bool Camera::connect(esp_power_level_t power, progressFunc pFunc, void *pCtx) {
+  // try extending range by adjusting connection parameters
+  m_Client->updateConnParams(m_MinInterval, m_MaxInterval, m_Latency, m_Timeout);
   bool connected = this->connect(pFunc, pCtx);
   if (connected) {
     // Set BLE transmit power after connection is established.
