@@ -106,6 +106,12 @@ class Camera {
   void updateProgress(progressFunc pFunc, void *ctx, float value);
 
  private:
+  const uint16_t m_MinInterval = BLE_GAP_INITIAL_CONN_ITVL_MIN;
+  const uint16_t m_MaxInterval = BLE_GAP_INITIAL_CONN_ITVL_MAX;
+  // allow a packet to skip
+  const uint16_t m_Latency = 1;
+  // double the disconnect timeout
+  const uint16_t m_Timeout = (2 * BLE_GAP_INITIAL_SUPERVISION_TIMEOUT);
 };
 }  // namespace Furble
 
