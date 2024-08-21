@@ -41,12 +41,12 @@ static std::vector<index_entry_t> load_index(void) {
   if (bytes > 0 && (bytes % sizeof(index_entry_t) == 0)) {
     uint8_t buffer[bytes] = {0};
     size_t count = bytes / sizeof(index_entry_t);
-    Serial.printf("Index entries: %d\r\n", count);
+    ESP_LOGI(LOG_TAG, "Index entries: %d\r\n", count);
     m_Prefs.getBytes(FURBLE_PREF_INDEX, buffer, bytes);
     index_entry_t *entry = (index_entry_t *)buffer;
 
     for (int i = 0; i < count; i++) {
-      Serial.printf("Loading index entry: %s\r\n", entry[i].name);
+      ESP_LOGI(LOG_TAG, "Loading index entry: %s\r\n", entry[i].name);
       index.push_back(entry[i]);
     }
   }
@@ -57,9 +57,9 @@ static std::vector<index_entry_t> load_index(void) {
 static void add_index(std::vector<index_entry_t> &index, index_entry_t &entry) {
   bool exists = false;
   for (size_t i = 0; i < index.size(); i++) {
-    Serial.printf("[%d] %s : %s\r\n", i, index[i].name, entry.name);
+    ESP_LOGI(LOG_TAG, "[%d] %s : %s\r\n", i, index[i].name, entry.name);
     if (strcmp(index[i].name, entry.name) == 0) {
-      Serial.println("Overwriting existing entry");
+      ESP_LOGI(LOG_TAG, "Overwriting existing entry");
       index[i] = entry;
       exists = true;
       break;
@@ -67,7 +67,7 @@ static void add_index(std::vector<index_entry_t> &index, index_entry_t &entry) {
   }
 
   if (!exists) {
-    Serial.println("Adding new entry");
+    ESP_LOGI(LOG_TAG, "Adding new entry");
     index.push_back(entry);
   }
 }
@@ -87,9 +87,9 @@ void CameraList::save(Camera *pCamera) {
   if (pCamera->serialise(dbuffer, dbytes)) {
     // Store the entry and the index if serialisation succeeds
     m_Prefs.putBytes(entry.name, dbuffer, dbytes);
-    Serial.printf("Saved %s\r\n", entry.name);
+    ESP_LOGI(LOG_TAG, "Saved %s\r\n", entry.name);
     save_index(index);
-    Serial.printf("Index entries: %d\r\n", index.size());
+    ESP_LOGI(LOG_TAG, "Index entries: %d\r\n", index.size());
   }
 
   m_Prefs.end();
@@ -105,8 +105,8 @@ void CameraList::remove(Camera *pCamera) {
   size_t i = 0;
   for (i = 0; i < index.size(); i++) {
     if (strcmp(index[i].name, entry.name) == 0) {
-      Serial.print("Deleting: ");
-      Serial.println(entry.name);
+      ESP_LOGI(LOG_TAG, "Deleting: ");
+      ESP_LOGI(LOG_TAG, "%s", entry.name);
       break;
     }
   }

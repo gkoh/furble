@@ -58,7 +58,7 @@ static void display_interval_msg(interval_state_t state,
     clen = snprintf(ccount, 16, "%03u/%03u", count, sv_count->value);
     len = snprintf(hms, 32, "%02u:%02u:%02u", rem_h, rem_m, rem_s);
   }
-  // Serial.println(hms);
+  // ESP_LOGI(LOG_TAG, hms);
 
   if (((len > 0) && memcmp(prev_hms, hms, len))
       || ((clen > 0) && memcmp(prev_count, ccount, clen))) {
@@ -96,7 +96,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
     switch (state) {
       case INTERVAL_SHUTTER_OPEN:
         if ((icount < interval->count.value) || (interval->count.unit == SPIN_UNIT_INF)) {
-          // Serial.println("Shutter Open");
+          // ESP_LOGI(LOG_TAG, "Shutter Open");
           camera->shutterPress();
           next = now + config_shutter;
           state = INTERVAL_SHUTTER_WAIT;
@@ -111,7 +111,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
         break;
       case INTERVAL_SHUTTER_CLOSE:
         icount++;
-        // Serial.println("Shutter Release");
+        // ESP_LOGI(LOG_TAG, "Shutter Release");
         camera->shutterRelease();
         next = now + config_delay;
         if ((icount < interval->count.value) || (interval->count.unit == SPIN_UNIT_INF)) {
@@ -132,7 +132,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
 
     if (M5.BtnB.wasClicked()) {
       if (state == INTERVAL_SHUTTER_WAIT) {
-        // Serial.print("Shutter Release");
+        // ESP_LOGI(LOG_TAG, "Shutter Release");
         camera->shutterRelease();
       }
       active = false;

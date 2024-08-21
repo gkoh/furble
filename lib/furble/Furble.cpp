@@ -4,6 +4,9 @@
 #include "Device.h"
 #include "Furble.h"
 
+// log tag
+const char *LOG_TAG = FURBLE_STR;
+
 namespace Furble {
 
 NimBLEScan *Scan::m_Scan = nullptr;
@@ -12,7 +15,7 @@ void *Scan::m_ScanResultPrivateData = nullptr;
 HIDServer *Scan::m_HIDServer = nullptr;
 
 void scanEndCB(NimBLEScanResults results) {
-  Serial.println("Scan ended");
+  ESP_LOGI(LOG_TAG, "Scan ended");
 }
 
 /**
