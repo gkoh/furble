@@ -58,7 +58,7 @@ static void display_interval_msg(interval_state_t state,
 
   if ((len > 0) && memcmp(prev_hms, hms, len)) {
     memcpy(prev_hms, hms, len);
-    ez.msgBox((String)statestr, (String)hms, "Stop", false, NULL, NO_COLOR, false);
+    ez.msgBox(statestr, {hms}, {"Stop"}, false, NULL, NO_COLOR, false);
   }
 }
 
@@ -139,7 +139,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
 
 void remote_interval(FurbleCtx *fctx) {
   ezMenu submenu(FURBLE_STR " - Interval");
-  submenu.buttons("OK#down");
+  submenu.buttons({"OK", "down"});
   submenu.addItem("Start");
   settings_add_interval_items(&submenu);
   submenu.addItem("Back");

@@ -3,44 +3,15 @@
 
 #define M5EZ_VERSION "2.1.2"
 
-// Comment out the line below to disable WPS.
-#undef M5EZ_WPS
-
-// Turn this off to compile without WiFi (no) OTA updates, no clock)
-#undef M5EZ_WIFI
-
 // Turn this off if you don't have a battery attached
 #define M5EZ_BATTERY
-
-// Turn this off to compile without BLE (Bluetooth Low Energy)
-// #define M5EZ_BLE
-#ifdef M5EZ_BLE
-#define M5EZ_BLE_DEVICE_NAME "M5ez"
-#endif
-
-// Have the autoconnect logic print debug messages on the serial port
-// #define M5EZ_WIFI_DEBUG
 
 // Determines whether the backlight is settable
 #define M5EZ_BACKLIGHT
 
-// Compile in ezTime and create a settings menu for clock display
-#undef M5EZ_CLOCK
-
-// FACES settings menu
-#undef M5EZ_FACES
-
-#include <vector>  // std::vector
-#ifdef M5EZ_WIFI
-#include <WiFi.h>  // WiFiEvent_t, system_event_info_t
-#endif
-
 #include <FS.h>
 #include <M5Unified.h>
 
-#ifdef M5EZ_CLOCK
-#include <ezTime.h>  // events, on-screen clock
-#endif
 // Special fake font pointers to access the older non FreeFonts in a unified way.
 // Only valid if passed to ez.setFont
 // (Note that these need to be specified without the & in front, unlike the FreeFonts)
@@ -90,7 +61,7 @@
 
 struct line_t {
   int16_t position;
-  String line;
+  std::string line;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -104,10 +75,10 @@ class ezTheme {
  public:
   static void begin();
   void add();
-  static bool select(String name);
+  static bool select(std::string name);
   static void menu();
 
-  String name = "Default";  // Change this when making theme
+  std::string name = "Default";  // Change this when making theme
   uint16_t background = 0xEF7D;
   uint16_t foreground = TFT_BLACK;
   uint8_t header_height = TFT_HEADER_HEIGHT;
@@ -121,8 +92,6 @@ class ezTheme {
   uint16_t print_color = foreground;
 
   const GFXfont *clock_font = TFT_FONT;
-
-  uint16_t longpress_time = 250;  // milliseconds
 
   uint8_t button_height = TFT_BUTTON_HEIGHT;
   const GFXfont *button_font = TFT_FONT;
@@ -209,7 +178,7 @@ class ezScreen {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct header_widget_t {
-  String name;
+  std::string name;
   bool leftover;  // widget gets all leftover width. Used by title, only one widget can have this
                   // property
   uint16_t x;
@@ -223,25 +192,25 @@ class ezHeader {
  private:
   static std::vector<header_widget_t> _widgets;
   static bool _shown;
-  static String _title;
+  static std::string _title;
   static void _drawTitle(uint16_t x, uint16_t w);
   static void _recalculate();
 
  public:
   static void begin();
-  static void show(String t = "");
+  static void show(std::string t = "");
   static bool shown();
   static void clear(bool wipe = true);
   static void insert(uint8_t position,
-                     String name,
+                     std::string name,
                      uint16_t width,
                      void (*function)(uint16_t x, uint16_t w),
                      bool leftover = false);
-  static void remove(String name);
-  static uint8_t position(String name);
-  static void draw(String name = "");
-  static String title();
-  static void title(String title);
+  static void remove(std::string name);
+  static uint8_t position(std::string name);
+  static void draw(std::string name = "");
+  static std::string title();
+  static void title(std::string title);
   //
 };
 
@@ -257,7 +226,7 @@ struct print_t {
   uint16_t color;
   uint16_t x;
   int16_t y;
-  String text;
+  std::string text;
 };
 
 class ezCanvas: public Print {
@@ -290,7 +259,7 @@ class ezCanvas: public Print {
   static uint8_t y();
   static void y(uint8_t newy);
   virtual size_t write(
-      uint8_t c);  // These three are used to inherint print and println from Print class
+      uint8_t c);  // These three are used to inherit print and println from Print class
   virtual size_t write(const char *str);
   virtual size_t write(const uint8_t *buffer, size_t size);
   static uint16_t loop(void *private_data);
@@ -305,8 +274,8 @@ class ezCanvas: public Print {
   static bool _wrap, _scroll;
   static const GFXfont *_font;
   static uint16_t _color;
-  static void _print(String text);
-  static void _putString(String text);
+  static void _print(std::string text);
+  static void _putString(std::string text);
   //
 };
 
@@ -320,30 +289,26 @@ class ezCanvas: public Print {
 class ezButtons {
  public:
   static void begin();
-  static void show(String buttons);
-  static String get();
+  static void show(std::vector<std::string> buttons);
+  static std::vector<std::string> get();
   static void clear(bool wipe = true);
   static void releaseWait();
-  static String poll();
-  static String wait(String Buttons = "");
+  static std::string poll();
+  static std::string wait();
 
  private:
-  static String _btn_a_s, _btn_a_l;
-  static String _btn_b_s, _btn_b_l;
-  static String _btn_c_s, _btn_c_l;
+  static std::string _btn_a;
+  static std::string _btn_b;
+  static std::string _btn_c;
   static bool _key_release_wait;
   static bool _lower_button_row, _upper_button_row;
-  static void _drawButtons(String btn_a_s,
-                           String btn_a_l,
-                           String btn_b_s,
-                           String btn_b_l,
-                           String btn_c_s,
-                           String btn_c_l,
-                           String btn_ab,
-                           String btn_bc,
-                           String btn_ac);
-  static void _drawButton(int16_t row, String text_s, String text_l, int16_t x, int16_t w);
-  static void _drawButtonString(String text, int16_t x, int16_t y, uint16_t color, int16_t datum);
+  static void _drawButtons(std::string btn_a, std::string btn_b, std::string btn_c);
+  static void _drawButton(int16_t row, std::string text, int16_t x, int16_t w);
+  static void _drawButtonString(std::string text,
+                                int16_t x,
+                                int16_t y,
+                                uint16_t color,
+                                int16_t datum);
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -355,39 +320,26 @@ class ezButtons {
 
 class ezMenu {
  public:
-  ezMenu(String hdr = "");
+  ezMenu(std::string hdr = "");
   bool addItem(
-      String nameAndCaption,
-      void (*simpleFunction)() = NULL,
-      bool (*advancedFunction)(ezMenu *callingMenu) = NULL,
-      void (*drawFunction)(ezMenu *callingMenu, int16_t x, int16_t y, int16_t w, int16_t h) = NULL);
-  bool addItem(
-      const char *image,
-      String nameAndCaption,
-      void (*simpleFunction)() = NULL,
-      bool (*advancedFunction)(ezMenu *callingMenu) = NULL,
-      void (*drawFunction)(ezMenu *callingMenu, int16_t x, int16_t y, int16_t w, int16_t h) = NULL);
-  bool addItem(
-      fs::FS &fs,
-      String path,
-      String nameAndCaption,
+      std::string name,
+      std::string caption = "",
       void (*simpleFunction)() = NULL,
       bool (*advancedFunction)(ezMenu *callingMenu) = NULL,
       void (*drawFunction)(ezMenu *callingMenu, int16_t x, int16_t y, int16_t w, int16_t h) = NULL);
   bool deleteItem(int16_t index);
-  bool deleteItem(String name);
+  bool deleteItem(std::string name);
+  bool setCaption(std::string name, std::string caption);
   int16_t countItems(void);
-  bool setCaption(int16_t index, String caption);
-  bool setCaption(String name, String caption);
   void setSortFunction(bool (*sortFunction)(const char *s1, const char *s2));
-  void buttons(String bttns);
-  void upOnFirst(String nameAndCaption);
-  void leftOnFirst(String nameAndCaption);
-  void downOnLast(String nameAndCaption);
-  void rightOnLast(String nameAndCaption);
-  int16_t getItemNum(String name);
+  void buttons(std::vector<std::string> bttns);
+  void upOnFirst(std::string name);
+  void leftOnFirst(std::string name);
+  void downOnLast(std::string name);
+  void rightOnLast(std::string name);
+  int16_t getItemNum(std::string name);
   int16_t pick();
-  String pickName(), pickCaption(), pickButton();
+  std::string pickName();
   void run();
   int16_t runOnce(bool dynamic = false);
   void txtBig();
@@ -412,10 +364,8 @@ class ezMenu {
 
  private:
   struct MenuItem_t {
-    String nameAndCaption;
-    const char *image;
-    fs::FS *fs;
-    String path;
+    std::string name;
+    std::string caption;
     void (*simpleFunction)();
     bool (*advancedFunction)(ezMenu *callingMenu);
     void (*drawFunction)(ezMenu *callingMenu, int16_t x, int16_t y, int16_t w, int16_t h);
@@ -423,19 +373,18 @@ class ezMenu {
   std::vector<MenuItem_t> _items;
   int16_t _selected, _offset;
   bool _redraw;
-  String _header, _buttons, _pick_button;
-  String _up_on_first, _down_on_last;
+  std::string _header, _pick_button;
+  std::vector<std::string> _buttons;
+  std::string _up_on_first, _down_on_last;
   int16_t _per_item_h, _vmargin;
   int16_t _items_per_screen;
   uint16_t _old_background;
-  void _drawImage(MenuItem_t &item);
   void _drawCaption();
   const GFXfont *_font;
-  int16_t _runImagesOnce();
   int16_t _runTextOnce(bool dynamic = false);
   void _fixOffset();
   void _drawItems();
-  void _drawItem(int16_t n, String text, bool selected);
+  void _drawItem(int16_t n, std::string text, bool selected);
   void _Arrows();
   int16_t _img_from_top;
   uint8_t _img_caption_location;
@@ -446,6 +395,7 @@ class ezMenu {
   bool (*_sortFunction)(const char *s1, const char *s2);
   void _sortItems();
   bool _sortWrapper(MenuItem_t &item1, MenuItem_t &item2);
+  void _replace(std::vector<std::string> &list, std::string name, std::string replacement);
   //
 };
 
@@ -458,9 +408,9 @@ class ezMenu {
 
 class ezProgressBar {
  public:
-  ezProgressBar(String header = "",
-                String msg = "",
-                String buttons = "",
+  ezProgressBar(const std::string header = "",
+                std::vector<std::string> msg = {""},
+                std::vector<std::string> buttons = {""},
                 const GFXfont *font = NULL,
                 uint16_t color = NO_COLOR,
                 uint16_t bar_color = NO_COLOR);
@@ -520,157 +470,6 @@ class ezBacklight {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//   C L O C K
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#ifdef M5EZ_CLOCK
-class ezClock {
- public:
-  static Timezone tz;
-  static void begin();
-  static void restart();
-  static void menu();
-  static uint16_t loop(void *private_data);
-  static void clear();
-  static void draw(uint16_t x, uint16_t w);
-  static bool waitForSync(const uint16_t timeout = 0);
-
- private:
-  static void _writePrefs();
-  static bool _on;
-  static String _timezone;
-  static bool _clock12;
-  static bool _am_pm;
-  static String _datetime;
-  static bool _starting;
-  //
-};
-#endif
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//   F A C E S
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#ifdef M5EZ_FACES
-class ezFACES {
- public:
-  static void begin();
-  static void menu();
-  static String poll();
-  static bool on();
-
- private:
-  static bool _on;
-  //
-};
-#endif
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//   W I F I
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#ifdef M5EZ_WIFI
-
-enum WifiState_t {
-  EZWIFI_NOT_INIT,
-  EZWIFI_WAITING,
-  EZWIFI_IDLE,
-  EZWIFI_SCANNING,
-  EZWIFI_CONNECTING,
-  EZWIFI_AUTOCONNECT_DISABLED
-};
-
-struct WifiNetwork_t {
-  String SSID;
-  String key;
-};
-
-class ezWifi {
- public:
-  static std::vector<WifiNetwork_t> networks;
-  static bool autoConnect;
-  static void begin();
-  static void add(String ssid, String key);
-  static bool remove(int8_t index);
-  static bool remove(String ssid);
-  static int8_t indexForSSID(String ssid);
-  static void readFlash();
-  static void writeFlash();
-  static void menu();
-  static uint16_t loop(void *private_data);
-  static bool update(String url, const char *root_cert, ezProgressBar *pb = NULL);
-  static String updateError();
-
- private:
-  static WifiState_t _state;
-  static uint8_t _current_from_scan;
-  static uint32_t _wait_until, _widget_time;
-  static void _drawWidget(uint16_t x, uint16_t w);
-  static bool _onOff(ezMenu *callingMenu);
-  static void _manageAutoconnects();
-  static bool _autoconnectSelected(ezMenu *callingMenu);
-  static void _askAdd();
-  static bool _connection(ezMenu *callingMenu);
-  static void _update_progress(int done, int total);
-  static String _update_err2str(uint8_t _error);
-  static ezProgressBar *_update_progressbar;
-  static String _update_error;
-#ifdef M5EZ_WPS
-  static void _WPShelper(WiFiEvent_t event, system_event_info_t info);
-  static WiFiEvent_t _WPS_event;
-  static String _WPS_pin;
-  static bool _WPS_new_event;
-#endif
-  //
-};
-
-#endif
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//   B L E
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#ifdef M5EZ_BLE
-
-class ezBLE {
- public:
-  static void begin();
-  static void readFlash();
-  static void writeFlash();
-  static void menu();
-  static void disconnect();
-  static class BLEClient *getClient(uint16_t index);
-  static uint16_t getClientCount();
-
- private:
-  static const std::vector<std::pair<uint16_t, String>> _gattUuids;
-  static bool _on;
-  static bool _initialized;
-  static std::vector<class BLEClient *> _clients;
-  static bool _scan(ezMenu *callingMenu);
-  static void _connect(class BLEAdvertisedDevice &device);
-  static bool _listClients(ezMenu *callingMenu);
-  static bool _showClient(class BLEClient *client);
-  static void _cleanup();
-  static void _refresh();
-  friend class M5ezClientCallback;
-};
-
-#endif
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
 //   B A T T E R Y
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -680,9 +479,6 @@ class ezBLE {
 class ezBattery {
  public:
   static void begin();
-  static void readFlash();
-  static void writeFlash();
-  static void menu();
   static uint16_t loop(void *private_data);
   static uint8_t getTransformedBatteryLevel();
   static uint16_t getBatteryBarColor(uint8_t batteryLevel);
@@ -724,24 +520,11 @@ class M5ez {
   static ezButtons buttons;
   static constexpr ezButtons &b = buttons;
   static ezSettings settings;
-#ifdef M5EZ_WIFI
-  static ezWifi wifi;
-  static constexpr ezWifi &w = wifi;
-#endif
-#ifdef M5EZ_BLE
-  static ezBLE ble;
-#endif
 #ifdef M5EZ_BATTERY
   static ezBattery battery;
 #endif
 #ifdef M5EZ_BACKLIGHT
   static ezBacklight backlight;
-#endif
-#ifdef M5EZ_CLOCK
-  static ezClock clock;
-#endif
-#ifdef M5EZ_FACES
-  static ezFACES faces;
 #endif
 
   static void begin();
@@ -755,63 +538,31 @@ class M5ez {
   static void redraw();
 
   // ez.msgBox
-  static String msgBox(String header,
-                       String msg,
-                       String buttons = "OK",
-                       const bool blocking = true,
-                       const GFXfont *font = NULL,
-                       uint16_t color = NO_COLOR,
-                       const bool clear = true);
+  static std::string msgBox(std::string header,
+                            std::vector<std::string> msg,
+                            std::vector<std::string> buttons = {"OK"},
+                            const bool blocking = true,
+                            const GFXfont *font = NULL,
+                            uint16_t color = NO_COLOR,
+                            const bool clear = true);
 
-  // ez.textInput
-  static String textInput(String header = "", String defaultText = "");
-
-  // ez.textBox
-  static String textBox(String header = "",
-                        String text = "",
-                        bool readonly = false,
-                        String buttons = "up#Done#down",
-                        const GFXfont *font = NULL,
-                        uint16_t color = NO_COLOR);
-
-  // Generic String object helper functions
-  static String rightOf(String input, String separator, bool trim = true);
-  static String leftOf(String input, String separator, bool trim = true);
-  static int16_t countStringInString(String haystack, String needle);
-  static int16_t chopString(String input,
-                            String separator,
-                            std::vector<String> &chops,
-                            bool trim = true);
-  static int16_t charsFit(String input, int16_t cutoff);
-  static String clipString(String input, int16_t cutoff, bool dots = true);
-  static bool isBackExitOrDone(String str);
+  static std::string clipString(std::string input, int16_t cutoff, bool dots = true);
+  static bool isBackExitOrDone(std::string str);
 
   // m5.lcd wrappers that make fonts easier
   static void setFont(const GFXfont *font);
   static int16_t fontHeight();
 
-  static String version();
+  static std::string version();
 
  private:
   static std::vector<event_t> _events;
   static bool _redraw;
 
-  // ez.textInput
-  static int16_t _text_cursor_x, _text_cursor_y, _text_cursor_h, _text_cursor_w;
-  static bool _text_cursor_state;
-  static void _drawTextInputLockString(String text);
-  static void _drawTextInputBox(String text);
-  static void _textCursor();
-  static void _textCursor(bool state);
-  static long _text_cursor_millis;
-
-  // ez.textBox
-  static void _wrapLines(String text, uint16_t width, std::vector<line_t> &lines);
-  static void _fitLines(String text,
+  static void _fitLines(std::vector<std::string> text,
                         uint16_t max_width,
                         uint16_t min_width,
                         std::vector<line_t> &lines);
-  //
 };
 
 extern M5ez ez;

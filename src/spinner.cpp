@@ -67,12 +67,12 @@ static void display_spinner(const char *title,
     }
   }
 
-  const char *buttons = "Adjust#Next";
+  std::vector<std::string> buttons = {"Adjust", "Next"};
   if (index == 0) {
-    buttons = "OK#Next";
+    buttons = {"OK", "Next"};
   }
 
-  ez.msgBox(title, (String)spin_row, buttons, false);
+  ez.msgBox(title, {spin_row}, buttons, false);
 }
 
 static void spinner_preset(const char *title, SpinValue *sv) {
@@ -226,8 +226,8 @@ void spinner_modify_value(const char *title, bool preset, SpinValue *sv) {
   }
 }
 
-String sv2str(SpinValue *sv) {
-  return String(sv->value) + unit2str[sv->unit];
+std::string sv2str(SpinValue *sv) {
+  return std::to_string(sv->value) + unit2str[sv->unit];
 }
 
 unsigned long sv2ms(SpinValue *sv) {

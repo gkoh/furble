@@ -68,10 +68,10 @@ esp_power_level_t settings_load_esp_tx_power() {
  */
 void settings_menu_tx_power(void) {
   uint8_t power = load_tx_power();
-  ezProgressBar power_bar(FURBLE_STR, "Set transmit power", "Adjust#Back");
+  ezProgressBar power_bar(FURBLE_STR, {"Set transmit power"}, {"Adjust", "Back"});
   power_bar.value(power / 0.03f);
   while (true) {
-    String b = ez.buttons.poll();
+    std::string b = ez.buttons.poll();
     if (b == "Adjust") {
       power++;
       if (power > 3) {
@@ -92,7 +92,10 @@ void settings_menu_tx_power(void) {
  */
 static void show_gps_info(void) {
   Serial.println("GPS Data");
-  char buffer[256] = {0x0};
+  char buffer0[64] = {0x0};
+  char buffer1[64] = {0x0};
+  char buffer2[64] = {0x0};
+  char buffer3[64] = {0x0};
   bool first = true;
 
   do {
@@ -103,19 +106,21 @@ static void show_gps_info(void) {
     bool updated = furble_gps.location.isUpdated() || furble_gps.date.isUpdated()
                    || furble_gps.time.isUpdated();
 
-    snprintf(buffer, 256, "%s (%d) | %.2f, %.2f | %.2f metres | %4u-%02u-%02u %02u:%02u:%02u",
+    snprintf(buffer0, 64, "%s (%d)",
              furble_gps.location.isValid() && furble_gps.date.isValid() && furble_gps.time.isValid()
                  ? "Valid"
                  : "Invalid",
-             furble_gps.location.age(), furble_gps.location.lat(), furble_gps.location.lng(),
-             furble_gps.altitude.meters(), furble_gps.date.year(), furble_gps.date.month(),
-             furble_gps.date.day(), furble_gps.time.hour(), furble_gps.time.minute(),
-             furble_gps.time.second());
+             furble_gps.location.age());
+    snprintf(buffer1, 64, "%.2f %.2f", furble_gps.location.lat(), furble_gps.location.lng());
+    snprintf(buffer2, 64, "%.2f metres", furble_gps.altitude.meters());
+    snprintf(buffer3, 64, "%4u-%02u-%02u %02u:%02u:%02u", furble_gps.date.year(),
+             furble_gps.date.month(), furble_gps.date.day(), furble_gps.time.hour(),
+             furble_gps.time.minute(), furble_gps.time.second());
 
     if (first || updated) {
       first = false;
       ez.header.draw("gps");
-      ez.msgBox("GPS Data", buffer, "Back", false);
+      ez.msgBox("GPS Data", {buffer0, buffer1, buffer2, buffer3}, {"Back"}, false);
     }
 
     ez.yield();
@@ -148,7 +153,7 @@ static void settings_save_gps(bool enable) {
 
 bool settings_gps_onoff(ezMenu *menu) {
   furble_gps_enable = !furble_gps_enable;
-  menu->setCaption("onoff", "GPS\t" + (String)(furble_gps_enable ? "ON" : "OFF"));
+  menu->setCaption("onoff", std::string("GPS\t") + (furble_gps_enable ? "ON" : "OFF"));
   settings_save_gps(furble_gps_enable);
 
   return true;
@@ -160,10 +165,10 @@ bool settings_gps_onoff(ezMenu *menu) {
 void settings_menu_gps(void) {
   ezMenu submenu(FURBLE_STR " - GPS settings");
 
-  submenu.buttons("OK#down");
-  submenu.addItem("onoff | GPS\t" + (String)(furble_gps_enable ? "ON" : "OFF"), NULL,
+  submenu.buttons({"OK", "down"});
+  submenu.addItem("onoff", std::string("GPS\t") + (furble_gps_enable ? "ON" : "OFF"), NULL,
                   settings_gps_onoff);
-  submenu.addItem("GPS Data", show_gps_info);
+  submenu.addItem("GPS Data", "", show_gps_info);
   submenu.downOnLast("first");
   submenu.addItem("Back");
   submenu.run();
@@ -197,7 +202,7 @@ void settings_save_interval(interval_t *interval) {
 
 static bool configure_count(ezMenu *menu) {
   ezMenu submenu("Count");
-  submenu.buttons("OK#down");
+  submenu.buttons({"OK", "down"});
   submenu.addItem("Custom");
   submenu.addItem("Infinite");
   submenu.downOnLast("first");
@@ -212,12 +217,12 @@ static bool configure_count(ezMenu *menu) {
     interval.count.unit = SPIN_UNIT_INF;
   }
 
-  String countstr = sv2str(&interval.count);
+  std::string countstr = sv2str(&interval.count);
   if (interval.count.unit == SPIN_UNIT_INF) {
     countstr = "INF";
   }
 
-  menu->setCaption("interval_count", "Count\t" + countstr);
+  menu->setCaption("interval_count", std::string("Count\t") + countstr);
   settings_save_interval(&interval);
 
   return true;
@@ -225,7 +230,7 @@ static bool configure_count(ezMenu *menu) {
 
 static bool configure_delay(ezMenu *menu) {
   ezMenu submenu("Delay");
-  submenu.buttons("OK#down");
+  submenu.buttons({"OK", "down"});
   submenu.addItem("Custom");
   submenu.addItem("Preset");
   submenu.downOnLast("first");
@@ -249,7 +254,7 @@ static bool configure_delay(ezMenu *menu) {
 
 static bool configure_shutter(ezMenu *menu) {
   ezMenu submenu("Shutter");
-  submenu.buttons("OK#down");
+  submenu.buttons({"OK", "down"});
   submenu.addItem("Custom");
   submenu.addItem("Preset");
   submenu.downOnLast("first");
@@ -274,15 +279,17 @@ static bool configure_shutter(ezMenu *menu) {
 void settings_add_interval_items(ezMenu *submenu) {
   settings_load_interval(&interval);
 
-  submenu->addItem("interval_count | Count\t" + sv2str(&interval.count), NULL, configure_count);
-  submenu->addItem("interval_delay | Delay\t" + sv2str(&interval.delay), NULL, configure_delay);
-  submenu->addItem("interval_shutter | Shutter\t" + sv2str(&interval.shutter), NULL,
+  submenu->addItem("interval_count", std::string("Count\t") + sv2str(&interval.count), NULL,
+                   configure_count);
+  submenu->addItem("interval_delay", std::string("Delay\t") + sv2str(&interval.delay), NULL,
+                   configure_delay);
+  submenu->addItem("interval_shutter", std::string("Shutter\t") + sv2str(&interval.shutter), NULL,
                    configure_shutter);
 }
 
 void settings_menu_interval(void) {
   ezMenu submenu(FURBLE_STR " - Intervalometer settings");
-  submenu.buttons("OK#down");
+  submenu.buttons({"OK", "down"});
   settings_add_interval_items(&submenu);
   submenu.addItem("Back");
   submenu.downOnLast("first");
