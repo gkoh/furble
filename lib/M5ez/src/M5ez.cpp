@@ -1068,7 +1068,6 @@ std::string M5ez::msgBox(std::string header,
     color = ez.theme->msg_color;
   ez.buttons.show(buttons);
   std::vector<line_t> lines;
-  // msg.replace("|", (String) char(13));
   M5.Lcd.setTextDatum(CC_DATUM);
   M5.Lcd.setTextColor(color);
   ez.setFont(font);
