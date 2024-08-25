@@ -655,7 +655,7 @@ std::string ezButtons::poll() {
   return keystr;
 }
 
-std::string ezButtons::wait() {
+const std::string ezButtons::wait() {
   std::string keystr = "";
   while (keystr == "") {
     keystr = ez.buttons.poll();
@@ -784,16 +784,11 @@ void ezBacklight::menu() {
         }
       } break;
       case 2: {
-        std::vector<std::string> disp_val;
+        const std::array<std::string, 3> text = { "Backlight will not turn off",
+          "Backlight will turn off after 30 seconds of inactivity",
+          "Backlight will turn off after a minute of inactivity" };
         while (true) {
-          if (!_inactivity) {
-            disp_val = {"Backlight will not turn off"};
-          } else if (_inactivity == 1) {
-            disp_val = {"Backlight will turn off after", "30 seconds of inactivity"};
-          } else {
-            disp_val = {"Backlight will turn off after", "a minute of inactivity"};
-          }
-          ez.msgBox("Inactivity timeout", disp_val, {"Adjust", "Back"}, false);
+          ez.msgBox("Inactivity timeout", {text[_inactivity]}, {"Adjust", "Back"}, false);
           std::string b = ez.buttons.wait();
           if (b == "Adjust")
             _inactivity++;
@@ -1094,13 +1089,41 @@ std::string M5ez::msgBox(std::string header,
   }
 }
 
+std::size_t M5ez::_findBreak(std::string text, const std::size_t pos, uint16_t max_width) {
+  uint16_t start = pos;
+  std::size_t breakpoint = std::string::npos;
+  while (true) {
+    std::size_t testpoint = text.find(' ', start);
+    if (testpoint == std::string::npos) {
+      breakpoint = testpoint;
+      break;
+    }
+    uint16_t width = M5.Lcd.textWidth(text.substr(pos, testpoint-pos).c_str());
+    if (width > max_width) {
+      break;
+    }
+
+    breakpoint = testpoint;
+    start = testpoint+1;
+  }
+
+  return breakpoint;
+}
+
 void M5ez::_fitLines(std::vector<std::string> text,
                      uint16_t max_width,
                      uint16_t min_width,
                      std::vector<line_t> &lines) {
   for (int16_t n = 0; n < text.size(); n++) {
-    line_t line = {n, text[n]};
-    lines.push_back(line);
+    // break each line on spaces into text width
+    uint16_t pos = 0;
+    std::size_t breakpoint;
+    do {
+      breakpoint = _findBreak(text[n], pos, max_width - 10);
+      line_t line = {n, text[n].substr(pos, breakpoint-pos)};
+      lines.push_back(line);
+      pos = breakpoint+1;
+    } while (breakpoint != std::string::npos);
   }
 }
 

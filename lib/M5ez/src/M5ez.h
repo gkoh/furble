@@ -294,7 +294,7 @@ class ezButtons {
   static void clear(bool wipe = true);
   static void releaseWait();
   static std::string poll();
-  static std::string wait();
+  static const std::string wait();
 
  private:
   static std::string _btn_a;
@@ -562,6 +562,8 @@ class M5ez {
                         uint16_t max_width,
                         uint16_t min_width,
                         std::vector<line_t> &lines);
+
+  static std::size_t _findBreak(std::string text, std::size_t pos, uint16_t max_width);
 };
 
 extern M5ez ez;

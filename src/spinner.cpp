@@ -69,7 +69,7 @@ static void display_spinner(const char *title,
 
   std::vector<std::string> buttons = {"Adjust", "Next"};
   if (index == 0) {
-    buttons = {"OK", "Next"};
+    buttons[0] = "OK";
   }
 
   ez.msgBox(title, {spin_row}, buttons, false);
