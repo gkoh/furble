@@ -35,6 +35,7 @@ bool ezTheme::select(std::string name) {
       return true;
     }
   }
+
   return false;
 }
 
@@ -718,8 +719,7 @@ uint8_t ezBacklight::_brightness;
 uint8_t ezBacklight::_inactivity;
 uint32_t ezBacklight::_last_activity;
 uint8_t ezBacklight::_MinimumBrightness;
-uint8_t ezBacklight::_Step = 0;
-uint8_t ezBacklight::_MaxSteps = 8;
+const uint8_t ezBacklight::_MaxSteps;
 bool ezBacklight::_backlight_off = false;
 
 void ezBacklight::begin() {
@@ -758,8 +758,8 @@ void ezBacklight::menu() {
   blmenu.addItem("Inactivity timeout");
   blmenu.addItem("Back");
   blmenu.downOnLast("first");
-  _Step = (_brightness - _MinimumBrightness) * _MaxSteps
-          / (256 - _MinimumBrightness);  // Calculate step from brightness
+  uint8_t step = (_brightness - _MinimumBrightness) * _MaxSteps
+                 / (256 - _MinimumBrightness);  // Calculate step from brightness
   while (true) {
     switch (blmenu.runOnce()) {
       case 1: {
@@ -767,16 +767,16 @@ void ezBacklight::menu() {
         while (true) {
           std::string b = ez.buttons.poll();
           if (b == "Adjust") {
-            if (_brightness >= _MinimumBrightness && _Step < _MaxSteps - 1) {
-              _Step++;
+            if (_brightness >= _MinimumBrightness && step < _MaxSteps - 1) {
+              step++;
               _brightness =
-                  _MinimumBrightness + (_Step * (255 - _MinimumBrightness) / (_MaxSteps - 1));
+                  _MinimumBrightness + (step * (255 - _MinimumBrightness) / (_MaxSteps - 1));
             } else {
-              _Step = 0;
+              step = 0;
               _brightness = _MinimumBrightness;
             }
           }
-          float p = ((float)_Step / (_MaxSteps - 1)) * 100.0f;
+          float p = ((float)step / (_MaxSteps - 1)) * 100.0f;
           bl.value(p);
           M5.Display.setBrightness(_brightness);
           if (b == "Back")
@@ -1225,12 +1225,12 @@ bool ezMenu::deleteItem(std::string name) {
 }
 
 bool ezMenu::setCaption(std::string name, std::string caption) {
-  auto item = std::find_if(_items.begin(), _items.end(),
-                           [&](const MenuItem_t &v) { return v.name == name; });
-  if (item != _items.end()) {
-    item->caption = caption;
-    M5ez::_redraw = true;
-    return true;
+  for (int n = 0; n < _items.size(); n++) {
+    if (_items[n].name == name) {
+      _items[n].caption = caption;
+      M5ez::_redraw = true;
+      return true;
+    }
   }
 
   return false;
