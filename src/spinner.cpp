@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include <M5Unified.h>
 #include <M5ez.h>
 
