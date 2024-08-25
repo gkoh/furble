@@ -15,20 +15,31 @@ static const char *unit2str[5] = {"    ",   // SPIN_UNIT_NIL
 static uint16_t spin_preset[PRESET_NUM] = {1, 2, 4, 8, 15, 30, 60, 125, 250, 500};
 
 #define FMT_NONE_LEN (4)
-static const char *fmt_none[FMT_NONE_LEN] = {" %1u  %1u  %1u ", "[%1u] %1u  %1u ",
-                                             " %1u [%1u] %1u ", " %1u  %1u [%1u]"};
+static const char *fmt_none[FMT_NONE_LEN] = {
+    " %1u  %1u  %1u ",
+    "[%1u] %1u  %1u ",
+    " %1u [%1u] %1u ",
+    " %1u  %1u [%1u]",
+};
 
 #define FMT_UNIT_LEN (5)
-static const char *fmt_unit[FMT_UNIT_LEN] = {" %1u  %1u  %1u  %4s ", "[%1u] %1u  %1u  %4s ",
-                                             " %1u [%1u] %1u  %4s ", " %1u  %1u [%1u] %4s ",
-                                             " %1u  %1u  %1u [%4s]"};
+static const char *fmt_unit[FMT_UNIT_LEN] = {
+    " %1u  %1u  %1u  %4s ", "[%1u] %1u  %1u  %4s ", " %1u [%1u] %1u  %4s ",
+    " %1u  %1u [%1u] %4s ", " %1u  %1u  %1u [%4s]",
+};
 
 #define FMT_PRESET_NONE_LEN (2)
-static const char *fmt_preset_none[FMT_PRESET_NONE_LEN] = {" %1u  %1u  %1u ", "[%1u  %1u  %1u]"};
+static const char *fmt_preset_none[FMT_PRESET_NONE_LEN] = {
+    " %1u  %1u  %1u ",
+    "[%1u  %1u  %1u]",
+};
 
 #define FMT_PRESET_UNIT_LEN (3)
 static const char *fmt_preset_unit[FMT_PRESET_UNIT_LEN] = {
-    " %1u  %1u  %1u  %4s ", "[%1u  %1u  %1u] %4s ", " %1u  %1u  %1u [%4s]"};
+    " %1u  %1u  %1u  %4s ",
+    "[%1u  %1u  %1u] %4s ",
+    " %1u  %1u  %1u [%4s]",
+};
 
 #define SPIN_ROW_LEN (32)
 

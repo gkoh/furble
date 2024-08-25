@@ -784,9 +784,11 @@ void ezBacklight::menu() {
         }
       } break;
       case 2: {
-        const std::array<std::string, 3> text = { "Backlight will not turn off",
-          "Backlight will turn off after 30 seconds of inactivity",
-          "Backlight will turn off after a minute of inactivity" };
+        const std::vector<std::string> text = {
+            "Backlight will not turn off",
+            "Backlight will turn off after 30 seconds of inactivity",
+            "Backlight will turn off after a minute of inactivity",
+        };
         while (true) {
           ez.msgBox("Inactivity timeout", {text[_inactivity]}, {"Adjust", "Back"}, false);
           std::string b = ez.buttons.wait();
@@ -1098,13 +1100,13 @@ std::size_t M5ez::_findBreak(std::string text, const std::size_t pos, uint16_t m
       breakpoint = testpoint;
       break;
     }
-    uint16_t width = M5.Lcd.textWidth(text.substr(pos, testpoint-pos).c_str());
+    uint16_t width = M5.Lcd.textWidth(text.substr(pos, testpoint - pos).c_str());
     if (width > max_width) {
       break;
     }
 
     breakpoint = testpoint;
-    start = testpoint+1;
+    start = testpoint + 1;
   }
 
   return breakpoint;
@@ -1120,9 +1122,9 @@ void M5ez::_fitLines(std::vector<std::string> text,
     std::size_t breakpoint;
     do {
       breakpoint = _findBreak(text[n], pos, max_width - 10);
-      line_t line = {n, text[n].substr(pos, breakpoint-pos)};
+      line_t line = {n, text[n].substr(pos, breakpoint - pos)};
       lines.push_back(line);
-      pos = breakpoint+1;
+      pos = breakpoint + 1;
     } while (breakpoint != std::string::npos);
   }
 }
