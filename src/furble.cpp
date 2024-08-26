@@ -23,13 +23,15 @@ void update_progress_bar(void *ctx, float value) {
  * Display the version.
  */
 static void about(void) {
-  String version = FURBLE_VERSION;
+  std::string version = FURBLE_VERSION;
   if (version.length() < 1) {
     version = "unknown";
   }
 
-  ez.msgBox(FURBLE_STR " - About", "Version: " + version + "|ID: " + Furble::Device::getStringID(),
-            "Back", true);
+  ez.msgBox(
+      FURBLE_STR " - About",
+      {std::string("Version: ") + version, std::string("ID: ") + Furble::Device::getStringID()},
+      {"Back"}, true);
 }
 
 static void show_shutter_control(bool shutter_locked, unsigned long lock_start_ms) {
@@ -52,16 +54,19 @@ static void show_shutter_control(bool shutter_locked, unsigned long lock_start_m
     snprintf(duration, 16, "%02lu:%02lu", minutes, seconds);
 
 #if ARDUINO_M5STACK_CORE_ESP32 || ARDUINO_M5STACK_CORE2
-    ez.msgBox("Remote Shutter", "Shutter Locked|" + String(duration), "Unlock#Unlock#Back", false);
+    ez.msgBox("Remote Shutter", {std::string("Shutter Locked") + std::string(duration)},
+              {"Unlock", "Unlock", "Back"}, false);
 #else
-    ez.msgBox("Remote Shutter", "Shutter Locked|" + String(duration) + "||Back: Power",
-              "Unlock#Unlock", false);
+    ez.msgBox("Remote Shutter",
+              {std::string("Shutter Locked") + std::string(duration), "", "Back: Power"},
+              {"Unlock", "Unlock"}, false);
 #endif
   } else {
 #if ARDUINO_M5STACK_CORE_ESP32 || ARDUINO_M5STACK_CORE2
-    ez.msgBox("Remote Shutter", "Lock: Focus+Release", "Release#Focus#Back", false);
+    ez.msgBox("Remote Shutter", {"Lock: Focus+Release"}, {"Release", "Focus", "Back"}, false);
 #else
-    ez.msgBox("Remote Shutter", "Lock: Focus+Release|Back: Power", "Release#Focus", false);
+    ez.msgBox("Remote Shutter", {"Lock: Focus+Release", "Back: Power"}, {"Release", "Focus"},
+              false);
 #endif
   }
 }
@@ -152,10 +157,10 @@ static uint16_t statusRefresh(void *private_data) {
     return 500;
   }
 
-  String buttons = ez.buttons.get();
-  String header = ez.header.title();
+  auto buttons = ez.buttons.get();
+  std::string header = ez.header.title();
 
-  ezProgressBar progress_bar(FURBLE_STR, "Reconnecting ...", "");
+  ezProgressBar progress_bar(FURBLE_STR, {"Reconnecting ..."}, {""});
   if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
     ez.screen.clear();
     ez.header.show(header);
@@ -176,7 +181,7 @@ static uint16_t statusRefresh(void *private_data) {
 static void menu_remote(FurbleCtx *fctx) {
   ez.backlight.inactivity(NEVER);
   ezMenu submenu(FURBLE_STR " - Connected");
-  submenu.buttons("OK#down");
+  submenu.buttons({"OK", "down"});
   submenu.addItem("Shutter");
   submenu.addItem("Interval");
   submenu.addItem("Disconnect");
@@ -216,7 +221,7 @@ void updateConnectItems(void *private_data) {
 }
 
 static void menu_connect(bool scan) {
-  String header = FURBLE_STR " - ";
+  std::string header = FURBLE_STR " - ";
   if (scan) {
     header += "Scanning";
   } else {
@@ -231,7 +236,7 @@ static void menu_connect(bool scan) {
     updateConnectItems(&submenu);
   }
 
-  submenu.buttons("OK#down");
+  submenu.buttons({"OK", "down"});
   if (submenu.getItemNum("Back") == 0) {
     submenu.addItem("Back");
   }
@@ -250,7 +255,7 @@ static void menu_connect(bool scan) {
 
   FurbleCtx fctx = {Furble::CameraList::get(i - 1), false};
 
-  ezProgressBar progress_bar(FURBLE_STR, "Connecting ...", "");
+  ezProgressBar progress_bar(FURBLE_STR, {"Connecting ..."}, {""});
   if (fctx.camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
     if (scan) {
       Furble::CameraList::save(fctx.camera);
@@ -278,7 +283,7 @@ static void do_saved(void) {
 
 static void menu_delete(void) {
   ezMenu submenu(FURBLE_STR " - Delete");
-  submenu.buttons("OK#down");
+  submenu.buttons({"OK", "down"});
   Furble::CameraList::load();
 
   for (size_t i = 0; i < Furble::CameraList::size(); i++) {
@@ -296,13 +301,13 @@ static void menu_delete(void) {
 static void menu_settings(void) {
   ezMenu submenu(FURBLE_STR " - Settings");
 
-  submenu.buttons("OK#down");
-  submenu.addItem("Backlight", ez.backlight.menu);
-  submenu.addItem("GPS", settings_menu_gps);
-  submenu.addItem("Intervalometer", settings_menu_interval);
-  submenu.addItem("Theme", ez.theme->menu);
-  submenu.addItem("Transmit Power", settings_menu_tx_power);
-  submenu.addItem("About", about);
+  submenu.buttons({"OK", "down"});
+  submenu.addItem("Backlight", "", ez.backlight.menu);
+  submenu.addItem("GPS", "", settings_menu_gps);
+  submenu.addItem("Intervalometer", "", settings_menu_interval);
+  submenu.addItem("Theme", "", ez.theme->menu);
+  submenu.addItem("Transmit Power", "", settings_menu_tx_power);
+  submenu.addItem("About", "", about);
   submenu.addItem("Back");
   submenu.downOnLast("first");
   submenu.run();
@@ -330,16 +335,16 @@ void loop() {
   size_t save_count = Furble::CameraList::getSaveCount();
 
   ezMenu mainmenu(FURBLE_STR);
-  mainmenu.buttons("OK#down");
+  mainmenu.buttons({"OK", "down"});
   if (save_count > 0) {
-    mainmenu.addItem("Connect", do_saved);
+    mainmenu.addItem("Connect", "", do_saved);
   }
-  mainmenu.addItem("Scan", do_scan);
+  mainmenu.addItem("Scan", "", do_scan);
   if (save_count > 0) {
-    mainmenu.addItem("Delete Saved", menu_delete);
+    mainmenu.addItem("Delete Saved", "", menu_delete);
   }
-  mainmenu.addItem("Settings", menu_settings);
-  mainmenu.addItem("Power Off", mainmenu_poweroff);
+  mainmenu.addItem("Settings", "", menu_settings);
+  mainmenu.addItem("Power Off", "", mainmenu_poweroff);
   mainmenu.downOnLast("first");
 
   do {

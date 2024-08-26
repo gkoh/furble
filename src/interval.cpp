@@ -44,21 +44,27 @@ static void display_interval_msg(interval_state_t state,
   }
 
   ms2hms(rem, &rem_h, &rem_m, &rem_s);
+  static char prev_count[16] = {0x0};
   static char prev_hms[32] = {0x0};
+  char ccount[16] = {0x0};
   char hms[32] = {0x0};
   int len = 0;
+  int clen = 0;
 
   if (sv_count->unit == SPIN_UNIT_INF) {
-    len = snprintf(hms, 32, "%09u|%02u:%02u:%02u", count, rem_h, rem_m, rem_s);
+    clen = snprintf(ccount, 16, "%09u", count);
+    len = snprintf(hms, 32, "%02u:%02u:%02u", rem_h, rem_m, rem_s);
   } else {
-    len =
-        snprintf(hms, 32, "%03u/%03u|%02u:%02u:%02u", count, sv_count->value, rem_h, rem_m, rem_s);
+    clen = snprintf(ccount, 16, "%03u/%03u", count, sv_count->value);
+    len = snprintf(hms, 32, "%02u:%02u:%02u", rem_h, rem_m, rem_s);
   }
   // Serial.println(hms);
 
-  if ((len > 0) && memcmp(prev_hms, hms, len)) {
+  if (((len > 0) && memcmp(prev_hms, hms, len))
+      || ((clen > 0) && memcmp(prev_count, ccount, clen))) {
     memcpy(prev_hms, hms, len);
-    ez.msgBox((String)statestr, (String)hms, "Stop", false, NULL, NO_COLOR, false);
+    memcpy(prev_count, ccount, clen);
+    ez.msgBox(statestr, {ccount, hms}, {"Stop"}, false, NULL, NO_COLOR, false);
   }
 }
 
@@ -139,7 +145,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
 
 void remote_interval(FurbleCtx *fctx) {
   ezMenu submenu(FURBLE_STR " - Interval");
-  submenu.buttons("OK#down");
+  submenu.buttons({"OK", "down"});
   submenu.addItem("Start");
   settings_add_interval_items(&submenu);
   submenu.addItem("Back");
@@ -147,13 +153,12 @@ void remote_interval(FurbleCtx *fctx) {
 
   do {
     int16_t i = submenu.runOnce();
+    if (i == 0) {
+      return;
+    }
 
     if (submenu.pickName() == "Start") {
       do_interval(fctx, &interval);
-    }
-
-    if (i == 0) {
-      return;
     }
 
   } while (submenu.pickName() != "Back");

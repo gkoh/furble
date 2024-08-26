@@ -1,8 +1,7 @@
 #include <Camera.h>
+#include <M5Unified.h>
 #include <M5ez.h>
 #include <TinyGPS++.h>
-
-#include <M5Unified.h>
 
 #include "furble_gps.h"
 #include "settings.h"

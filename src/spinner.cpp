@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include <M5Unified.h>
 #include <M5ez.h>
 
@@ -11,24 +10,34 @@ static const char *unit2str[5] = {"    ",   // SPIN_UNIT_NIL
                                   "mins"};  // SPIN_UNIT_MIN
 
 #define PRESET_NUM 10
-
-static uint16_t spin_preset[PRESET_NUM] = {1, 2, 4, 8, 15, 30, 60, 125, 250, 500};
+static const std::array<uint16_t, PRESET_NUM> spin_preset = {1, 2, 4, 8, 15, 30, 60, 125, 250, 500};
 
 #define FMT_NONE_LEN (4)
-static const char *fmt_none[FMT_NONE_LEN] = {" %1u  %1u  %1u ", "[%1u] %1u  %1u ",
-                                             " %1u [%1u] %1u ", " %1u  %1u [%1u]"};
+static const std::array<const char *, FMT_NONE_LEN> fmt_none = {
+    " %1u  %1u  %1u ",
+    "[%1u] %1u  %1u ",
+    " %1u [%1u] %1u ",
+    " %1u  %1u [%1u]",
+};
 
 #define FMT_UNIT_LEN (5)
-static const char *fmt_unit[FMT_UNIT_LEN] = {" %1u  %1u  %1u  %4s ", "[%1u] %1u  %1u  %4s ",
-                                             " %1u [%1u] %1u  %4s ", " %1u  %1u [%1u] %4s ",
-                                             " %1u  %1u  %1u [%4s]"};
+static const std::array<const char *, FMT_UNIT_LEN> fmt_unit = {
+    " %1u  %1u  %1u  %4s ", "[%1u] %1u  %1u  %4s ", " %1u [%1u] %1u  %4s ",
+    " %1u  %1u [%1u] %4s ", " %1u  %1u  %1u [%4s]",
+};
 
 #define FMT_PRESET_NONE_LEN (2)
-static const char *fmt_preset_none[FMT_PRESET_NONE_LEN] = {" %1u  %1u  %1u ", "[%1u  %1u  %1u]"};
+static const std::array<const char *, FMT_PRESET_NONE_LEN> fmt_preset_none = {
+    " %1u  %1u  %1u ",
+    "[%1u  %1u  %1u]",
+};
 
 #define FMT_PRESET_UNIT_LEN (3)
-static const char *fmt_preset_unit[FMT_PRESET_UNIT_LEN] = {
-    " %1u  %1u  %1u  %4s ", "[%1u  %1u  %1u] %4s ", " %1u  %1u  %1u [%4s]"};
+static const std::array<const char *, FMT_PRESET_UNIT_LEN> fmt_preset_unit = {
+    " %1u  %1u  %1u  %4s ",
+    "[%1u  %1u  %1u] %4s ",
+    " %1u  %1u  %1u [%4s]",
+};
 
 #define SPIN_ROW_LEN (32)
 
@@ -67,16 +76,17 @@ static void display_spinner(const char *title,
     }
   }
 
-  const char *buttons = "Adjust#Next";
+  std::vector<std::string> buttons = {"Adjust", "Next"};
   if (index == 0) {
-    buttons = "OK#Next";
+    buttons[0] = "OK";
   }
 
-  ez.msgBox(title, (String)spin_row, buttons, false);
+  ez.msgBox(title, {spin_row}, buttons, false);
 }
 
 static void spinner_preset(const char *title, SpinValue *sv) {
-  const unsigned int imax = sv->unit == SPIN_UNIT_NIL ? FMT_PRESET_NONE_LEN : FMT_PRESET_UNIT_LEN;
+  const unsigned int imax =
+      sv->unit == SPIN_UNIT_NIL ? fmt_preset_none.size() : fmt_preset_unit.size();
   unsigned int i = 0;
   unsigned int n = 0;
   bool ok = false;
@@ -87,7 +97,7 @@ static void spinner_preset(const char *title, SpinValue *sv) {
   unsigned int u;
 
   // find closest preset equal or lower
-  for (n = (PRESET_NUM - 1); n > 0; n--) {
+  for (n = (spin_preset.size() - 1); n > 0; n--) {
     if (value >= spin_preset[n]) {
       break;
     }
@@ -105,7 +115,7 @@ static void spinner_preset(const char *title, SpinValue *sv) {
           break;
         case 1:
           n++;
-          if (n >= PRESET_NUM) {
+          if (n >= spin_preset.size()) {
             n = 0;
           }
           value = spin_preset[n];
@@ -147,7 +157,7 @@ static void spinner_preset(const char *title, SpinValue *sv) {
 }
 
 static void spinner_custom(const char *title, SpinValue *sv) {
-  const unsigned int imax = sv->unit == SPIN_UNIT_NIL ? FMT_NONE_LEN : FMT_UNIT_LEN;
+  const unsigned int imax = sv->unit == SPIN_UNIT_NIL ? fmt_none.size() : fmt_unit.size();
   unsigned int i = 0;
   bool ok = false;
 
@@ -226,8 +236,8 @@ void spinner_modify_value(const char *title, bool preset, SpinValue *sv) {
   }
 }
 
-String sv2str(SpinValue *sv) {
-  return String(sv->value) + unit2str[sv->unit];
+std::string sv2str(SpinValue *sv) {
+  return std::to_string(sv->value) + unit2str[sv->unit];
 }
 
 unsigned long sv2ms(SpinValue *sv) {
