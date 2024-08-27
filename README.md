@@ -67,10 +67,8 @@ Follow the instructions on the wiki: [Easy Web Install](https://github.com/gkoh/
 PlatformIO does everything assuming things are installed and connected properly.
 In most cases it should be:
 - clone the repository
-- plug in the M5StickC
+- plug in the M5StickC or M5StickC Plus/Plus2
     - `platformio run -e m5stick-c -t upload`
-- OR plug in the M5StickC Plus/Plus2
-    - `platformio run -e m5stick-c-plus -t upload`
 - OR plug in the M5Stack Core2
     - `platformio run -e m5stack-core2 -t upload`
 

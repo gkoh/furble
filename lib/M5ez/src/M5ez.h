@@ -32,33 +32,6 @@
 
 #define NO_COLOR TFT_TRANSPARENT
 
-#if ARDUINO_M5STICK_C_PLUS
-#define TFT_W 240
-#define TFT_H 135
-#define TFT_FONT sans16
-#define TFT_HEADER_HEIGHT 23
-#define TFT_BUTTON_HEIGHT 19
-#define TFT_RADIUS 8
-#endif
-
-#if ARDUINO_M5STICK_C
-#define TFT_W 160
-#define TFT_H 80
-#define TFT_FONT hzk16
-#define TFT_HEADER_HEIGHT 12
-#define TFT_BUTTON_HEIGHT 11
-#define TFT_RADIUS 3
-#endif
-
-#if ARDUINO_M5STACK_CORE_ESP32 || ARDUINO_M5STACK_CORE2
-#define TFT_W 320
-#define TFT_H 240
-#define TFT_FONT (&FreeMono12pt7b)
-#define TFT_HEADER_HEIGHT 23
-#define TFT_BUTTON_HEIGHT 24
-#define TFT_RADIUS 8
-#endif
-
 struct line_t {
   int16_t position;
   std::string line;
@@ -81,42 +54,26 @@ class ezTheme {
   std::string name = "Default";  // Change this when making theme
   uint16_t background = 0xEF7D;
   uint16_t foreground = TFT_BLACK;
-  uint8_t header_height = TFT_HEADER_HEIGHT;
-  const GFXfont *header_font = TFT_FONT;
+  uint8_t header_height;
+  const GFXfont *header_font;
   uint8_t header_hmargin = 5;
   uint8_t header_tmargin = 3;
   uint16_t header_bgcolor = TFT_BLUE;
   uint16_t header_fgcolor = TFT_WHITE;
 
-  const GFXfont *print_font = TFT_FONT;
+  const GFXfont *print_font;
   uint16_t print_color = foreground;
 
-  const GFXfont *clock_font = TFT_FONT;
-
-  uint8_t button_height = TFT_BUTTON_HEIGHT;
-  const GFXfont *button_font = TFT_FONT;
+  uint8_t button_height;
+  const GFXfont *button_font;
   uint8_t button_tmargin = 1;
   uint8_t button_hmargin = 5;
   uint8_t button_gap = 3;
-  uint8_t button_radius = TFT_RADIUS;
+  uint8_t button_radius;
   uint16_t button_bgcolor_b = TFT_BLUE;
   uint16_t button_bgcolor_t = TFT_PURPLE;
   uint16_t button_fgcolor = TFT_WHITE;
   uint16_t button_longcolor = TFT_CYAN;
-
-  uint8_t input_top = 50;      // pixels below ez.canvas.top()
-  uint8_t input_hmargin = 10;  // The distance between text box and edge of screen
-  uint8_t input_vmargin = 10;  // Vertical margin _inside_ the text box
-  const GFXfont *input_font = TFT_FONT;
-  const GFXfont *input_keylock_font = TFT_FONT;
-  uint16_t input_bgcolor = TFT_BLACK;
-  uint16_t input_fgcolor = TFT_GREEN;
-  uint16_t input_cursor_blink = 500;  // milliseconds
-  uint8_t input_faces_btns = 18;
-
-  const GFXfont *tb_font = TFT_FONT;
-  uint16_t tb_color = foreground;
-  uint8_t tb_hmargin = 5;
 
   uint8_t menu_lmargin = 15;
   uint8_t menu_rmargin = 10;
@@ -124,12 +81,12 @@ class ezTheme {
   uint16_t menu_item_color = foreground;
   uint16_t menu_sel_bgcolor = foreground;
   uint16_t menu_sel_fgcolor = background;
-  const GFXfont *menu_big_font = TFT_FONT;
-  const GFXfont *menu_small_font = TFT_FONT;
+  const GFXfont *menu_big_font;
+  const GFXfont *menu_small_font;
   uint8_t menu_item_hmargin = 10;
-  uint8_t menu_item_radius = TFT_RADIUS;
+  uint8_t menu_item_radius;
 
-  const GFXfont *msg_font = TFT_FONT;
+  const GFXfont *msg_font;
   uint16_t msg_color = foreground;
   uint8_t msg_hmargin = 20;
 
@@ -148,7 +105,9 @@ class ezTheme {
   uint16_t battery_50_fgcolor = TFT_YELLOW;
   uint16_t battery_75_fgcolor = TFT_GREENYELLOW;
   uint16_t battery_100_fgcolor = TFT_GREEN;
-  //
+
+ private:
+  static void update(void);
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -229,9 +188,19 @@ struct print_t {
   std::string text;
 };
 
+class ezTFT {
+ public:
+  int32_t width;
+  int32_t height;
+};
+
 class ezCanvas: public Print {
   friend class ezHeader;
   friend class ezButtons;
+  friend class ezProgressBar;
+  friend class ezMenu;
+  friend class ezScreen;
+  friend class M5ez;
 
  public:
   static void begin();
@@ -265,6 +234,7 @@ class ezCanvas: public Print {
   static uint16_t loop(void *private_data);
 
  private:
+  static ezTFT tft;
   static std::vector<print_t> _printed;
   static uint32_t _next_scroll;
   static void top(uint8_t newtop);
@@ -502,6 +472,7 @@ struct event_t {
   void *private_data;
   uint32_t when;
 };
+
 class M5ez {
   friend class ezProgressBar;
   friend class ezHeader;  // TMP?

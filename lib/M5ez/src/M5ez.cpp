@@ -12,12 +12,51 @@
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void ezTheme::update(void) {
+  const GFXfont *font;
+  uint8_t radius;
+
+  switch (M5.getBoard()) {
+    case m5::board_t::board_M5StickC:
+      font = hzk16;
+      ez.theme->header_height = 12;
+      ez.theme->button_height = 11;
+      radius = 3;
+      break;
+    case m5::board_t::board_M5StickCPlus:
+    case m5::board_t::board_M5StickCPlus2:
+      font = sans16;
+      ez.theme->header_height = 23;
+      ez.theme->button_height = 19;
+      radius = 8;
+      break;
+    case m5::board_t::board_M5StackCore2:
+    case m5::board_t::board_M5Stack:
+    default:
+      font = (&FreeMono12pt7b);
+      ez.theme->header_height = 23;
+      ez.theme->button_height = 24;
+      radius = 8;
+  }
+
+  ez.theme->header_font = font;
+  ez.theme->print_font = font;
+  ez.theme->button_font = font;
+  ez.theme->menu_big_font = font;
+  ez.theme->menu_small_font = font;
+  ez.theme->msg_font = font = font;
+
+  ez.theme->button_radius = radius;
+  ez.theme->menu_item_radius = radius;
+}
+
 void ezTheme::begin() {
   if (!ez.themes.size()) {
     ezTheme defaultTheme;
     defaultTheme.add();
   }
   ez.theme = &ez.themes[0];
+  update();
   Preferences prefs;
   prefs.begin("M5ez", true);  // read-only
   select(prefs.getString("theme", "").c_str());
@@ -32,6 +71,7 @@ bool ezTheme::select(std::string name) {
   for (uint8_t n = 0; n < ez.themes.size(); n++) {
     if (ez.themes[n].name == name) {
       ez.theme = &ez.themes[n];
+      update();
       return true;
     }
   }
@@ -95,7 +135,7 @@ void ezScreen::clear(uint16_t color) {
   ez.header.clear(false);
   ez.buttons.clear(false);
   ez.canvas.reset();
-  M5.Lcd.fillRect(0, 0, TFT_W, TFT_H, color);
+  M5.Lcd.fillRect(0, 0, ez.canvas.tft.width, ez.canvas.tft.height, color);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -127,7 +167,7 @@ void ezHeader::_recalculate() {
     x += _widgets[n].w;
   }
   if (we_have_leftover) {  // Then start from right setting x values
-    x = TFT_W;
+    x = ez.canvas.tft.width;
     for (int8_t n = _widgets.size() - 1; n >= 0; n--) {
       if (_widgets[n].leftover) {  // and set width of leftover widget to remainder
         _widgets[n].w = x - _widgets[n].x;
@@ -185,7 +225,7 @@ void ezHeader::show(std::string t /* = "" */) {
   _shown = true;
   if (t != "")
     _title = t;  // only change title if provided
-  M5.Lcd.fillRect(0, 0, TFT_W, ez.theme->header_height,
+  M5.Lcd.fillRect(0, 0, ez.canvas.tft.width, ez.theme->header_height,
                   ez.theme->header_bgcolor);  // Clear header area
   for (uint8_t n = 0; n < _widgets.size(); n++) {
     (_widgets[n].function)(_widgets[n].x, _widgets[n].w);  // Tell all header widgets to draw
@@ -205,7 +245,7 @@ void ezHeader::draw(std::string name) {
 
 void ezHeader::clear(bool wipe /* = true */) {
   if (wipe)
-    M5.Lcd.fillRect(0, 0, TFT_W, ez.theme->header_height, ez.theme->background);
+    M5.Lcd.fillRect(0, 0, ez.canvas.tft.width, ez.theme->header_height, ez.theme->background);
   _shown = false;
   ez.canvas.top(0);
 }
@@ -240,6 +280,7 @@ void ezHeader::_drawTitle(uint16_t x, uint16_t w) {
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+ezTFT ezCanvas::tft;
 uint8_t ezCanvas::_y, ezCanvas::_top, ezCanvas::_bottom;
 uint16_t ezCanvas::_x, ezCanvas::_left, ezCanvas::_right, ezCanvas::_lmargin;
 const GFXfont *ezCanvas::_font;
@@ -249,10 +290,29 @@ std::vector<print_t> ezCanvas::_printed;
 uint32_t ezCanvas::_next_scroll;
 
 void ezCanvas::begin() {
+  switch (M5.getBoard()) {
+    case m5::board_t::board_M5StickC:
+      tft.width = 160;
+      tft.height = 80;
+      M5.Lcd.setRotation(3);
+      break;
+    case m5::board_t::board_M5StickCPlus:
+    case m5::board_t::board_M5StickCPlus2:
+      tft.width = 240;
+      tft.height = 135;
+      M5.Lcd.setRotation(3);
+      break;
+    case m5::board_t::board_M5StackCore2:
+    case m5::board_t::board_M5Stack:
+    default:
+      tft.width = 320;
+      tft.height = 240;
+  }
+
   _left = 0;
-  _right = TFT_W - 1;
+  _right = ez.canvas.tft.width - 1;
   _top = 0;
-  _bottom = TFT_H - 1;
+  _bottom = ez.canvas.tft.height - 1;
   ez.addEvent(ez.canvas.loop);
   reset();
 }
@@ -526,24 +586,25 @@ std::vector<std::string> ezButtons::get() {
 
 void ezButtons::clear(bool wipe /* = true */) {
   if (wipe && (_lower_button_row || _upper_button_row)) {
-    M5.Lcd.fillRect(0, ez.canvas.bottom() + 1, TFT_H - ez.canvas.bottom() - 1, TFT_W,
-                    ez.screen.background());
+    M5.Lcd.fillRect(0, ez.canvas.bottom() + 1, ez.canvas.tft.height - ez.canvas.bottom() - 1,
+                    ez.canvas.tft.width, ez.screen.background());
   }
   _btn_a = _btn_b = _btn_c = "";
   _lower_button_row = false;
   _upper_button_row = false;
-  ez.canvas.bottom(TFT_H - 1);
+  ez.canvas.bottom(ez.canvas.tft.height - 1);
 }
 
 void ezButtons::_drawButtons(std::string btn_a, std::string btn_b, std::string btn_c) {
-  int16_t btnwidth = int16_t((TFT_W - 4 * ez.theme->button_gap) / 3);
+  int16_t btnwidth = int16_t((ez.canvas.tft.width - 4 * ez.theme->button_gap) / 3);
 
   // See if any buttons are used on the bottom row
   if (btn_a != "" || btn_b != "" || btn_c != "") {
     if (!_lower_button_row) {
       // If the lower button row wasn't there before, clear the area first
-      M5.Lcd.fillRect(0, TFT_H - ez.theme->button_height - ez.theme->button_gap, TFT_W,
-                      ez.theme->button_height + ez.theme->button_gap, ez.screen.background());
+      M5.Lcd.fillRect(0, ez.canvas.tft.height - ez.theme->button_height - ez.theme->button_gap,
+                      ez.canvas.tft.width, ez.theme->button_height + ez.theme->button_gap,
+                      ez.screen.background());
     }
     // Then draw the three buttons there. (drawButton erases single buttons if unused.)
     if (_btn_a != btn_a) {
@@ -562,25 +623,27 @@ void ezButtons::_drawButtons(std::string btn_a, std::string btn_b, std::string b
   } else {
     if (_lower_button_row) {
       // If there was a lower button row before and it's now gone, clear the area
-      M5.Lcd.fillRect(0, TFT_H - ez.theme->button_height - ez.theme->button_gap, TFT_W,
-                      ez.theme->button_height + ez.theme->button_gap, ez.screen.background());
+      M5.Lcd.fillRect(0, ez.canvas.tft.height - ez.theme->button_height - ez.theme->button_gap,
+                      ez.canvas.tft.width, ez.theme->button_height + ez.theme->button_gap,
+                      ez.screen.background());
       _btn_a = _btn_b = _btn_c = "";
       _lower_button_row = false;
     }
   }
 
   uint8_t button_rows = _upper_button_row ? 2 : (_lower_button_row ? 1 : 0);
-  ez.canvas.bottom(TFT_H - (button_rows * (ez.theme->button_height + ez.theme->button_gap)));
+  ez.canvas.bottom(ez.canvas.tft.height
+                   - (button_rows * (ez.theme->button_height + ez.theme->button_gap)));
 }
 
 void ezButtons::_drawButton(int16_t row, std::string text, int16_t x, int16_t w) {
   // row = 1 for lower and 2 for upper row
   int16_t y, bg_color;
   if (row == 1) {
-    y = TFT_H - ez.theme->button_height;
+    y = ez.canvas.tft.height - ez.theme->button_height;
     bg_color = ez.theme->button_bgcolor_b;
   } else {
-    y = TFT_H - 2 * ez.theme->button_height - ez.theme->button_gap;
+    y = ez.canvas.tft.height - 2 * ez.theme->button_height - ez.theme->button_gap;
     bg_color = ez.theme->button_bgcolor_t;
   }
   if (text != "") {
@@ -991,9 +1054,6 @@ void M5ez::begin() {
   cfg.internal_spk = false;
   cfg.internal_mic = false;
   M5.begin(cfg);
-#if ARDUINO_M5STICK_C || ARDUINO_M5STICK_C_PLUS
-  M5.Lcd.setRotation(3);
-#endif
   ezTheme::begin();
   ez.screen.begin();
   ez.settings.begin();
@@ -1077,9 +1137,9 @@ std::string M5ez::msgBox(std::string header,
     int16_t y =
         ez.canvas.top() + ez.canvas.height() / 2 - ((lines.size() - 1) * font_h / 2) + n * font_h;
     if (!clear) {
-      M5.Lcd.fillRect(0, y - font_h / 2, TFT_W, font_h, ez.theme->background);
+      M5.Lcd.fillRect(0, y - font_h / 2, ez.canvas.tft.width, font_h, ez.theme->background);
     }
-    M5.Lcd.drawString(lines[n].line.c_str(), TFT_W / 2, y);
+    M5.Lcd.drawString(lines[n].line.c_str(), ez.canvas.tft.width / 2, y);
   }
   if (buttons.size() != 0 && blocking) {
     std::string ret = ez.buttons.wait();
@@ -1168,11 +1228,12 @@ void M5ez::setFont(const GFXfont *font) {
 }
 
 int16_t M5ez::fontHeight() {
-#if ARDUINO_M5STICK_C_PLUS || ARDUINO_M5STACK_CORE_ESP32
-  return M5.Lcd.fontHeight(M5.Lcd.getFont());
-#else
-  return 11;
-#endif
+  switch (M5.getBoard()) {
+    case m5::board_t::board_M5StickC:
+      return 11;
+    default:
+      return M5.Lcd.fontHeight(M5.Lcd.getFont());
+  }
 }
 
 std::string M5ez::version() {
@@ -1397,7 +1458,7 @@ int16_t ezMenu::_runTextOnce(bool dynamic) {
         ez.setFont(_font);
         (_items[old_selected].drawFunction)(
             this, ez.theme->menu_lmargin, top_item_h + (old_selected - _offset) * _per_item_h,
-            TFT_W - ez.theme->menu_lmargin - ez.theme->menu_rmargin, _per_item_h);
+            ez.canvas.tft.width - ez.theme->menu_lmargin - ez.theme->menu_rmargin, _per_item_h);
       } else {
         MenuItem_t *item = &_items[old_selected];
         std::string text = item->caption != "" ? item->caption : item->name;
@@ -1407,7 +1468,7 @@ int16_t ezMenu::_runTextOnce(bool dynamic) {
         ez.setFont(_font);
         (_items[_selected].drawFunction)(
             this, ez.theme->menu_lmargin, top_item_h + (_selected - _offset) * _per_item_h,
-            TFT_W - ez.theme->menu_lmargin - ez.theme->menu_rmargin, _per_item_h);
+            ez.canvas.tft.width - ez.theme->menu_lmargin - ez.theme->menu_rmargin, _per_item_h);
       } else {
         MenuItem_t *item = &_items[_selected];
         std::string text = item->caption != "" ? item->caption : item->name;
@@ -1430,9 +1491,9 @@ void ezMenu::_drawItems() {
             + (ez.canvas.height() % _per_item_h) / 2;  // remainder of screen left over by last item
                                                        // not fitting split to center menu
         ez.setFont(_font);
-        (_items[item_ref].drawFunction)(this, ez.theme->menu_lmargin, top_item_h + n * _per_item_h,
-                                        TFT_W - ez.theme->menu_lmargin - ez.theme->menu_rmargin,
-                                        _per_item_h);
+        (_items[item_ref].drawFunction)(
+            this, ez.theme->menu_lmargin, top_item_h + n * _per_item_h,
+            ez.canvas.tft.width - ez.theme->menu_lmargin - ez.theme->menu_rmargin, _per_item_h);
       } else {
         MenuItem_t *item = &_items[item_ref];
         std::string text = item->caption != "" ? item->caption : item->name;
@@ -1461,18 +1522,19 @@ void ezMenu::_drawItem(int16_t n, std::string text, bool selected) {
     fill_color = ez.screen.background();
     M5.Lcd.setTextColor(ez.theme->menu_item_color);
   }
-  text = ez.clipString(text, TFT_W - ez.theme->menu_lmargin - 2 * ez.theme->menu_item_hmargin
-                                 - ez.theme->menu_rmargin);
+  text = ez.clipString(text, ez.canvas.tft.width - ez.theme->menu_lmargin
+                                 - 2 * ez.theme->menu_item_hmargin - ez.theme->menu_rmargin);
   M5.Lcd.fillRoundRect(ez.theme->menu_lmargin, top_item_h + n * _per_item_h,
-                       TFT_W - ez.theme->menu_lmargin - ez.theme->menu_rmargin, _per_item_h,
-                       ez.theme->menu_item_radius, fill_color);
+                       ez.canvas.tft.width - ez.theme->menu_lmargin - ez.theme->menu_rmargin,
+                       _per_item_h, ez.theme->menu_item_radius, fill_color);
   auto tabpos = text.find("\t");
   M5.Lcd.drawString(text.substr(0, tabpos).c_str(),
                     ez.theme->menu_lmargin + ez.theme->menu_item_hmargin, menu_text_y);
   if (tabpos != std::string::npos) {
     M5.Lcd.setTextDatum(CR_DATUM);
     M5.Lcd.drawString(text.substr(tabpos, std::string::npos).c_str(),
-                      TFT_W - ez.theme->menu_rmargin - ez.theme->menu_item_hmargin, menu_text_y);
+                      ez.canvas.tft.width - ez.theme->menu_rmargin - ez.theme->menu_item_hmargin,
+                      menu_text_y);
   }
 }
 
@@ -1689,7 +1751,7 @@ ezProgressBar::ezProgressBar(const std::string header /* = "" */,
     bar_color = ez.theme->progressbar_color;
   _bar_color = bar_color;
   ez.screen.clear();
-  M5.Lcd.fillRect(0, 0, TFT_W, TFT_H, ez.screen.background());
+  M5.Lcd.fillRect(0, 0, ez.canvas.tft.width, ez.canvas.tft.height, ez.screen.background());
 
   if (header != "")
     ez.header.show(header);
@@ -1704,7 +1766,7 @@ ezProgressBar::ezProgressBar(const std::string header /* = "" */,
   for (uint8_t n = 0; n < lines.size(); n++) {
     int16_t y =
         ez.canvas.top() + ez.canvas.height() / 2 - ((num_lines - 1) * font_h / 2) + n * font_h;
-    M5.Lcd.drawString(lines[n].line.c_str(), TFT_W / 2, y);
+    M5.Lcd.drawString(lines[n].line.c_str(), ez.canvas.tft.width / 2, y);
   }
   _bar_y = ez.canvas.top() + ez.canvas.height() / 2 + ((num_lines - 1) * font_h / 2)
            - ez.theme->progressbar_width / 2;
