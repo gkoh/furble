@@ -18,7 +18,7 @@ class CanonEOSM6: public CanonEOS {
   static bool matches(NimBLEAdvertisedDevice *pDevice);
 
  private:
-  device_type_t getDeviceType(void);
+  device_type_t getDeviceType(void) override;
 };
 
 }  // namespace Furble
