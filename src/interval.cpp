@@ -86,7 +86,6 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
 
   do {
     ez.yield();
-    furble_gps_update_geodata(camera);
     now = millis();
 
     if (fctx->reconnected) {

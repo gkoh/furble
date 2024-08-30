@@ -8,4 +8,6 @@ struct FurbleCtx {
   bool reconnected;
 };
 
+void vUITask(void *param);
+
 #endif

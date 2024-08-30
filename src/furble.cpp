@@ -4,12 +4,14 @@
 
 #include <M5Unified.h>
 
+#include "furble_control.h"
 #include "furble_gps.h"
 #include "furble_ui.h"
 #include "interval.h"
 #include "settings.h"
 
 const uint32_t SCAN_DURATION = (60 * 5);
+static QueueHandle_t queue;
 
 /**
  * Progress bar update function.
@@ -75,10 +77,13 @@ static void remote_control(FurbleCtx *fctx) {
   auto camera = fctx->camera;
   static unsigned long shutter_lock_start_ms = 0;
   static bool shutter_lock = false;
+  control_cmd_t cmd;
 
   ESP_LOGI(LOG_TAG, "Remote Control");
 
   show_shutter_control(false, 0);
+
+  ESP_LOGW(LOG_TAG, "queue = %p", queue);
 
   do {
     ez.yield();
@@ -91,7 +96,8 @@ static void remote_control(FurbleCtx *fctx) {
     if (M5.BtnPWR.wasClicked() || M5.BtnC.wasPressed()) {
       if (shutter_lock) {
         // ensure shutter is released on exit
-        camera->shutterRelease();
+        cmd = CONTROL_CMD_SHUTTER_RELEASE;
+        xQueueSend(queue, &cmd, 0);
       }
       ESP_LOGI(LOG_TAG, "Exit shutter");
       break;
@@ -101,16 +107,16 @@ static void remote_control(FurbleCtx *fctx) {
       // release shutter if either shutter or focus is pressed
       if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked()) {
         shutter_lock = false;
-        camera->shutterRelease();
+        cmd = CONTROL_CMD_SHUTTER_RELEASE;
+        xQueueSend(queue, &cmd, 0);
         show_shutter_control(false, 0);
-        ESP_LOGI(LOG_TAG, "shutterRelease(unlock)");
       } else {
         show_shutter_control(true, shutter_lock_start_ms);
       }
     } else {
       if (M5.BtnA.wasPressed()) {
-        camera->shutterPress();
-        ESP_LOGI(LOG_TAG, "shutterPress()");
+        cmd = CONTROL_CMD_SHUTTER_PRESS;
+        xQueueSend(queue, &cmd, 0);
         continue;
       }
 
@@ -122,21 +128,21 @@ static void remote_control(FurbleCtx *fctx) {
           show_shutter_control(true, shutter_lock_start_ms);
           ESP_LOGI(LOG_TAG, "shutter lock");
         } else {
-          camera->shutterRelease();
-          ESP_LOGI(LOG_TAG, "shutterRelease()");
+          cmd = CONTROL_CMD_SHUTTER_RELEASE;
+          xQueueSend(queue, &cmd, 0);
         }
         continue;
       }
 
       if (M5.BtnB.wasPressed()) {
-        camera->focusPress();
-        ESP_LOGI(LOG_TAG, "focusPress()");
+        cmd = CONTROL_CMD_FOCUS_PRESS;
+        xQueueSend(queue, &cmd, 0);
         continue;
       }
 
       if (M5.BtnB.wasReleased()) {
-        camera->focusRelease();
-        ESP_LOGI(LOG_TAG, "focusRelease()");
+        cmd = CONTROL_CMD_FOCUS_RELEASE;
+        xQueueSend(queue, &cmd, 0);
         continue;
       }
     }
@@ -153,7 +159,7 @@ static uint16_t statusRefresh(void *private_data) {
   auto camera = fctx->camera;
 
   if (camera->isConnected()) {
-    furble_gps_update_geodata(camera);
+    furble_gps_update(camera);
     return 500;
   }
 
@@ -204,6 +210,7 @@ static void menu_remote(FurbleCtx *fctx) {
   ez.removeEvent(statusRefresh);
 
   fctx->camera->disconnect();
+  fctx->camera->setActive(false);
   ez.backlight.inactivity(USER_SET);
 }
 
@@ -255,11 +262,13 @@ static void menu_connect(bool scan) {
 
   FurbleCtx fctx = {Furble::CameraList::get(i - 1), false};
 
-  ezProgressBar progress_bar(FURBLE_STR, {"Connecting ..."}, {""});
+  ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to ") + fctx.camera->getName()},
+                             {""});
   if (fctx.camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
     if (scan) {
       Furble::CameraList::save(fctx.camera);
     }
+    fctx.camera->setActive(true);
     menu_remote(&fctx);
   }
 }
@@ -317,37 +326,34 @@ static void mainmenu_poweroff(void) {
   M5.Power.powerOff();
 }
 
-void setup() {
-  Serial.begin(115200);
+void vUITask(void *param) {
+  queue = static_cast<QueueHandle_t>(param);
 
 #include <themes/dark.h>
 #include <themes/default.h>
 #include <themes/mono_furble.h>
 
   ez.begin();
-  Furble::Device::init();
   furble_gps_init();
 
-  Furble::Scan::init(settings_load_esp_tx_power());
-}
+  while (true) {
+    size_t save_count = Furble::CameraList::getSaveCount();
 
-void loop() {
-  size_t save_count = Furble::CameraList::getSaveCount();
+    ezMenu mainmenu(FURBLE_STR);
+    mainmenu.buttons({"OK", "down"});
+    if (save_count > 0) {
+      mainmenu.addItem("Connect", "", do_saved);
+    }
+    mainmenu.addItem("Scan", "", do_scan);
+    if (save_count > 0) {
+      mainmenu.addItem("Delete Saved", "", menu_delete);
+    }
+    mainmenu.addItem("Settings", "", menu_settings);
+    mainmenu.addItem("Power Off", "", mainmenu_poweroff);
+    mainmenu.downOnLast("first");
 
-  ezMenu mainmenu(FURBLE_STR);
-  mainmenu.buttons({"OK", "down"});
-  if (save_count > 0) {
-    mainmenu.addItem("Connect", "", do_saved);
+    do {
+      mainmenu.runOnce();
+    } while (Furble::CameraList::getSaveCount() == save_count);
   }
-  mainmenu.addItem("Scan", "", do_scan);
-  if (save_count > 0) {
-    mainmenu.addItem("Delete Saved", "", menu_delete);
-  }
-  mainmenu.addItem("Settings", "", menu_settings);
-  mainmenu.addItem("Power Off", "", mainmenu_poweroff);
-  mainmenu.downOnLast("first");
-
-  do {
-    mainmenu.runOnce();
-  } while (Furble::CameraList::getSaveCount() == save_count);
 }

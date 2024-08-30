@@ -3,6 +3,7 @@
 #include <M5ez.h>
 #include <TinyGPS++.h>
 
+#include "furble_control.h"
 #include "furble_gps.h"
 #include "settings.h"
 
@@ -51,7 +52,7 @@ static uint16_t service_grove_gps(void *private_data) {
 /**
  * Update geotag data.
  */
-void furble_gps_update_geodata(Furble::Camera *camera) {
+void furble_gps_update(Furble::Camera *camera) {
   if (!furble_gps_enable) {
     return;
   }
@@ -65,7 +66,7 @@ void furble_gps_update_geodata(Furble::Camera *camera) {
                                            furble_gps.date.day(),    furble_gps.time.hour(),
                                            furble_gps.time.minute(), furble_gps.time.second()};
 
-    camera->updateGeoData(dgps, timesync);
+    control_update_gps(dgps, timesync);
     ez.header.draw("gps");
   }
 }

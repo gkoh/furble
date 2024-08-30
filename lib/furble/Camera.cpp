@@ -24,6 +24,14 @@ bool Camera::connect(esp_power_level_t power, progressFunc pFunc, void *pCtx) {
   return connected;
 }
 
+bool Camera::isActive(void) {
+  return m_Active;
+}
+
+void Camera::setActive(bool active) {
+  m_Active = active;
+}
+
 const char *Camera::getName(void) {
   return m_Name.c_str();
 }
