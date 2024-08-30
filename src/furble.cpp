@@ -72,7 +72,7 @@ static void show_shutter_control(bool shutter_locked, unsigned long lock_start_m
 }
 
 static void remote_control(FurbleCtx *fctx) {
-  Furble::Camera *camera = fctx->camera;
+  auto camera = fctx->camera;
   static unsigned long shutter_lock_start_ms = 0;
   static bool shutter_lock = false;
 
@@ -150,7 +150,7 @@ static void remote_control(FurbleCtx *fctx) {
  */
 static uint16_t statusRefresh(void *private_data) {
   FurbleCtx *fctx = static_cast<FurbleCtx *>(private_data);
-  Furble::Camera *camera = fctx->camera;
+  auto camera = fctx->camera;
 
   if (camera->isConnected()) {
     furble_gps_update_geodata(camera);

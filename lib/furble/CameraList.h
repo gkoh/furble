@@ -1,6 +1,8 @@
 #ifndef CAMERALIST_H
 #define CAMERALIST_H
 
+#include <memory>
+
 #include "Camera.h"
 
 namespace Furble {
@@ -12,12 +14,12 @@ class CameraList {
   /**
    * Save camera to connection list.
    */
-  static void save(Camera *pCamera);
+  static void save(Furble::Camera *camera);
 
   /**
    * Remove camera from connection list.
    */
-  static void remove(Camera *pCamera);
+  static void remove(Furble::Camera *camera);
 
   /**
    * Load previously connected devices.
@@ -59,13 +61,13 @@ class CameraList {
   /**
    * Retrieve last entry.
    */
-  static Camera *back(void);
+  static Furble::Camera *back(void);
 
  private:
   /**
    * List of connectable devices.
    */
-  static std::vector<Furble::Camera *> m_ConnectList;
+  static std::vector<std::unique_ptr<Furble::Camera>> m_ConnectList;
 };
 }  // namespace Furble
 

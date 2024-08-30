@@ -69,7 +69,7 @@ static void display_interval_msg(interval_state_t state,
 }
 
 static void do_interval(FurbleCtx *fctx, interval_t *interval) {
-  Furble::Camera *camera = fctx->camera;
+  auto camera = fctx->camera;
   const unsigned long config_delay = sv2ms(&interval->delay);
   const unsigned long config_shutter = sv2ms(&interval->shutter);
 

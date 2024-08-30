@@ -19,6 +19,9 @@ namespace Furble {
  */
 class Camera {
  public:
+  Camera();
+  ~Camera();
+
   /**
    * GPS data type.
    */
@@ -99,8 +102,8 @@ class Camera {
    */
   virtual bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr) = 0;
 
-  NimBLEAddress m_Address = NimBLEAddress("");
-  NimBLEClient *m_Client = NimBLEDevice::createClient();
+  NimBLEAddress m_Address = NimBLEAddress{};
+  NimBLEClient *m_Client;
   std::string m_Name;
 
   void updateProgress(progressFunc pFunc, void *ctx, float value);

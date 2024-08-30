@@ -160,7 +160,7 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
 
   if (m_PairResult != CANON_EOS_PAIR_ACCEPT) {
     bool deleted = NimBLEDevice::deleteBond(m_Address);
-    ESP_LOGI(LOG_TAG, "Rejected, delete pairing: %d", deleted);
+    ESP_LOGW(LOG_TAG, "Rejected, delete pairing: %d", deleted);
     return false;
   }
 

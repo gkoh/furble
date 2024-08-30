@@ -12,7 +12,7 @@
 
 namespace Furble {
 
-std::vector<Furble::Camera *> CameraList::m_ConnectList;
+std::vector<std::unique_ptr<Furble::Camera>> CameraList::m_ConnectList;
 static Preferences m_Prefs;
 
 /**
@@ -72,19 +72,19 @@ static void add_index(std::vector<index_entry_t> &index, index_entry_t &entry) {
   }
 }
 
-void CameraList::save(Camera *pCamera) {
+void CameraList::save(Furble::Camera *camera) {
   m_Prefs.begin(FURBLE_STR, false);
   std::vector<index_entry_t> index = load_index();
 
   index_entry_t entry = {0};
-  pCamera->fillSaveName(entry.name);
-  entry.type = pCamera->getDeviceType();
+  camera->fillSaveName(entry.name);
+  entry.type = camera->getDeviceType();
 
   add_index(index, entry);
 
-  size_t dbytes = pCamera->getSerialisedBytes();
+  size_t dbytes = camera->getSerialisedBytes();
   uint8_t dbuffer[dbytes] = {0};
-  if (pCamera->serialise(dbuffer, dbytes)) {
+  if (camera->serialise(dbuffer, dbytes)) {
     // Store the entry and the index if serialisation succeeds
     m_Prefs.putBytes(entry.name, dbuffer, dbytes);
     ESP_LOGI(LOG_TAG, "Saved %s\r\n", entry.name);
@@ -95,12 +95,12 @@ void CameraList::save(Camera *pCamera) {
   m_Prefs.end();
 }
 
-void CameraList::remove(Camera *pCamera) {
+void CameraList::remove(Furble::Camera *camera) {
   m_Prefs.begin(FURBLE_STR, false);
   std::vector<index_entry_t> index = load_index();
 
   index_entry_t entry = {0};
-  pCamera->fillSaveName(entry.name);
+  camera->fillSaveName(entry.name);
 
   size_t i = 0;
   for (i = 0; i < index.size(); i++) {
@@ -140,16 +140,16 @@ void CameraList::load(void) {
 
     switch (index[i].type) {
       case FURBLE_FUJIFILM:
-        m_ConnectList.push_back(new Fujifilm(dbuffer, dbytes));
+        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Fujifilm(dbuffer, dbytes)));
         break;
       case FURBLE_CANON_EOS_M6:
-        m_ConnectList.push_back(new CanonEOSM6(dbuffer, dbytes));
+        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new CanonEOSM6(dbuffer, dbytes)));
         break;
       case FURBLE_CANON_EOS_RP:
-        m_ConnectList.push_back(new CanonEOSRP(dbuffer, dbytes));
+        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new CanonEOSRP(dbuffer, dbytes)));
         break;
       case FURBLE_MOBILE_DEVICE:
-        m_ConnectList.push_back(new MobileDevice(dbuffer, dbytes));
+        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new MobileDevice(dbuffer, dbytes)));
         break;
     }
   }
@@ -173,22 +173,22 @@ void CameraList::clear(void) {
 }
 
 Furble::Camera *CameraList::get(size_t n) {
-  return m_ConnectList[n];
+  return m_ConnectList[n].get();
 }
 
 Furble::Camera *CameraList::back(void) {
-  return m_ConnectList.back();
+  return m_ConnectList.back().get();
 }
 
 bool CameraList::match(NimBLEAdvertisedDevice *pDevice) {
   if (Fujifilm::matches(pDevice)) {
-    m_ConnectList.push_back(new Furble::Fujifilm(pDevice));
+    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::Fujifilm(pDevice)));
     return true;
   } else if (CanonEOSM6::matches(pDevice)) {
-    m_ConnectList.push_back(new Furble::CanonEOSM6(pDevice));
+    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::CanonEOSM6(pDevice)));
     return true;
   } else if (CanonEOSRP::matches(pDevice)) {
-    m_ConnectList.push_back(new Furble::CanonEOSRP(pDevice));
+    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::CanonEOSRP(pDevice)));
     return true;
   }
 
@@ -196,7 +196,7 @@ bool CameraList::match(NimBLEAdvertisedDevice *pDevice) {
 }
 
 void CameraList::add(NimBLEAddress address) {
-  m_ConnectList.push_back(new Furble::MobileDevice(address));
+  m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::MobileDevice(address)));
 }
 
 }  // namespace Furble
