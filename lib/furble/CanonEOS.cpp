@@ -22,8 +22,8 @@ CanonEOS::CanonEOS(const void *data, size_t len) {
 CanonEOS::CanonEOS(NimBLEAdvertisedDevice *pDevice) {
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
-  Serial.printf("Name = %s\r\n", m_Name.c_str());
-  Serial.printf("Address = %s\r\n", m_Address.toString().c_str());
+  ESP_LOGI(LOG_TAG, "Name = %s", m_Name.c_str());
+  ESP_LOGI(LOG_TAG, "Address = %s", m_Address.toString().c_str());
   Device::getUUID128(&m_Uuid);
 }
 
@@ -38,7 +38,7 @@ void CanonEOS::pairCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
                             size_t length,
                             bool isNotify) {
   if (!isNotify && (length > 0)) {
-    Serial.printf("Got pairing callback: 0x%02x\n", pData[0]);
+    ESP_LOGI(LOG_TAG, "Got pairing callback: 0x%02x", pData[0]);
     m_PairResult = pData[0];
   }
 }
@@ -85,32 +85,32 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
     m_PairResult = 0x00;
   }
 
-  Serial.println("Connecting");
+  ESP_LOGI(LOG_TAG, "Connecting");
   if (!m_Client->connect(m_Address)) {
-    Serial.println("Connection failed!!!");
+    ESP_LOGI(LOG_TAG, "Connection failed!!!");
     return false;
   }
 
-  Serial.println("Connected");
+  ESP_LOGI(LOG_TAG, "Connected");
   updateProgress(pFunc, pCtx, 10.0f);
 
-  Serial.println("Securing");
+  ESP_LOGI(LOG_TAG, "Securing");
   if (!m_Client->secureConnection()) {
     return false;
   }
-  Serial.println("Secured!");
+  ESP_LOGI(LOG_TAG, "Secured!");
   updateProgress(pFunc, pCtx, 20.0f);
 
   NimBLERemoteService *pSvc = m_Client->getService(CANON_EOS_SVC_IDEN_UUID);
   if (pSvc) {
     NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(CANON_EOS_CHR_NAME_UUID);
     if ((pChr != nullptr) && pChr->canIndicate()) {
-      Serial.println("Subscribed for pairing indication");
+      ESP_LOGI(LOG_TAG, "Subscribed for pairing indication");
       pChr->subscribe(false, std::bind(&CanonEOS::pairCallback, this, _1, _2, _3, _4));
     }
   }
 
-  Serial.println("Identifying 1!");
+  ESP_LOGI(LOG_TAG, "Identifying 1!");
   const char *name = Device::getStringID();
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_NAME_UUID, 0x01,
                     (uint8_t *)name, strlen(name)))
@@ -118,21 +118,21 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
 
   updateProgress(pFunc, pCtx, 30.0f);
 
-  Serial.println("Identifying 2!");
+  ESP_LOGI(LOG_TAG, "Identifying 2!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x03, m_Uuid.uint8,
                     UUID128_LEN))
     return false;
 
   updateProgress(pFunc, pCtx, 40.0f);
 
-  Serial.println("Identifying 3!");
+  ESP_LOGI(LOG_TAG, "Identifying 3!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x04,
                     (uint8_t *)name, strlen(name)))
     return false;
 
   updateProgress(pFunc, pCtx, 50.0f);
 
-  Serial.println("Identifying 4!");
+  ESP_LOGI(LOG_TAG, "Identifying 4!");
 
   uint8_t x = 0x02;
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x05, &x, 1))
@@ -140,7 +140,7 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
 
   updateProgress(pFunc, pCtx, 60.0f);
 
-  Serial.println("Identifying 5!");
+  ESP_LOGI(LOG_TAG, "Identifying 5!");
 
   /* write to 0xf204 */
   x = 0x0a;
@@ -148,7 +148,7 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
     return false;
 
   // Give the user 60s to confirm/deny pairing
-  Serial.println("Waiting for user to confirm/deny pairing.");
+  ESP_LOGI(LOG_TAG, "Waiting for user to confirm/deny pairing.");
   for (unsigned int i = 0; i < 60; i++) {
     float progress = 70.0f + (float(i) / 6.0f);
     updateProgress(pFunc, pCtx, progress);
@@ -160,7 +160,7 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
 
   if (m_PairResult != CANON_EOS_PAIR_ACCEPT) {
     bool deleted = NimBLEDevice::deleteBond(m_Address);
-    Serial.printf("Rejected, delete pairing: %d\n", deleted);
+    ESP_LOGW(LOG_TAG, "Rejected, delete pairing: %d", deleted);
     return false;
   }
 
@@ -171,14 +171,14 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
 
   updateProgress(pFunc, pCtx, 80.0f);
 
-  Serial.println("Identifying 6!");
+  ESP_LOGI(LOG_TAG, "Identifying 6!");
 
   /* write to 0xf307 */
   x = 0x03;
   if (!write_value(m_Client, CANON_EOS_SVC_UNK1_UUID, CANON_EOS_CHR_UNK1_UUID, &x, 1))
     return false;
 
-  Serial.println("Paired!");
+  ESP_LOGI(LOG_TAG, "Paired!");
   updateProgress(pFunc, pCtx, 100.0f);
 
   return true;

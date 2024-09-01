@@ -50,7 +50,7 @@ bool MobileDevice::connect(progressFunc pFunc, void *pCtx) {
 
   unsigned int timeout = 60;
 
-  Serial.println("Waiting for connection.");
+  ESP_LOGI(LOG_TAG, "Waiting for connection.");
   while (--timeout && !isConnected()) {
     progress += 1.0f;
     updateProgress(pFunc, pCtx, progress);
@@ -58,7 +58,7 @@ bool MobileDevice::connect(progressFunc pFunc, void *pCtx) {
   };
 
   if (timeout == 0) {
-    Serial.println("Connection timed out.");
+    ESP_LOGI(LOG_TAG, "Connection timed out.");
     return false;
   }
 

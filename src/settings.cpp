@@ -91,7 +91,7 @@ void settings_menu_tx_power(void) {
  * Display GPS data.
  */
 static void show_gps_info(void) {
-  Serial.println("GPS Data");
+  ESP_LOGI(LOG_TAG, "GPS Data");
   char buffer0[64] = {0x0};
   char buffer1[64] = {0x0};
   char buffer2[64] = {0x0};

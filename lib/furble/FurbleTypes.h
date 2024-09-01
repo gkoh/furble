@@ -3,6 +3,8 @@
 
 #define FURBLE_STR "furble"
 
+extern const char *LOG_TAG;
+
 typedef enum {
   FURBLE_FUJIFILM = 1,
   FURBLE_CANON_EOS_M6 = 2,

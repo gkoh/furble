@@ -72,11 +72,11 @@ static void show_shutter_control(bool shutter_locked, unsigned long lock_start_m
 }
 
 static void remote_control(FurbleCtx *fctx) {
-  Furble::Camera *camera = fctx->camera;
+  auto camera = fctx->camera;
   static unsigned long shutter_lock_start_ms = 0;
   static bool shutter_lock = false;
 
-  Serial.println("Remote Control");
+  ESP_LOGI(LOG_TAG, "Remote Control");
 
   show_shutter_control(false, 0);
 
@@ -93,7 +93,7 @@ static void remote_control(FurbleCtx *fctx) {
         // ensure shutter is released on exit
         camera->shutterRelease();
       }
-      Serial.println("Exit shutter");
+      ESP_LOGI(LOG_TAG, "Exit shutter");
       break;
     }
 
@@ -103,14 +103,14 @@ static void remote_control(FurbleCtx *fctx) {
         shutter_lock = false;
         camera->shutterRelease();
         show_shutter_control(false, 0);
-        Serial.println("shutterRelease(unlock)");
+        ESP_LOGI(LOG_TAG, "shutterRelease(unlock)");
       } else {
         show_shutter_control(true, shutter_lock_start_ms);
       }
     } else {
       if (M5.BtnA.wasPressed()) {
         camera->shutterPress();
-        Serial.println("shutterPress()");
+        ESP_LOGI(LOG_TAG, "shutterPress()");
         continue;
       }
 
@@ -120,23 +120,23 @@ static void remote_control(FurbleCtx *fctx) {
           shutter_lock = true;
           shutter_lock_start_ms = millis();
           show_shutter_control(true, shutter_lock_start_ms);
-          Serial.println("shutter lock");
+          ESP_LOGI(LOG_TAG, "shutter lock");
         } else {
           camera->shutterRelease();
-          Serial.println("shutterRelease()");
+          ESP_LOGI(LOG_TAG, "shutterRelease()");
         }
         continue;
       }
 
       if (M5.BtnB.wasPressed()) {
         camera->focusPress();
-        Serial.println("focusPress()");
+        ESP_LOGI(LOG_TAG, "focusPress()");
         continue;
       }
 
       if (M5.BtnB.wasReleased()) {
         camera->focusRelease();
-        Serial.println("focusRelease()");
+        ESP_LOGI(LOG_TAG, "focusRelease()");
         continue;
       }
     }
@@ -150,7 +150,7 @@ static void remote_control(FurbleCtx *fctx) {
  */
 static uint16_t statusRefresh(void *private_data) {
   FurbleCtx *fctx = static_cast<FurbleCtx *>(private_data);
-  Furble::Camera *camera = fctx->camera;
+  auto camera = fctx->camera;
 
   if (camera->isConnected()) {
     furble_gps_update_geodata(camera);
