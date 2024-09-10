@@ -743,9 +743,6 @@ void ezSettings::begin() {
 #ifdef M5EZ_BATTERY
   ez.battery.begin();
 #endif
-#ifdef M5EZ_CLOCK
-  ez.clock.begin();
-#endif
 #ifdef M5EZ_BACKLIGHT
   ez.backlight.begin();
 #endif
@@ -1075,9 +1072,6 @@ void M5ez::yield() {
       }
     }
   }
-#ifdef M5EZ_CLOCK
-  events();  // TMP
-#endif
 }
 
 void M5ez::addEvent(uint16_t (*function)(void *private_data),

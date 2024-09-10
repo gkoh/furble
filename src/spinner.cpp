@@ -149,7 +149,6 @@ static void spinner_preset(const char *title, SpinValue *sv) {
     }
 
     ez.yield();
-    delay(50);
   } while (!ok);
 
   // reconstruct the value

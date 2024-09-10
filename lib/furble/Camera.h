@@ -87,6 +87,16 @@ class Camera {
    */
   virtual bool isConnected(void);
 
+  /**
+   * Camera is active (ie. connect() has succeeded previously).
+   */
+  bool isActive(void);
+
+  /**
+   * Set camera activity state.
+   */
+  void setActive(bool active);
+
   const char *getName(void);
 
   void fillSaveName(char *name);
@@ -115,6 +125,8 @@ class Camera {
   const uint16_t m_Latency = 1;
   // double the disconnect timeout
   const uint16_t m_Timeout = (2 * BLE_GAP_INITIAL_SUPERVISION_TIMEOUT);
+
+  bool m_Active = false;
 };
 }  // namespace Furble
 
