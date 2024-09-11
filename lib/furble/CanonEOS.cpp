@@ -204,7 +204,7 @@ void CanonEOS::focusRelease(void) {
   return;
 }
 
-void CanonEOS::updateGeoData(gps_t &gps, timesync_t &timesync) {
+void CanonEOS::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
   // do nothing
   return;
 }

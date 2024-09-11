@@ -261,7 +261,7 @@ void Fujifilm::focusRelease(void) {
   shutterRelease();
 }
 
-void Fujifilm::sendGeoData(gps_t &gps, timesync_t &timesync) {
+void Fujifilm::sendGeoData(const gps_t &gps, const timesync_t &timesync) {
   NimBLERemoteService *pSvc = m_Client->getService(FUJIFILM_SVC_GEOTAG_UUID);
   if (pSvc == nullptr) {
     return;
@@ -296,7 +296,7 @@ void Fujifilm::sendGeoData(gps_t &gps, timesync_t &timesync) {
   }
 }
 
-void Fujifilm::updateGeoData(gps_t &gps, timesync_t &timesync) {
+void Fujifilm::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
   if (m_GeoRequested) {
     sendGeoData(gps, timesync);
     m_GeoRequested = false;

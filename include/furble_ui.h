@@ -1,10 +1,10 @@
 #ifndef FURBLE_UI_H
 #define FURBLE_UI_H
 
-#include <Camera.h>
+#include "furble_control.h"
 
 struct FurbleCtx {
-  Furble::Camera *camera;
+  Furble::Control *control;
   bool reconnected;
 };
 

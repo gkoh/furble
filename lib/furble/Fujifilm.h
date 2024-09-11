@@ -27,7 +27,7 @@ class Fujifilm: public Camera {
   void shutterRelease(void) override;
   void focusPress(void) override;
   void focusRelease(void) override;
-  void updateGeoData(gps_t &gps, timesync_t &timesync) override;
+  void updateGeoData(const gps_t &gps, const timesync_t &timesync) override;
   void disconnect(void) override;
   device_type_t getDeviceType(void) override;
   size_t getSerialisedBytes(void) override;
@@ -59,7 +59,7 @@ class Fujifilm: public Camera {
 
   void print(void);
   void notify(NimBLERemoteCharacteristic *, uint8_t *, size_t, bool);
-  void sendGeoData(gps_t &gps, timesync_t &timesync);
+  void sendGeoData(const gps_t &gps, const timesync_t &timesync);
 
   template <std::size_t N>
   void sendShutterCommand(const std::array<uint8_t, N> &cmd, const std::array<uint8_t, N> &param);

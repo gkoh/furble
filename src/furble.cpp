@@ -11,7 +11,7 @@
 #include "settings.h"
 
 const uint32_t SCAN_DURATION = (60 * 5);
-static QueueHandle_t queue;
+static Furble::Control *g_Control;
 
 /**
  * Progress bar update function.
@@ -74,16 +74,13 @@ static void show_shutter_control(bool shutter_locked, unsigned long lock_start_m
 }
 
 static void remote_control(FurbleCtx *fctx) {
-  auto camera = fctx->camera;
+  auto control = fctx->control;
   static unsigned long shutter_lock_start_ms = 0;
   static bool shutter_lock = false;
-  control_cmd_t cmd;
 
   ESP_LOGI(LOG_TAG, "Remote Control");
 
   show_shutter_control(false, 0);
-
-  ESP_LOGW(LOG_TAG, "queue = %p", queue);
 
   do {
     ez.yield();
@@ -96,8 +93,7 @@ static void remote_control(FurbleCtx *fctx) {
     if (M5.BtnPWR.wasClicked() || M5.BtnC.wasPressed()) {
       if (shutter_lock) {
         // ensure shutter is released on exit
-        cmd = CONTROL_CMD_SHUTTER_RELEASE;
-        xQueueSend(queue, &cmd, 0);
+        control->sendCommand(CONTROL_CMD_SHUTTER_RELEASE);
       }
       ESP_LOGI(LOG_TAG, "Exit shutter");
       break;
@@ -107,16 +103,14 @@ static void remote_control(FurbleCtx *fctx) {
       // release shutter if either shutter or focus is pressed
       if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked()) {
         shutter_lock = false;
-        cmd = CONTROL_CMD_SHUTTER_RELEASE;
-        xQueueSend(queue, &cmd, 0);
+        control->sendCommand(CONTROL_CMD_SHUTTER_RELEASE);
         show_shutter_control(false, 0);
       } else {
         show_shutter_control(true, shutter_lock_start_ms);
       }
     } else {
       if (M5.BtnA.wasPressed()) {
-        cmd = CONTROL_CMD_SHUTTER_PRESS;
-        xQueueSend(queue, &cmd, 0);
+        control->sendCommand(CONTROL_CMD_SHUTTER_PRESS);
         continue;
       }
 
@@ -128,25 +122,22 @@ static void remote_control(FurbleCtx *fctx) {
           show_shutter_control(true, shutter_lock_start_ms);
           ESP_LOGI(LOG_TAG, "shutter lock");
         } else {
-          cmd = CONTROL_CMD_SHUTTER_RELEASE;
-          xQueueSend(queue, &cmd, 0);
+          control->sendCommand(CONTROL_CMD_SHUTTER_RELEASE);
         }
         continue;
       }
 
       if (M5.BtnB.wasPressed()) {
-        cmd = CONTROL_CMD_FOCUS_PRESS;
-        xQueueSend(queue, &cmd, 0);
+        control->sendCommand(CONTROL_CMD_FOCUS_PRESS);
         continue;
       }
 
       if (M5.BtnB.wasReleased()) {
-        cmd = CONTROL_CMD_FOCUS_RELEASE;
-        xQueueSend(queue, &cmd, 0);
+        control->sendCommand(CONTROL_CMD_FOCUS_RELEASE);
         continue;
       }
     }
-  } while (camera->isConnected());
+  } while (control->isConnected());
 }
 
 /**
@@ -156,26 +147,31 @@ static void remote_control(FurbleCtx *fctx) {
  */
 static uint16_t statusRefresh(void *private_data) {
   FurbleCtx *fctx = static_cast<FurbleCtx *>(private_data);
-  auto camera = fctx->camera;
+  auto control = fctx->control;
 
-  if (camera->isConnected()) {
-    furble_gps_update(camera);
+  if (control->isConnected()) {
+    furble_gps_update(control);
     return 500;
   }
 
   auto buttons = ez.buttons.get();
   std::string header = ez.header.title();
 
-  ezProgressBar progress_bar(FURBLE_STR, {"Reconnecting ..."}, {""});
-  if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
-    ez.screen.clear();
-    ez.header.show(header);
-    ez.buttons.show(buttons);
+  for (const auto &target : control->getTargets()) {
+    auto camera = target->getCamera();
+    if (!camera->isConnected()) {
+      ezProgressBar progress_bar(FURBLE_STR, {"Reconnecting ..."}, {""});
+      if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
+        ez.screen.clear();
+        ez.header.show(header);
+        ez.buttons.show(buttons);
 
-    fctx->reconnected = true;
+        fctx->reconnected = true;
 
-    ez.redraw();
-    return 500;
+        ez.redraw();
+        return 500;
+      }
+    }
   }
 
   ez.screen.clear();
@@ -209,8 +205,7 @@ static void menu_remote(FurbleCtx *fctx) {
 
   ez.removeEvent(statusRefresh);
 
-  fctx->camera->disconnect();
-  fctx->camera->setActive(false);
+  fctx->control->disconnect();
   ez.backlight.inactivity(USER_SET);
 }
 
@@ -227,7 +222,7 @@ void updateConnectItems(void *private_data) {
   submenu->addItem("Back");
 }
 
-static void menu_connect(bool scan) {
+static void menu_connect(Furble::Control *control, bool scan) {
   std::string header = FURBLE_STR " - ";
   if (scan) {
     header += "Scanning";
@@ -260,15 +255,16 @@ static void menu_connect(bool scan) {
   if (i == 0)
     return;
 
-  FurbleCtx fctx = {Furble::CameraList::get(i - 1), false};
+  // FurbleCtx fctx = {Furble::CameraList::get(i - 1), false};
+  FurbleCtx fctx = {control, false};
+  auto camera = Furble::CameraList::get(i - 1);
 
-  ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to ") + fctx.camera->getName()},
-                             {""});
-  if (fctx.camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
+  ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to ") + camera->getName()}, {""});
+  if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
     if (scan) {
-      Furble::CameraList::save(fctx.camera);
+      Furble::CameraList::save(camera);
     }
-    fctx.camera->setActive(true);
+    control->addActive(camera);
     menu_remote(&fctx);
   }
 }
@@ -279,7 +275,7 @@ static void menu_connect(bool scan) {
 static void do_scan(void) {
   Furble::CameraList::clear();
   Furble::Scan::clear();
-  menu_connect(true);
+  menu_connect(g_Control, true);
 }
 
 /**
@@ -287,7 +283,7 @@ static void do_scan(void) {
  */
 static void do_saved(void) {
   Furble::CameraList::load();
-  menu_connect(false);
+  menu_connect(g_Control, false);
 }
 
 static void menu_delete(void) {
@@ -327,7 +323,7 @@ static void mainmenu_poweroff(void) {
 }
 
 void vUITask(void *param) {
-  queue = static_cast<QueueHandle_t>(param);
+  g_Control = static_cast<Furble::Control *>(param);
 
 #include <themes/dark.h>
 #include <themes/default.h>

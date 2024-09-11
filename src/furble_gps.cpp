@@ -52,7 +52,7 @@ static uint16_t service_grove_gps(void *private_data) {
 /**
  * Update geotag data.
  */
-void furble_gps_update(Furble::Camera *camera) {
+void furble_gps_update(Furble::Control *control) {
   if (!furble_gps_enable) {
     return;
   }
@@ -66,7 +66,7 @@ void furble_gps_update(Furble::Camera *camera) {
                                            furble_gps.date.day(),    furble_gps.time.hour(),
                                            furble_gps.time.minute(), furble_gps.time.second()};
 
-    control_update_gps(dgps, timesync);
+    control->updateGPS(dgps, timesync);
     ez.header.draw("gps");
   }
 }

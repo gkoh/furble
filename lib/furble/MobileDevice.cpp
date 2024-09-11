@@ -89,7 +89,7 @@ void MobileDevice::focusRelease(void) {
   // not supported
 }
 
-void MobileDevice::updateGeoData(gps_t &gps, timesync_t &timesync) {
+void MobileDevice::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
   // not supported
 }
 

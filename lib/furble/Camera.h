@@ -76,7 +76,7 @@ class Camera {
   /**
    * Update geotagging data.
    */
-  virtual void updateGeoData(gps_t &gps, timesync_t &timesync) = 0;
+  virtual void updateGeoData(const gps_t &gps, const timesync_t &timesync) = 0;
 
   virtual device_type_t getDeviceType(void) = 0;
   virtual size_t getSerialisedBytes(void) = 0;

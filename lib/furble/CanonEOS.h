@@ -61,7 +61,7 @@ class CanonEOS: public Camera {
   void shutterRelease(void) override;
   void focusPress(void) override;
   void focusRelease(void) override;
-  void updateGeoData(gps_t &gps, timesync_t &timesync) override;
+  void updateGeoData(const gps_t &gps, const timesync_t &timesync) override;
   void disconnect(void) override;
   size_t getSerialisedBytes(void) override;
   bool serialise(void *buffer, size_t bytes) override;
