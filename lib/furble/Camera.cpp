@@ -36,6 +36,10 @@ const char *Camera::getName(void) {
   return m_Name.c_str();
 }
 
+const NimBLEAddress Camera::getAddress(void) {
+  return m_Address;
+}
+
 void Camera::fillSaveName(char *name) {
   snprintf(name, 16, "%08llX", (uint64_t)m_Address);
 }

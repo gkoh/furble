@@ -41,7 +41,7 @@ class CameraList {
   /**
    * Add mobile device to the list.
    */
-  static void add(NimBLEAddress address);
+  static void add(const NimBLEAddress &address, const std::string &name);
 
   /**
    * Number of connectable devices.

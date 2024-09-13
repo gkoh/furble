@@ -10,7 +10,7 @@
 #include "interval.h"
 #include "settings.h"
 
-const uint32_t SCAN_DURATION = (60 * 5);
+const uint32_t SCAN_DURATION_MS = (60 * 5 * 1000);
 static Furble::Control *g_Control;
 
 /**
@@ -233,7 +233,7 @@ static void menu_connect(Furble::Control *control, bool scan) {
   ezMenu submenu(header);
   if (scan) {
     ez.backlight.inactivity(NEVER);
-    Furble::Scan::start(SCAN_DURATION, updateConnectItems, &submenu);
+    Furble::Scan::start(SCAN_DURATION_MS, updateConnectItems, &submenu);
   } else {
     updateConnectItems(&submenu);
   }
@@ -255,7 +255,7 @@ static void menu_connect(Furble::Control *control, bool scan) {
   if (i == 0)
     return;
 
-  // FurbleCtx fctx = {Furble::CameraList::get(i - 1), false};
+#if 1
   FurbleCtx fctx = {control, false};
   auto camera = Furble::CameraList::get(i - 1);
 
@@ -267,6 +267,23 @@ static void menu_connect(Furble::Control *control, bool scan) {
     control->addActive(camera);
     menu_remote(&fctx);
   }
+#else
+  FurbleCtx fctx = {control, false};
+
+  for (int n = 0; n < Furble::CameraList::size(); n++) {
+    auto camera = Furble::CameraList::get(n);
+    ESP_LOGE(LOG_TAG, "n = %u", n);
+    ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to ") + camera->getName()},
+                               {""});
+    if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
+      if (scan) {
+        Furble::CameraList::save(camera);
+      }
+      control->addActive(camera);
+    }
+  }
+  menu_remote(&fctx);
+#endif
 }
 
 /**

@@ -39,6 +39,7 @@ HIDServer::HIDServer() {
   m_Server = NimBLEDevice::createServer();
   m_Server->setCallbacks(this);
   m_Server->advertiseOnDisconnect(false);
+  m_Server->getPeerNameOnConnect(true);
 
   m_HID = new NimBLEHIDDevice(m_Server);
   m_Input = m_HID->inputReport(1);
@@ -55,6 +56,7 @@ HIDServer::HIDServer() {
   // advertise the services
   m_Advertising = m_Server->getAdvertising();
   m_Advertising->setAppearance(HID_GENERIC_REMOTE);
+  m_Advertising->setAdvertisementType(BLE_GAP_CONN_MODE_UND);
   m_Advertising->addServiceUUID(m_HID->hidService()->getUUID());
 }
 
@@ -84,23 +86,11 @@ void HIDServer::stop(void) {
   m_Server->stopAdvertising();
 }
 
-void HIDServer::onConnect(NimBLEServer *pServer, ble_gap_conn_desc *desc) {
-  NimBLEAddress address = NimBLEAddress(desc->peer_ota_addr);
+void HIDServer::onAuthenticationComplete(const NimBLEConnInfo &connInfo, const std::string &name) {
+  NimBLEAddress address = connInfo.getIdAddress();
   if (m_hidCallbacks != nullptr) {
-    m_hidCallbacks->onConnect(address);
+    m_hidCallbacks->onComplete(address, name);
   }
-}
-
-void HIDServer::onDisconnect(NimBLEServer *pServer, ble_gap_conn_desc *desc) {
-  m_Connected = false;
-}
-
-void HIDServer::onAuthenticationComplete(ble_gap_conn_desc *desc) {
-  NimBLEAddress address = NimBLEAddress(desc->peer_ota_addr);
-  if (m_hidCallbacks != nullptr) {
-    m_hidCallbacks->onComplete(address);
-  }
-  m_Connected = true;
 }
 
 NimBLECharacteristic *HIDServer::getInput(void) {
@@ -116,7 +106,9 @@ void HIDServer::disconnect(NimBLEAddress &address) {
   m_Server->disconnect(info.getConnHandle());
 }
 
-bool HIDServer::isConnected(void) {
-  return m_Connected;
+bool HIDServer::isConnected(NimBLEAddress &address) {
+  NimBLEConnInfo info = m_Server->getPeerInfo(address);
+
+  return (!info.getIdAddress().isNull());
 }
 }  // namespace Furble

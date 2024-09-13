@@ -19,8 +19,8 @@ MobileDevice::MobileDevice(const void *data, size_t len) {
   m_HIDServer = HIDServer::getInstance();
 }
 
-MobileDevice::MobileDevice(NimBLEAddress address) {
-  m_Name = address.toString();
+MobileDevice::MobileDevice(const NimBLEAddress &address, const std::string &name) {
+  m_Name = name;
   m_Address = address;
   m_HIDServer = HIDServer::getInstance();
 }
@@ -43,14 +43,13 @@ bool MobileDevice::matches(NimBLEAdvertisedDevice *pDevice) {
  * All this logic is encapsulated in the HIDServer class.
  */
 bool MobileDevice::connect(progressFunc pFunc, void *pCtx) {
+  unsigned int timeout = 60;
   float progress = 0.0f;
   updateProgress(pFunc, pCtx, progress);
 
-  m_HIDServer->start(60, nullptr, &m_Address);
+  m_HIDServer->start(timeout * 1000, nullptr, &m_Address);
 
-  unsigned int timeout = 60;
-
-  ESP_LOGI(LOG_TAG, "Waiting for connection.");
+  ESP_LOGI(LOG_TAG, "Waiting for connection from %s", m_Name.c_str());
   while (--timeout && !isConnected()) {
     progress += 1.0f;
     updateProgress(pFunc, pCtx, progress);
@@ -62,6 +61,7 @@ bool MobileDevice::connect(progressFunc pFunc, void *pCtx) {
     return false;
   }
 
+  ESP_LOGI(LOG_TAG, "Connected to %s.", m_Name.c_str());
   progress = 100.0f;
   updateProgress(pFunc, pCtx, progress);
   m_HIDServer->stop();
@@ -98,7 +98,7 @@ void MobileDevice::disconnect(void) {
 }
 
 bool MobileDevice::isConnected(void) {
-  return m_HIDServer->isConnected();
+  return m_HIDServer->isConnected(m_Address);
 }
 
 device_type_t MobileDevice::getDeviceType(void) {

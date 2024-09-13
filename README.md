@@ -100,8 +100,10 @@ Connection to mobile devices is a little iffy:
 - hit `Scan`
 - on the mobile device:
    - pair with `furble`
-- on `furble` the mobile device bluetooth MAC address should appear as a connectable target
-   - fixing the target name is tracked in [#100](https://github.com/gkoh/furble/issues/100).
+- on `furble` the mobile device should appear as a connectable target if the pairing was successful
+- connect to the mobile device to save the pairing
+  - the devices will remain paired even if you do not connect and save
+  - forget `furble` on the mobile device to remove such a pair
 
 ### GPS Location Tagging
 

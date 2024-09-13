@@ -48,7 +48,7 @@ class Scan {
   ~Scan();
 
  private:
-  class AdvertisedCallback;
+  class ScanCallback;
   class HIDServerCallback;
 
   static NimBLEScan *m_Scan;

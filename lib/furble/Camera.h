@@ -99,6 +99,8 @@ class Camera {
 
   const char *getName(void);
 
+  const NimBLEAddress getAddress(void);
+
   void fillSaveName(char *name);
 
  protected:

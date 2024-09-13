@@ -13,7 +13,7 @@ namespace Furble {
 class MobileDevice: public Camera {
  public:
   MobileDevice(const void *data, size_t len);
-  MobileDevice(NimBLEAddress address);
+  MobileDevice(const NimBLEAddress &address, const std::string &name);
   ~MobileDevice(void);
 
   static bool matches(NimBLEAdvertisedDevice *pDevice);
