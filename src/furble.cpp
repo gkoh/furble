@@ -10,8 +10,14 @@
 #include "interval.h"
 #include "settings.h"
 
-const uint32_t SCAN_DURATION_MS = (60 * 5 * 1000);
-static Furble::Control *g_Control;
+typedef struct {
+  Furble::Control *control;
+  ezMenu *menu;
+  bool scan;
+  bool multiconnect;
+} ui_context_t;
+
+#define CONNECT_STAR "Connect *"
 
 /**
  * Progress bar update function.
@@ -145,8 +151,8 @@ static void remote_control(FurbleCtx *fctx) {
  * * disconnect detection
  * * geotag updates
  */
-static uint16_t statusRefresh(void *private_data) {
-  FurbleCtx *fctx = static_cast<FurbleCtx *>(private_data);
+static uint16_t statusRefresh(void *context) {
+  FurbleCtx *fctx = static_cast<FurbleCtx *>(context);
   auto control = fctx->control;
 
   if (control->isConnected()) {
@@ -209,17 +215,82 @@ static void menu_remote(FurbleCtx *fctx) {
   ez.backlight.inactivity(USER_SET);
 }
 
+static bool do_connect(ezMenu *menu, void *context) {
+  auto ctx = static_cast<ui_context_t *>(context);
+
+  ESP_LOGE("UI", "HERE");
+
+  FurbleCtx fctx = {ctx->control, false};
+
+  if (!ctx->scan && ctx->multiconnect) {
+    for (int n = 0; n < Furble::CameraList::size(); n++) {
+      auto camera = Furble::CameraList::get(n);
+      if (camera->isActive()) {
+        ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to ") + camera->getName()},
+                                   {""});
+        if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
+          ctx->control->addActive(camera);
+        } else {
+          // Fail all if any connect fails
+          return false;
+        }
+      }
+    }
+  } else {
+    auto camera = Furble::CameraList::get(menu->pick() - 1);
+
+    ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to ") + camera->getName()},
+                               {""});
+    if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
+      if (ctx->scan) {
+        Furble::CameraList::save(camera);
+      }
+      ctx->control->addActive(camera);
+    } else {
+      return false;
+    }
+  }
+
+  menu_remote(&fctx);
+  return true;
+}
+
+static bool toggleCameraSelect(ezMenu *menu, void *context) {
+  auto camera = static_cast<Furble::Camera *>(context);
+  camera->setActive(!camera->isActive());
+  menu->setCaption(camera->getAddress().toString(),
+                   std::string(camera->getName()) + "\t" + (camera->isActive() ? "*" : ""));
+
+  return true;
+}
+
 /**
  * Scan callback to update connection menu with new devices.
  */
-void updateConnectItems(void *private_data) {
-  ezMenu *submenu = (ezMenu *)private_data;
+static void updateConnectItems(void *context) {
+  auto ctx = static_cast<ui_context_t *>(context);
+  auto menu = ctx->menu;
 
-  submenu->deleteItem("Back");
-  for (int i = submenu->countItems(); i < Furble::CameraList::size(); i++) {
-    submenu->addItem(Furble::CameraList::get(i)->getName());
+  if (!ctx->scan && ctx->multiconnect) {
+    menu->deleteItem(CONNECT_STAR);
   }
-  submenu->addItem("Back");
+  menu->deleteItem("Back");
+  for (int i = menu->countItems(); i < Furble::CameraList::size(); i++) {
+    auto camera = Furble::CameraList::get(i);
+
+    if (!ctx->scan && ctx->multiconnect) {
+      menu->addItem(camera->getAddress().toString(),
+                    std::string(camera->getName()) + "\t" + (camera->isActive() ? "*" : ""), NULL,
+                    static_cast<void *>(camera), toggleCameraSelect);
+    } else {
+      menu->addItem(camera->getAddress().toString(), std::string(camera->getName()), NULL, ctx,
+                    do_connect);
+    }
+  }
+  if (!ctx->scan && ctx->multiconnect) {
+    menu->addItem(CONNECT_STAR, "", NULL, ctx, do_connect);
+  }
+  menu->addItem("Back");
 }
 
 static void menu_connect(Furble::Control *control, bool scan) {
@@ -231,11 +302,12 @@ static void menu_connect(Furble::Control *control, bool scan) {
   }
 
   ezMenu submenu(header);
+  ui_context_t ui_ctx = (ui_context_t){control, &submenu, scan, settings_load_multiconnect()};
   if (scan) {
     ez.backlight.inactivity(NEVER);
-    Furble::Scan::start(SCAN_DURATION_MS, updateConnectItems, &submenu);
+    Furble::Scan::start(updateConnectItems, &ui_ctx);
   } else {
-    updateConnectItems(&submenu);
+    updateConnectItems(&ui_ctx);
   }
 
   submenu.buttons({"OK", "down"});
@@ -244,63 +316,43 @@ static void menu_connect(Furble::Control *control, bool scan) {
   }
   submenu.downOnLast("first");
 
-  submenu.runOnce(true);
+  do {
+    submenu.runOnce(true);
 
-  if (scan) {
-    Furble::Scan::stop();
-    ez.backlight.inactivity(USER_SET);
-  }
-
-  int16_t i = submenu.pick();
-  if (i == 0)
-    return;
-
-#if 1
-  FurbleCtx fctx = {control, false};
-  auto camera = Furble::CameraList::get(i - 1);
-
-  ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to ") + camera->getName()}, {""});
-  if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
     if (scan) {
-      Furble::CameraList::save(camera);
+      Furble::Scan::stop();
+      ez.backlight.inactivity(USER_SET);
     }
-    control->addActive(camera);
-    menu_remote(&fctx);
-  }
-#else
-  FurbleCtx fctx = {control, false};
 
-  for (int n = 0; n < Furble::CameraList::size(); n++) {
-    auto camera = Furble::CameraList::get(n);
-    ESP_LOGE(LOG_TAG, "n = %u", n);
-    ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to ") + camera->getName()},
-                               {""});
-    if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
-      if (scan) {
-        Furble::CameraList::save(camera);
-      }
-      control->addActive(camera);
+    if (submenu.pick() == 0) {
+      break;
     }
-  }
-  menu_remote(&fctx);
-#endif
+  } while (!scan);
 }
 
 /**
  * Scan for devices, then present connection menu.
  */
-static void do_scan(void) {
+static bool do_scan(ezMenu *menu, void *context) {
+  auto control = static_cast<Furble::Control *>(context);
+
   Furble::CameraList::clear();
   Furble::Scan::clear();
-  menu_connect(g_Control, true);
+  menu_connect(control, true);
+
+  return true;
 }
 
 /**
  * Retrieve saved devices, then present connection menu.
  */
-static void do_saved(void) {
+static bool do_saved(ezMenu *menu, void *context) {
+  auto control = static_cast<Furble::Control *>(context);
+
   Furble::CameraList::load();
-  menu_connect(g_Control, false);
+  menu_connect(control, false);
+
+  return true;
 }
 
 static void menu_delete(void) {
@@ -320,13 +372,32 @@ static void menu_delete(void) {
   Furble::CameraList::remove(Furble::CameraList::get(i - 1));
 }
 
+/**
+ * Toggle Multi-Connect menu setting.
+ */
+static bool multiconnect_toggle(ezMenu *menu, void *context) {
+  bool *multiconnect = static_cast<bool *>(context);
+  *multiconnect = !*multiconnect;
+  menu->setCaption("multiconnectonoff",
+                   std::string("Multi-Connect\t") + (*multiconnect ? "ON" : "OFF"));
+
+  settings_save_multiconnect(*multiconnect);
+
+  return true;
+}
+
 static void menu_settings(void) {
   ezMenu submenu(FURBLE_STR " - Settings");
+
+  bool multiconnect = settings_load_multiconnect();
 
   submenu.buttons({"OK", "down"});
   submenu.addItem("Backlight", "", ez.backlight.menu);
   submenu.addItem("GPS", "", settings_menu_gps);
   submenu.addItem("Intervalometer", "", settings_menu_interval);
+  submenu.addItem("multiconnectonoff",
+                  std::string("Multi-Connect\t") + (multiconnect ? "ON" : "OFF"), nullptr,
+                  &multiconnect, multiconnect_toggle);
   submenu.addItem("Theme", "", ez.theme->menu);
   submenu.addItem("Transmit Power", "", settings_menu_tx_power);
   submenu.addItem("About", "", about);
@@ -340,7 +411,7 @@ static void mainmenu_poweroff(void) {
 }
 
 void vUITask(void *param) {
-  g_Control = static_cast<Furble::Control *>(param);
+  auto control = static_cast<Furble::Control *>(param);
 
 #include <themes/dark.h>
 #include <themes/default.h>
@@ -355,9 +426,9 @@ void vUITask(void *param) {
     ezMenu mainmenu(FURBLE_STR);
     mainmenu.buttons({"OK", "down"});
     if (save_count > 0) {
-      mainmenu.addItem("Connect", "", do_saved);
+      mainmenu.addItem("Connect", "", nullptr, control, do_saved);
     }
-    mainmenu.addItem("Scan", "", do_scan);
+    mainmenu.addItem("Scan", "", nullptr, control, do_scan);
     if (save_count > 0) {
       mainmenu.addItem("Delete Saved", "", menu_delete);
     }

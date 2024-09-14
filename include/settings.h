@@ -6,8 +6,6 @@
 
 #include "interval.h"
 
-extern interval_t interval;
-
 void settings_menu_tx_power(void);
 esp_power_level_t settings_load_esp_tx_power(void);
 
@@ -17,7 +15,10 @@ void settings_menu_gps(void);
 void settings_load_interval(interval_t *interval);
 void settings_save_interval(interval_t *interval);
 
-void settings_add_interval_items(ezMenu *submenu);
+void settings_add_interval_items(ezMenu *submenu, interval_t *interval);
 void settings_menu_interval(void);
+
+bool settings_load_multiconnect(void);
+void settings_save_multiconnect(bool multiconnect);
 
 #endif

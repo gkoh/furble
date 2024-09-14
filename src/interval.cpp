@@ -143,10 +143,14 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
 }
 
 void remote_interval(FurbleCtx *fctx) {
+  interval_t interval;
+
+  settings_load_interval(&interval);
+
   ezMenu submenu(FURBLE_STR " - Interval");
   submenu.buttons({"OK", "down"});
   submenu.addItem("Start");
-  settings_add_interval_items(&submenu);
+  settings_add_interval_items(&submenu, &interval);
   submenu.addItem("Back");
   submenu.downOnLast("first");
 

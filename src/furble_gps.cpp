@@ -29,7 +29,7 @@ bool furble_gps_enable = false;
 /**
  * GPS serial event service handler.
  */
-static uint16_t service_grove_gps(void *private_data) {
+static uint16_t service_grove_gps(void *context) {
   if (!furble_gps_enable) {
     return GPS_SERVICE_MS;
   }
@@ -106,7 +106,7 @@ static void current_draw_widget(uint16_t x, uint16_t y) {
   M5.Lcd.drawString(s, x + ez.theme->header_hmargin, ez.theme->header_tmargin + 2);
 }
 
-static uint16_t current_service(void *private_data) {
+static uint16_t current_service(void *context) {
   ez.header.draw("current");
   return 1000;
 }

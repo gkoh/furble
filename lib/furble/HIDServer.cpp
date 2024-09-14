@@ -39,7 +39,6 @@ HIDServer::HIDServer() {
   m_Server = NimBLEDevice::createServer();
   m_Server->setCallbacks(this);
   m_Server->advertiseOnDisconnect(false);
-  m_Server->getPeerNameOnConnect(true);
 
   m_HID = new NimBLEHIDDevice(m_Server);
   m_Input = m_HID->inputReport(1);
@@ -56,11 +55,12 @@ HIDServer::HIDServer() {
   // advertise the services
   m_Advertising = m_Server->getAdvertising();
   m_Advertising->setAppearance(HID_GENERIC_REMOTE);
-  m_Advertising->setAdvertisementType(BLE_GAP_CONN_MODE_UND);
   m_Advertising->addServiceUUID(m_HID->hidService()->getUUID());
 }
 
-HIDServer::~HIDServer() {}
+HIDServer::~HIDServer() {
+  m_hidCallbacks = nullptr;
+}
 
 HIDServer *HIDServer::getInstance(void) {
   if (hidServer == nullptr) {
@@ -70,15 +70,17 @@ HIDServer *HIDServer::getInstance(void) {
   return hidServer;
 }
 
-void HIDServer::start(unsigned int duration,
-                      HIDServerCallbacks *hidCallback,
-                      NimBLEAddress *address) {
+void HIDServer::start(NimBLEAddress *address, HIDServerCallbacks *hidCallback) {
   m_hidCallbacks = hidCallback;
   m_HID->startServices();
 
-  // Directed advertising not yet released
-  // m_Advertising->start(0, nullptr, address);
-  m_Advertising->start(duration);
+  m_Server->getPeerNameOnConnect((address == nullptr) ? true : false);
+
+  // Cannot get directed advertising working properly.
+  // m_Advertising->setAdvertisementType((address == nullptr) ? BLE_GAP_CONN_MODE_UND :
+  // BLE_GAP_CONN_MODE_DIR);
+  m_Advertising->setAdvertisementType(BLE_GAP_CONN_MODE_UND);
+  m_Advertising->start(BLE_HS_FOREVER, nullptr, address);
 }
 
 void HIDServer::stop(void) {
@@ -91,6 +93,11 @@ void HIDServer::onAuthenticationComplete(const NimBLEConnInfo &connInfo, const s
   if (m_hidCallbacks != nullptr) {
     m_hidCallbacks->onComplete(address, name);
   }
+}
+
+void HIDServer::onIdentity(const NimBLEConnInfo &connInfo) {
+  ESP_LOGI("HID", "identity resolved: address = %s, type = %d",
+           connInfo.getIdAddress().toString().c_str(), connInfo.getIdAddress().getType());
 }
 
 NimBLECharacteristic *HIDServer::getInput(void) {

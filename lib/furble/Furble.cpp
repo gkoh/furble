@@ -44,6 +44,7 @@ void Scan::init(esp_power_level_t power) {
   NimBLEDevice::init(Device::getStringID());
   NimBLEDevice::setPower(power);
   NimBLEDevice::setSecurityAuth(true, true, true);
+  NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_PUBLIC);
 
   // NimBLE requires configuring server before scan
   m_HIDServer = HIDServer::getInstance();
@@ -55,14 +56,12 @@ void Scan::init(esp_power_level_t power) {
   m_Scan->setWindow(6553);
 }
 
-void Scan::start(const uint32_t scanDuration,
-                 scanResultCallback scanCallback,
-                 void *scanPrivateData) {
-  m_HIDServer->start(scanDuration, new HIDServerCallback());
+void Scan::start(scanResultCallback scanCallback, void *scanPrivateData) {
+  m_HIDServer->start(nullptr, new HIDServerCallback());
 
   m_ScanResultCallback = scanCallback;
   m_ScanResultPrivateData = scanPrivateData;
-  m_Scan->start(scanDuration, false);
+  m_Scan->start(BLE_HS_FOREVER, false);
 }
 
 void Scan::stop(void) {

@@ -28,9 +28,7 @@ class HIDServer: public NimBLEServerCallbacks {
    *
    * @param[in] address If specified, start directed advertising.
    */
-  void start(unsigned int duration,
-             HIDServerCallbacks *hidCallbacks,
-             NimBLEAddress *address = nullptr);
+  void start(NimBLEAddress *address = nullptr, HIDServerCallbacks *hidCallbacks = nullptr);
 
   void stop(void);
 
@@ -46,6 +44,7 @@ class HIDServer: public NimBLEServerCallbacks {
   static HIDServer *hidServer;  // singleton
 
   void onAuthenticationComplete(const NimBLEConnInfo &connInfo, const std::string &name) override;
+  void onIdentity(const NimBLEConnInfo &connInfo) override;
 
   NimBLEServer *m_Server = nullptr;
   NimBLEHIDDevice *m_HID = nullptr;

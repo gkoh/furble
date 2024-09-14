@@ -450,7 +450,7 @@ size_t ezCanvas::write(const uint8_t *buffer, size_t size) {
   return size;
 }
 
-uint16_t ezCanvas::loop(void *private_data) {
+uint16_t ezCanvas::loop(void *context) {
   if (_next_scroll && millis() >= _next_scroll) {
     ez.setFont(_font);
     uint8_t h = ez.fontHeight();
@@ -907,7 +907,7 @@ void changeCpuPower(bool reduce) {
   }
 }
 
-uint16_t ezBacklight::loop(void *private_data) {
+uint16_t ezBacklight::loop(void *context) {
   if (!_backlight_off && _inactivity) {
     if (millis() > _last_activity + 30000 * _inactivity) {
       _backlight_off = true;
@@ -955,7 +955,7 @@ void ezBattery::begin() {
   }
 }
 
-uint16_t ezBattery::loop(void *private_data) {
+uint16_t ezBattery::loop(void *context) {
   if (!_on)
     return 0;
   ez.header.draw("battery");
@@ -1059,11 +1059,12 @@ void M5ez::begin() {
 }
 
 void M5ez::yield() {
+  vTaskDelay(1); // allow lower priority tasks to run
   ::yield();  // execute the Arduino yield in the root namespace
   M5.update();
   for (uint8_t n = 0; n < _events.size(); n++) {
     if (millis() > _events[n].when) {
-      uint16_t r = (_events[n].function)(_events[n].private_data);
+      uint16_t r = (_events[n].function)(_events[n].context);
       if (r) {
         _events[n].when = millis() + r - 1;
       } else {
@@ -1074,17 +1075,17 @@ void M5ez::yield() {
   }
 }
 
-void M5ez::addEvent(uint16_t (*function)(void *private_data),
-                    void *private_data,
+void M5ez::addEvent(uint16_t (*function)(void *context),
+                    void *context,
                     uint32_t when /* = 1 */) {
   event_t n;
   n.function = function;
-  n.private_data = private_data;
+  n.context = context;
   n.when = millis() + when - 1;
   _events.push_back(n);
 }
 
-void M5ez::removeEvent(uint16_t (*function)(void *private_data)) {
+void M5ez::removeEvent(uint16_t (*function)(void *context)) {
   uint8_t n = 0;
   while (n < _events.size()) {
     if (_events[n].function == function) {
@@ -1274,13 +1275,14 @@ void ezMenu::txtFont(const GFXfont *font) {
 bool ezMenu::addItem(std::string name,
                      std::string caption,
                      void (*simpleFunction)() /* = NULL */,
-                     bool (*advancedFunction)(ezMenu *callingMenu) /* = NULL */,
+                     void *context /* = NULL */,
+                     bool (*advancedFunction)(ezMenu *callingMenu, void *context) /* = NULL */,
                      void (*drawFunction)(ezMenu *callingMenu,
                                           int16_t x,
                                           int16_t y,
                                           int16_t w,
                                           int16_t h) /* = NULL */) {
-  MenuItem_t new_item = {name, caption, simpleFunction, advancedFunction, drawFunction};
+  MenuItem_t new_item = {name, caption, context, simpleFunction, advancedFunction, drawFunction};
   if (_selected == -1)
     _selected = _items.size();
   _items.push_back(new_item);
@@ -1437,7 +1439,7 @@ int16_t ezMenu::_runTextOnce(bool dynamic) {
         (_items[_selected].simpleFunction)();
       }
       if (_items[_selected].advancedFunction) {
-        if (!(_items[_selected].advancedFunction)(this))
+        if (!(_items[_selected].advancedFunction)(this, _items[_selected].context))
           return 0;
       }
       return _selected

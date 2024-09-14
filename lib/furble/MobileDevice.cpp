@@ -43,20 +43,20 @@ bool MobileDevice::matches(NimBLEAdvertisedDevice *pDevice) {
  * All this logic is encapsulated in the HIDServer class.
  */
 bool MobileDevice::connect(progressFunc pFunc, void *pCtx) {
-  unsigned int timeout = 60;
+  unsigned int timeout_secs = 60;
   float progress = 0.0f;
   updateProgress(pFunc, pCtx, progress);
 
-  m_HIDServer->start(timeout * 1000, nullptr, &m_Address);
+  m_HIDServer->start(&m_Address);
 
-  ESP_LOGI(LOG_TAG, "Waiting for connection from %s", m_Name.c_str());
-  while (--timeout && !isConnected()) {
+  ESP_LOGI(LOG_TAG, "Waiting for %us for connection from %s", timeout_secs, m_Name.c_str());
+  while (--timeout_secs && !isConnected()) {
     progress += 1.0f;
     updateProgress(pFunc, pCtx, progress);
     delay(1000);
   };
 
-  if (timeout == 0) {
+  if (timeout_secs == 0) {
     ESP_LOGI(LOG_TAG, "Connection timed out.");
     return false;
   }

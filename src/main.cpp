@@ -28,7 +28,8 @@ void setup() {
     abort();
   }
 
-  xRet = xTaskCreatePinnedToCore(vUITask, "UI-M5ez", 32768, control, 2, &xUIHandle, 1);
+  // Pin UI to same core (0) as NimBLE
+  xRet = xTaskCreatePinnedToCore(vUITask, "UI-M5ez", 32768, control, 2, &xUIHandle, 0);
   if (xRet != pdPASS) {
     ESP_LOGE(LOG_TAG, "Failed to create UI task.");
     abort();
