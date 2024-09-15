@@ -106,7 +106,9 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
     NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(CANON_EOS_CHR_NAME_UUID);
     if ((pChr != nullptr) && pChr->canIndicate()) {
       ESP_LOGI(LOG_TAG, "Subscribed for pairing indication");
-      pChr->subscribe(false, std::bind(&CanonEOS::pairCallback, this, _1, _2, _3, _4));
+      pChr->subscribe(false,
+                      [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length,
+                             bool isNotify) { this->pairCallback(pChr, pData, length, isNotify); });
     }
   }
 

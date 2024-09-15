@@ -4,3 +4,4 @@ ColumnLimit: 100
 PointerAlignment: Right
 BreakBeforeBinaryOperators: NonAssignment
 SpaceBeforeInheritanceColon: false
+AlignArrayOfStructures: Left
