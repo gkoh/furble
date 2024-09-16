@@ -1059,8 +1059,8 @@ void M5ez::begin() {
 }
 
 void M5ez::yield() {
-  vTaskDelay(1); // allow lower priority tasks to run
-  ::yield();  // execute the Arduino yield in the root namespace
+  vTaskDelay(1);  // allow lower priority tasks to run
+  ::yield();      // execute the Arduino yield in the root namespace
   M5.update();
   for (uint8_t n = 0; n < _events.size(); n++) {
     if (millis() > _events[n].when) {
@@ -1075,9 +1075,7 @@ void M5ez::yield() {
   }
 }
 
-void M5ez::addEvent(uint16_t (*function)(void *context),
-                    void *context,
-                    uint32_t when /* = 1 */) {
+void M5ez::addEvent(uint16_t (*function)(void *context), void *context, uint32_t when /* = 1 */) {
   event_t n;
   n.function = function;
   n.context = context;
