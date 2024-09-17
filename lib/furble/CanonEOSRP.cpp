@@ -32,8 +32,4 @@ bool CanonEOSRP::matches(NimBLEAdvertisedDevice *pDevice) {
   return false;
 }
 
-device_type_t CanonEOSRP::getDeviceType(void) {
-  return FURBLE_CANON_EOS_RP;
-}
-
 }  // namespace Furble

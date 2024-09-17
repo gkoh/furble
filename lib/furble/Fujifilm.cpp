@@ -82,7 +82,7 @@ void Fujifilm::notify(BLERemoteCharacteristic *pChr, uint8_t *pData, size_t leng
   }
 }
 
-Fujifilm::Fujifilm(const void *data, size_t len) {
+Fujifilm::Fujifilm(const void *data, size_t len) : Camera(Type::FUJIFILM) {
   if (len != sizeof(fujifilm_t))
     throw;
 
@@ -92,7 +92,7 @@ Fujifilm::Fujifilm(const void *data, size_t len) {
   memcpy(m_Token.data(), fujifilm->token, FUJIFILM_TOKEN_LEN);
 }
 
-Fujifilm::Fujifilm(NimBLEAdvertisedDevice *pDevice) {
+Fujifilm::Fujifilm(NimBLEAdvertisedDevice *pDevice) : Camera(Type::FUJIFILM) {
   const char *data = pDevice->getManufacturerData().data();
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
@@ -313,10 +313,6 @@ void Fujifilm::print(void) {
 
 void Fujifilm::disconnect(void) {
   m_Client->disconnect();
-}
-
-device_type_t Fujifilm::getDeviceType(void) {
-  return FURBLE_FUJIFILM;
 }
 
 size_t Fujifilm::getSerialisedBytes(void) {

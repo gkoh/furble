@@ -4,7 +4,7 @@
 
 namespace Furble {
 
-Camera::Camera() {
+Camera::Camera(Type type) : m_Type(type) {
   m_Client = NimBLEDevice::createClient();
 }
 
@@ -32,16 +32,16 @@ void Camera::setActive(bool active) {
   m_Active = active;
 }
 
+const Camera::Type &Camera::getType(void) {
+  return m_Type;
+}
+
 const std::string &Camera::getName(void) {
   return m_Name;
 }
 
 const NimBLEAddress &Camera::getAddress(void) {
   return m_Address;
-}
-
-void Camera::fillSaveName(char *name) {
-  snprintf(name, 16, "%08llX", (uint64_t)m_Address);
 }
 
 void Camera::updateProgress(progressFunc pFunc, void *ctx, float value) {

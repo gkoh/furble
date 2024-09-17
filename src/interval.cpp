@@ -95,7 +95,6 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
     switch (state) {
       case INTERVAL_SHUTTER_OPEN:
         if ((icount < interval->count.value) || (interval->count.unit == SPIN_UNIT_INF)) {
-          // ESP_LOGI(LOG_TAG, "Shutter Open");
           control->sendCommand(CONTROL_CMD_SHUTTER_PRESS);
           next = now + config_shutter;
           state = INTERVAL_SHUTTER_WAIT;
@@ -110,7 +109,6 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
         break;
       case INTERVAL_SHUTTER_CLOSE:
         icount++;
-        // ESP_LOGI(LOG_TAG, "Shutter Release");
         control->sendCommand(CONTROL_CMD_SHUTTER_RELEASE);
         next = now + config_delay;
         if ((icount < interval->count.value) || (interval->count.unit == SPIN_UNIT_INF)) {
@@ -131,7 +129,6 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
 
     if (M5.BtnB.wasClicked()) {
       if (state == INTERVAL_SHUTTER_WAIT) {
-        // ESP_LOGI(LOG_TAG, "Shutter Release");
         control->sendCommand(CONTROL_CMD_SHUTTER_RELEASE);
       }
       active = false;

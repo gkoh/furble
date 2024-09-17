@@ -9,7 +9,7 @@
 
 namespace Furble {
 
-MobileDevice::MobileDevice(const void *data, size_t len) {
+MobileDevice::MobileDevice(const void *data, size_t len) : Camera(Type::MOBILE_DEVICE) {
   if (len != sizeof(mobile_device_t))
     throw;
 
@@ -19,7 +19,8 @@ MobileDevice::MobileDevice(const void *data, size_t len) {
   m_HIDServer = HIDServer::getInstance();
 }
 
-MobileDevice::MobileDevice(const NimBLEAddress &address, const std::string &name) {
+MobileDevice::MobileDevice(const NimBLEAddress &address, const std::string &name)
+    : Camera(Type::MOBILE_DEVICE) {
   m_Name = name;
   m_Address = address;
   m_HIDServer = HIDServer::getInstance();
@@ -99,10 +100,6 @@ void MobileDevice::disconnect(void) {
 
 bool MobileDevice::isConnected(void) {
   return m_HIDServer->isConnected(m_Address);
-}
-
-device_type_t MobileDevice::getDeviceType(void) {
-  return FURBLE_MOBILE_DEVICE;
 }
 
 size_t MobileDevice::getSerialisedBytes(void) {

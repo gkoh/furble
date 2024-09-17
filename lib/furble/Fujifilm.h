@@ -29,7 +29,6 @@ class Fujifilm: public Camera {
   void focusRelease(void) override;
   void updateGeoData(const gps_t &gps, const timesync_t &timesync) override;
   void disconnect(void) override;
-  device_type_t getDeviceType(void) override;
   size_t getSerialisedBytes(void) override;
   bool serialise(void *buffer, size_t bytes) override;
 

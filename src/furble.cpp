@@ -218,8 +218,6 @@ static void menu_remote(FurbleCtx *fctx) {
 static bool do_connect(ezMenu *menu, void *context) {
   auto ctx = static_cast<ui_context_t *>(context);
 
-  ESP_LOGE("UI", "HERE");
-
   FurbleCtx fctx = {ctx->control, false};
 
   if (!ctx->scan && ctx->multiconnect) {

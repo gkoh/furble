@@ -9,7 +9,7 @@
 
 namespace Furble {
 
-CanonEOS::CanonEOS(const void *data, size_t len) {
+CanonEOS::CanonEOS(Type type, const void *data, size_t len) : Camera(type) {
   if (len != sizeof(eos_t))
     throw;
 
@@ -19,7 +19,7 @@ CanonEOS::CanonEOS(const void *data, size_t len) {
   memcpy(&m_Uuid, &eos->uuid, sizeof(Device::uuid128_t));
 }
 
-CanonEOS::CanonEOS(NimBLEAdvertisedDevice *pDevice) {
+CanonEOS::CanonEOS(Type type, NimBLEAdvertisedDevice *pDevice) : Camera(type) {
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
   ESP_LOGI(LOG_TAG, "Name = %s", m_Name.c_str());

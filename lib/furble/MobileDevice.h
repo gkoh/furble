@@ -35,7 +35,6 @@ class MobileDevice: public Camera {
     uint8_t type;        /** Address type. */
   } mobile_device_t;
 
-  device_type_t getDeviceType(void);
   size_t getSerialisedBytes(void);
   bool serialise(void *buffer, size_t bytes);
   void sendKeyReport(const uint8_t key);

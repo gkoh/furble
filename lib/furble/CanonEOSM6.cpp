@@ -32,8 +32,4 @@ bool CanonEOSM6::matches(NimBLEAdvertisedDevice *pDevice) {
   return false;
 }
 
-device_type_t CanonEOSM6::getDeviceType(void) {
-  return FURBLE_CANON_EOS_M6;
-}
-
 }  // namespace Furble

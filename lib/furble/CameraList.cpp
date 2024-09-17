@@ -23,8 +23,12 @@ static Preferences m_Prefs;
  */
 typedef struct {
   char name[16];
-  device_type_t type;
+  Camera::Type type;
 } index_entry_t;
+
+static void fillSaveName(index_entry_t &entry, Camera *camera) {
+  snprintf(entry.name, 16, "%08llX", (uint64_t)camera->getAddress());
+}
 
 static void save_index(std::vector<index_entry_t> &index) {
   if (index.size() > 0) {
@@ -77,8 +81,8 @@ void CameraList::save(Furble::Camera *camera) {
   std::vector<index_entry_t> index = load_index();
 
   index_entry_t entry = {0};
-  camera->fillSaveName(entry.name);
-  entry.type = camera->getDeviceType();
+  fillSaveName(entry, camera);
+  entry.type = camera->getType();
 
   add_index(index, entry);
 
@@ -100,7 +104,7 @@ void CameraList::remove(Furble::Camera *camera) {
   std::vector<index_entry_t> index = load_index();
 
   index_entry_t entry = {0};
-  camera->fillSaveName(entry.name);
+  fillSaveName(entry, camera);
 
   size_t i = 0;
   for (i = 0; i < index.size(); i++) {
@@ -143,16 +147,16 @@ void CameraList::load(void) {
     m_Prefs.getBytes(index[i].name, dbuffer, dbytes);
 
     switch (index[i].type) {
-      case FURBLE_FUJIFILM:
+      case Camera::Type::FUJIFILM:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Fujifilm(dbuffer, dbytes)));
         break;
-      case FURBLE_CANON_EOS_M6:
+      case Camera::Type::CANON_EOS_M6:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new CanonEOSM6(dbuffer, dbytes)));
         break;
-      case FURBLE_CANON_EOS_RP:
+      case Camera::Type::CANON_EOS_RP:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new CanonEOSRP(dbuffer, dbytes)));
         break;
-      case FURBLE_MOBILE_DEVICE:
+      case Camera::Type::MOBILE_DEVICE:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new MobileDevice(dbuffer, dbytes)));
         break;
     }

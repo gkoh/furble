@@ -19,8 +19,15 @@ namespace Furble {
  */
 class Camera {
  public:
-  Camera();
-  ~Camera();
+  /**
+   * Camera types.
+   */
+  enum class Type : uint32_t {
+    FUJIFILM = 1,
+    CANON_EOS_M6 = 2,
+    CANON_EOS_RP = 3,
+    MOBILE_DEVICE = 4,
+  };
 
   /**
    * GPS data type.
@@ -42,6 +49,8 @@ class Camera {
     unsigned int minute;
     unsigned int second;
   } timesync_t;
+
+  ~Camera();
 
   /**
    * Wrapper for protected pure virtual Camera::connect().
@@ -78,7 +87,6 @@ class Camera {
    */
   virtual void updateGeoData(const gps_t &gps, const timesync_t &timesync) = 0;
 
-  virtual device_type_t getDeviceType(void) = 0;
   virtual size_t getSerialisedBytes(void) = 0;
   virtual bool serialise(void *buffer, size_t bytes) = 0;
 
@@ -97,13 +105,15 @@ class Camera {
    */
   void setActive(bool active);
 
+  const Type &getType(void);
+
   const std::string &getName(void);
 
   const NimBLEAddress &getAddress(void);
 
-  void fillSaveName(char *name);
-
  protected:
+  Camera(Type type);
+
   /**
    * Connect to the target camera such that it is ready for shutter control.
    *
@@ -127,6 +137,8 @@ class Camera {
   const uint16_t m_Latency = 1;
   // double the disconnect timeout
   const uint16_t m_Timeout = (2 * BLE_GAP_INITIAL_SUPERVISION_TIMEOUT);
+
+  const Type m_Type;
 
   bool m_Active = false;
 };

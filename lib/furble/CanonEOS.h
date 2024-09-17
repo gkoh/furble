@@ -10,10 +10,6 @@ namespace Furble {
  */
 class CanonEOS: public Camera {
  public:
-  CanonEOS(const void *data, size_t len);
-  CanonEOS(NimBLEAdvertisedDevice *pDevice);
-  ~CanonEOS(void);
-
  protected:
   typedef struct _eos_t {
     char name[MAX_NAME];    /** Human readable device name. */
@@ -21,6 +17,10 @@ class CanonEOS: public Camera {
     uint8_t type;           /** Address type. */
     Device::uuid128_t uuid; /** Our UUID. */
   } eos_t;
+
+  CanonEOS(Type type, const void *data, size_t len);
+  CanonEOS(Type type, NimBLEAdvertisedDevice *pDevice);
+  ~CanonEOS(void);
 
   const char *CANON_EOS_SVC_IDEN_UUID = "00010000-0000-1000-0000-d8492fffa821";
   /** 0xf108 */
