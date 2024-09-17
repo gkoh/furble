@@ -32,11 +32,11 @@ void Camera::setActive(bool active) {
   m_Active = active;
 }
 
-const char *Camera::getName(void) {
-  return m_Name.c_str();
+const std::string &Camera::getName(void) {
+  return m_Name;
 }
 
-const NimBLEAddress Camera::getAddress(void) {
+const NimBLEAddress &Camera::getAddress(void) {
   return m_Address;
 }
 

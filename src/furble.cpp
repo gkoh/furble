@@ -259,7 +259,7 @@ static bool toggleCameraSelect(ezMenu *menu, void *context) {
   auto camera = static_cast<Furble::Camera *>(context);
   camera->setActive(!camera->isActive());
   menu->setCaption(camera->getAddress().toString(),
-                   std::string(camera->getName()) + "\t" + (camera->isActive() ? "*" : ""));
+                   camera->getName() + "\t" + (camera->isActive() ? "*" : ""));
 
   return true;
 }
@@ -280,11 +280,10 @@ static void updateConnectItems(void *context) {
 
     if (!ctx->scan && ctx->multiconnect) {
       menu->addItem(camera->getAddress().toString(),
-                    std::string(camera->getName()) + "\t" + (camera->isActive() ? "*" : ""), NULL,
+                    camera->getName() + "\t" + (camera->isActive() ? "*" : ""), NULL,
                     static_cast<void *>(camera), toggleCameraSelect);
     } else {
-      menu->addItem(camera->getAddress().toString(), std::string(camera->getName()), NULL, ctx,
-                    do_connect);
+      menu->addItem(camera->getAddress().toString(), camera->getName(), NULL, ctx, do_connect);
     }
   }
   if (!ctx->scan && ctx->multiconnect) {

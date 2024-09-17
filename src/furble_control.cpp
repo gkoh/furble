@@ -6,7 +6,7 @@ static void target_task(void *param) {
   auto *target = static_cast<Furble::Control::Target *>(param);
 
   Furble::Camera *camera = target->getCamera();
-  const char *name = camera->getName();
+  const char *name = camera->getName().c_str();
 
   while (true) {
     control_cmd_t cmd = target->getCommand();
@@ -165,8 +165,8 @@ void Control::addActive(Camera *camera) {
   auto target = std::unique_ptr<Control::Target>(new Control::Target(camera));
 
   // Create per-target task that will self-delete on disconnect
-  BaseType_t ret =
-      xTaskCreatePinnedToCore(target_task, camera->getName(), 4096, target.get(), 3, NULL, 1);
+  BaseType_t ret = xTaskCreatePinnedToCore(target_task, camera->getName().c_str(), 4096,
+                                           target.get(), 3, NULL, 1);
   if (ret != pdPASS) {
     ESP_LOGE(LOG_TAG, "Failed to create task for '%s'.", camera->getName());
   } else {

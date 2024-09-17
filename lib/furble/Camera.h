@@ -97,9 +97,9 @@ class Camera {
    */
   void setActive(bool active);
 
-  const char *getName(void);
+  const std::string &getName(void);
 
-  const NimBLEAddress getAddress(void);
+  const NimBLEAddress &getAddress(void);
 
   void fillSaveName(char *name);
 
