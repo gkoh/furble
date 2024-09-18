@@ -1,6 +1,7 @@
 #ifndef CAMERALIST_H
 #define CAMERALIST_H
 
+#include <Preferences.h>
 #include <memory>
 
 #include "Camera.h"
@@ -41,7 +42,7 @@ class CameraList {
   /**
    * Add mobile device to the list.
    */
-  static void add(NimBLEAddress address);
+  static void add(const NimBLEAddress &address, const std::string &name);
 
   /**
    * Number of connectable devices.
@@ -58,16 +59,23 @@ class CameraList {
    */
   static Furble::Camera *get(size_t n);
 
-  /**
-   * Retrieve last entry.
-   */
-  static Furble::Camera *back(void);
-
  private:
+  typedef struct {
+    char name[16];
+    Camera::Type type;
+  } index_entry_t;
+
+  static void fillSaveEntry(index_entry_t &entry, Camera *camera);
+  static std::vector<index_entry_t> load_index(void);
+  static void save_index(std::vector<index_entry_t> &index);
+  static void add_index(std::vector<index_entry_t> &index, index_entry_t &entry);
+
   /**
    * List of connectable devices.
    */
   static std::vector<std::unique_ptr<Furble::Camera>> m_ConnectList;
+
+  static Preferences m_Prefs;
 };
 }  // namespace Furble
 

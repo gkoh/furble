@@ -9,7 +9,7 @@
 
 namespace Furble {
 
-MobileDevice::MobileDevice(const void *data, size_t len) {
+MobileDevice::MobileDevice(const void *data, size_t len) : Camera(Type::MOBILE_DEVICE) {
   if (len != sizeof(mobile_device_t))
     throw;
 
@@ -19,8 +19,9 @@ MobileDevice::MobileDevice(const void *data, size_t len) {
   m_HIDServer = HIDServer::getInstance();
 }
 
-MobileDevice::MobileDevice(NimBLEAddress address) {
-  m_Name = address.toString();
+MobileDevice::MobileDevice(const NimBLEAddress &address, const std::string &name)
+    : Camera(Type::MOBILE_DEVICE) {
+  m_Name = name;
   m_Address = address;
   m_HIDServer = HIDServer::getInstance();
 }
@@ -43,25 +44,25 @@ bool MobileDevice::matches(NimBLEAdvertisedDevice *pDevice) {
  * All this logic is encapsulated in the HIDServer class.
  */
 bool MobileDevice::connect(progressFunc pFunc, void *pCtx) {
+  unsigned int timeout_secs = 60;
   float progress = 0.0f;
   updateProgress(pFunc, pCtx, progress);
 
-  m_HIDServer->start(60, nullptr, &m_Address);
+  m_HIDServer->start(&m_Address);
 
-  unsigned int timeout = 60;
-
-  ESP_LOGI(LOG_TAG, "Waiting for connection.");
-  while (--timeout && !isConnected()) {
+  ESP_LOGI(LOG_TAG, "Waiting for %us for connection from %s", timeout_secs, m_Name.c_str());
+  while (--timeout_secs && !isConnected()) {
     progress += 1.0f;
     updateProgress(pFunc, pCtx, progress);
     delay(1000);
   };
 
-  if (timeout == 0) {
+  if (timeout_secs == 0) {
     ESP_LOGI(LOG_TAG, "Connection timed out.");
     return false;
   }
 
+  ESP_LOGI(LOG_TAG, "Connected to %s.", m_Name.c_str());
   progress = 100.0f;
   updateProgress(pFunc, pCtx, progress);
   m_HIDServer->stop();
@@ -89,7 +90,7 @@ void MobileDevice::focusRelease(void) {
   // not supported
 }
 
-void MobileDevice::updateGeoData(gps_t &gps, timesync_t &timesync) {
+void MobileDevice::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
   // not supported
 }
 
@@ -98,11 +99,7 @@ void MobileDevice::disconnect(void) {
 }
 
 bool MobileDevice::isConnected(void) {
-  return m_HIDServer->isConnected();
-}
-
-device_type_t MobileDevice::getDeviceType(void) {
-  return FURBLE_MOBILE_DEVICE;
+  return m_HIDServer->isConnected(m_Address);
 }
 
 size_t MobileDevice::getSerialisedBytes(void) {

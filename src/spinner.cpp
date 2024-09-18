@@ -3,37 +3,34 @@
 
 #include "spinner.h"
 
-static const char *unit2str[5] = {"    ",   // SPIN_UNIT_NIL
-                                  "    ",   // SPIN_UNIT_INF
-                                  "msec",   // SPIN_UNIT_MS
-                                  "secs",   // SPIN_UNIT_SEC
-                                  "mins"};  // SPIN_UNIT_MIN
+static constexpr std::array<const char *, 5> unit2str = {
+    "    ",  // SPIN_UNIT_NIL
+    "    ",  // SPIN_UNIT_INF
+    "msec",  // SPIN_UNIT_MS
+    "secs",  // SPIN_UNIT_SEC
+    "mins"   // SPIN_UNIT_MIN
+};
 
-#define PRESET_NUM 10
-static const std::array<uint16_t, PRESET_NUM> spin_preset = {1, 2, 4, 8, 15, 30, 60, 125, 250, 500};
+static constexpr std::array<uint16_t, 10> spin_preset = {1, 2, 4, 8, 15, 30, 60, 125, 250, 500};
 
-#define FMT_NONE_LEN (4)
-static const std::array<const char *, FMT_NONE_LEN> fmt_none = {
+static constexpr std::array<const char *, 4> fmt_none = {
     " %1u  %1u  %1u ",
     "[%1u] %1u  %1u ",
     " %1u [%1u] %1u ",
     " %1u  %1u [%1u]",
 };
 
-#define FMT_UNIT_LEN (5)
-static const std::array<const char *, FMT_UNIT_LEN> fmt_unit = {
+static constexpr std::array<const char *, 5> fmt_unit = {
     " %1u  %1u  %1u  %4s ", "[%1u] %1u  %1u  %4s ", " %1u [%1u] %1u  %4s ",
     " %1u  %1u [%1u] %4s ", " %1u  %1u  %1u [%4s]",
 };
 
-#define FMT_PRESET_NONE_LEN (2)
-static const std::array<const char *, FMT_PRESET_NONE_LEN> fmt_preset_none = {
+static constexpr std::array<const char *, 2> fmt_preset_none = {
     " %1u  %1u  %1u ",
     "[%1u  %1u  %1u]",
 };
 
-#define FMT_PRESET_UNIT_LEN (3)
-static const std::array<const char *, FMT_PRESET_UNIT_LEN> fmt_preset_unit = {
+static constexpr std::array<const char *, 3> fmt_preset_unit = {
     " %1u  %1u  %1u  %4s ",
     "[%1u  %1u  %1u] %4s ",
     " %1u  %1u  %1u [%4s]",
@@ -235,11 +232,11 @@ void spinner_modify_value(const char *title, bool preset, SpinValue *sv) {
   }
 }
 
-std::string sv2str(SpinValue *sv) {
+std::string sv2str(const SpinValue *sv) {
   return std::to_string(sv->value) + unit2str[sv->unit];
 }
 
-unsigned long sv2ms(SpinValue *sv) {
+unsigned long sv2ms(const SpinValue *sv) {
   switch (sv->unit) {
     case SPIN_UNIT_MIN:
       return (sv->value * 60 * 1000);

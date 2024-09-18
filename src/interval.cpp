@@ -69,7 +69,7 @@ static void display_interval_msg(interval_state_t state,
 }
 
 static void do_interval(FurbleCtx *fctx, interval_t *interval) {
-  auto camera = fctx->camera;
+  auto control = fctx->control;
   const unsigned long config_delay = sv2ms(&interval->delay);
   const unsigned long config_shutter = sv2ms(&interval->shutter);
 
@@ -95,8 +95,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
     switch (state) {
       case INTERVAL_SHUTTER_OPEN:
         if ((icount < interval->count.value) || (interval->count.unit == SPIN_UNIT_INF)) {
-          // ESP_LOGI(LOG_TAG, "Shutter Open");
-          camera->shutterPress();
+          control->sendCommand(CONTROL_CMD_SHUTTER_PRESS);
           next = now + config_shutter;
           state = INTERVAL_SHUTTER_WAIT;
         } else {
@@ -110,8 +109,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
         break;
       case INTERVAL_SHUTTER_CLOSE:
         icount++;
-        // ESP_LOGI(LOG_TAG, "Shutter Release");
-        camera->shutterRelease();
+        control->sendCommand(CONTROL_CMD_SHUTTER_RELEASE);
         next = now + config_delay;
         if ((icount < interval->count.value) || (interval->count.unit == SPIN_UNIT_INF)) {
           state = INTERVAL_DELAY;
@@ -131,22 +129,25 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
 
     if (M5.BtnB.wasClicked()) {
       if (state == INTERVAL_SHUTTER_WAIT) {
-        // ESP_LOGI(LOG_TAG, "Shutter Release");
-        camera->shutterRelease();
+        control->sendCommand(CONTROL_CMD_SHUTTER_RELEASE);
       }
       active = false;
     }
 
     display_interval_msg(state, icount, &interval->count, now, next);
-  } while (active && camera->isConnected());
+  } while (active && control->isConnected());
   ez.backlight.inactivity(USER_SET);
 }
 
 void remote_interval(FurbleCtx *fctx) {
+  interval_t interval;
+
+  settings_load_interval(&interval);
+
   ezMenu submenu(FURBLE_STR " - Interval");
   submenu.buttons({"OK", "down"});
   submenu.addItem("Start");
-  settings_add_interval_items(&submenu);
+  settings_add_interval_items(&submenu, &interval);
   submenu.addItem("Back");
   submenu.downOnLast("first");
 

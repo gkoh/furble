@@ -17,22 +17,19 @@ void setup() {
 
   Serial.begin(115200);
 
-  QueueHandle_t queue = xQueueCreate(CONTROL_CMD_QUEUE_LEN, sizeof(control_cmd_t));
-  if (queue == NULL) {
-    ESP_LOGE(LOG_TAG, "Failed to create control queue.");
-    abort();
-  }
-
   Furble::Device::init();
   Furble::Scan::init(settings_load_esp_tx_power());
 
-  xRet = xTaskCreatePinnedToCore(control_task, "control", 8192, queue, 3, &xControlHandle, 1);
+  Furble::Control *control = new Furble::Control();
+
+  xRet = xTaskCreatePinnedToCore(control_task, "control", 8192, control, 4, &xControlHandle, 1);
   if (xRet != pdPASS) {
     ESP_LOGE(LOG_TAG, "Failed to create control task.");
     abort();
   }
 
-  xRet = xTaskCreatePinnedToCore(vUITask, "UI-M5ez", 32768, queue, 2, &xUIHandle, 1);
+  // Pin UI to same core (0) as NimBLE
+  xRet = xTaskCreatePinnedToCore(vUITask, "UI-M5ez", 32768, control, 2, &xUIHandle, 0);
   if (xRet != pdPASS) {
     ESP_LOGE(LOG_TAG, "Failed to create UI task.");
     abort();

@@ -49,10 +49,10 @@ static const NimBLEUUID FUJIFILM_CHR_GEOTAG_UUID =
 
 static const NimBLEUUID FUJIFILM_GEOTAG_UPDATE = NimBLEUUID("ad06c7b7-f41a-46f4-a29a-712055319122");
 
-static const std::array<uint8_t, 2> FUJIFILM_SHUTTER_RELEASE = {0x00, 0x00};
-static const std::array<uint8_t, 2> FUJIFILM_SHUTTER_CMD = {0x01, 0x00};
-static const std::array<uint8_t, 2> FUJIFILM_SHUTTER_PRESS = {0x02, 0x00};
-static const std::array<uint8_t, 2> FUJIFILM_SHUTTER_FOCUS = {0x03, 0x00};
+static constexpr std::array<uint8_t, 2> FUJIFILM_SHUTTER_RELEASE = {0x00, 0x00};
+static constexpr std::array<uint8_t, 2> FUJIFILM_SHUTTER_CMD = {0x01, 0x00};
+static constexpr std::array<uint8_t, 2> FUJIFILM_SHUTTER_PRESS = {0x02, 0x00};
+static constexpr std::array<uint8_t, 2> FUJIFILM_SHUTTER_FOCUS = {0x03, 0x00};
 
 namespace Furble {
 
@@ -82,7 +82,7 @@ void Fujifilm::notify(BLERemoteCharacteristic *pChr, uint8_t *pData, size_t leng
   }
 }
 
-Fujifilm::Fujifilm(const void *data, size_t len) {
+Fujifilm::Fujifilm(const void *data, size_t len) : Camera(Type::FUJIFILM) {
   if (len != sizeof(fujifilm_t))
     throw;
 
@@ -92,7 +92,7 @@ Fujifilm::Fujifilm(const void *data, size_t len) {
   memcpy(m_Token.data(), fujifilm->token, FUJIFILM_TOKEN_LEN);
 }
 
-Fujifilm::Fujifilm(NimBLEAdvertisedDevice *pDevice) {
+Fujifilm::Fujifilm(NimBLEAdvertisedDevice *pDevice) : Camera(Type::FUJIFILM) {
   const char *data = pDevice->getManufacturerData().data();
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
@@ -107,13 +107,13 @@ Fujifilm::~Fujifilm(void) {
   m_Client = nullptr;
 }
 
-const size_t FUJIFILM_ADV_TOKEN_LEN = 7;
-const uint8_t FUJIFILM_ID_0 = 0xd8;
-const uint8_t FUJIFILM_ID_1 = 0x04;
-const uint8_t FUJIFILM_TYPE_TOKEN = 0x02;
+constexpr size_t FUJIFILM_ADV_TOKEN_LEN = 7;
+constexpr uint8_t FUJIFILM_ID_0 = 0xd8;
+constexpr uint8_t FUJIFILM_ID_1 = 0x04;
+constexpr uint8_t FUJIFILM_TYPE_TOKEN = 0x02;
 
 /**
- * Determine if the advertised BLE device is a Fujifilm X-T30.
+ * Determine if the advertised BLE device is a Fujifilm.
  */
 bool Fujifilm::matches(NimBLEAdvertisedDevice *pDevice) {
   if (pDevice->haveManufacturerData()
@@ -261,7 +261,7 @@ void Fujifilm::focusRelease(void) {
   shutterRelease();
 }
 
-void Fujifilm::sendGeoData(gps_t &gps, timesync_t &timesync) {
+void Fujifilm::sendGeoData(const gps_t &gps, const timesync_t &timesync) {
   NimBLERemoteService *pSvc = m_Client->getService(FUJIFILM_SVC_GEOTAG_UUID);
   if (pSvc == nullptr) {
     return;
@@ -273,18 +273,20 @@ void Fujifilm::sendGeoData(gps_t &gps, timesync_t &timesync) {
   }
 
   if (pChr->canWrite()) {
-    geotag_t geotag = {.latitude = (int32_t)(gps.latitude * 10000000),
-                       .longitude = (int32_t)(gps.longitude * 10000000),
-                       .altitude = (int32_t)gps.altitude,
-                       .pad = {0},
-                       .gps_time = {
-                           .year = (uint16_t)timesync.year,
-                           .day = (uint8_t)timesync.day,
-                           .month = (uint8_t)timesync.month,
-                           .hour = (uint8_t)timesync.hour,
-                           .minute = (uint8_t)timesync.minute,
-                           .second = (uint8_t)timesync.second,
-                       }};
+    geotag_t geotag = {
+        .latitude = (int32_t)(gps.latitude * 10000000),
+        .longitude = (int32_t)(gps.longitude * 10000000),
+        .altitude = (int32_t)gps.altitude,
+        .pad = {0},
+        .gps_time = {
+                .year = (uint16_t)timesync.year,
+                .day = (uint8_t)timesync.day,
+                .month = (uint8_t)timesync.month,
+                .hour = (uint8_t)timesync.hour,
+                .minute = (uint8_t)timesync.minute,
+                .second = (uint8_t)timesync.second,
+                }
+    };
 
     ESP_LOGI(LOG_TAG, "Sending geotag data (%u bytes) to 0x%04x", sizeof(geotag),
              pChr->getHandle());
@@ -296,7 +298,7 @@ void Fujifilm::sendGeoData(gps_t &gps, timesync_t &timesync) {
   }
 }
 
-void Fujifilm::updateGeoData(gps_t &gps, timesync_t &timesync) {
+void Fujifilm::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
   if (m_GeoRequested) {
     sendGeoData(gps, timesync);
     m_GeoRequested = false;
@@ -311,10 +313,6 @@ void Fujifilm::print(void) {
 
 void Fujifilm::disconnect(void) {
   m_Client->disconnect();
-}
-
-device_type_t Fujifilm::getDeviceType(void) {
-  return FURBLE_FUJIFILM;
 }
 
 size_t Fujifilm::getSerialisedBytes(void) {

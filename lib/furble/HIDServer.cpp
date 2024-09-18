@@ -58,7 +58,9 @@ HIDServer::HIDServer() {
   m_Advertising->addServiceUUID(m_HID->hidService()->getUUID());
 }
 
-HIDServer::~HIDServer() {}
+HIDServer::~HIDServer() {
+  m_hidCallbacks = nullptr;
+}
 
 HIDServer *HIDServer::getInstance(void) {
   if (hidServer == nullptr) {
@@ -68,15 +70,17 @@ HIDServer *HIDServer::getInstance(void) {
   return hidServer;
 }
 
-void HIDServer::start(unsigned int duration,
-                      HIDServerCallbacks *hidCallback,
-                      NimBLEAddress *address) {
+void HIDServer::start(NimBLEAddress *address, HIDServerCallbacks *hidCallback) {
   m_hidCallbacks = hidCallback;
   m_HID->startServices();
 
-  // Directed advertising not yet released
-  // m_Advertising->start(0, nullptr, address);
-  m_Advertising->start(duration);
+  m_Server->getPeerNameOnConnect((address == nullptr) ? true : false);
+
+  // Cannot get directed advertising working properly.
+  // m_Advertising->setAdvertisementType((address == nullptr) ? BLE_GAP_CONN_MODE_UND :
+  // BLE_GAP_CONN_MODE_DIR);
+  m_Advertising->setAdvertisementType(BLE_GAP_CONN_MODE_UND);
+  m_Advertising->start(BLE_HS_FOREVER, nullptr, address);
 }
 
 void HIDServer::stop(void) {
@@ -84,23 +88,16 @@ void HIDServer::stop(void) {
   m_Server->stopAdvertising();
 }
 
-void HIDServer::onConnect(NimBLEServer *pServer, ble_gap_conn_desc *desc) {
-  NimBLEAddress address = NimBLEAddress(desc->peer_ota_addr);
+void HIDServer::onAuthenticationComplete(const NimBLEConnInfo &connInfo, const std::string &name) {
+  NimBLEAddress address = connInfo.getIdAddress();
   if (m_hidCallbacks != nullptr) {
-    m_hidCallbacks->onConnect(address);
+    m_hidCallbacks->onComplete(address, name);
   }
 }
 
-void HIDServer::onDisconnect(NimBLEServer *pServer, ble_gap_conn_desc *desc) {
-  m_Connected = false;
-}
-
-void HIDServer::onAuthenticationComplete(ble_gap_conn_desc *desc) {
-  NimBLEAddress address = NimBLEAddress(desc->peer_ota_addr);
-  if (m_hidCallbacks != nullptr) {
-    m_hidCallbacks->onComplete(address);
-  }
-  m_Connected = true;
+void HIDServer::onIdentity(const NimBLEConnInfo &connInfo) {
+  ESP_LOGI("HID", "identity resolved: address = %s, type = %d",
+           connInfo.getIdAddress().toString().c_str(), connInfo.getIdAddress().getType());
 }
 
 NimBLECharacteristic *HIDServer::getInput(void) {
@@ -116,7 +113,9 @@ void HIDServer::disconnect(NimBLEAddress &address) {
   m_Server->disconnect(info.getConnHandle());
 }
 
-bool HIDServer::isConnected(void) {
-  return m_Connected;
+bool HIDServer::isConnected(NimBLEAddress &address) {
+  NimBLEConnInfo info = m_Server->getPeerInfo(address);
+
+  return (!info.getIdAddress().isNull());
 }
 }  // namespace Furble

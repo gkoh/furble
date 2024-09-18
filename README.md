@@ -7,7 +7,6 @@ cameras.
 
 ![furble - M5StickC-Plus2](https://github.com/user-attachments/assets/e0eebd87-3ac0-4a8b-871a-014eb8c71395)
 
-
 The remote uses the camera's native Bluetooth Low Energy interface so additional
 adapters are not required.
 
@@ -45,6 +44,7 @@ Currently supported features in `furble`:
 - focus
 - GPS location tagging
 - intervalometer
+- multi-connect
 
 ### Table of Features
 
@@ -100,8 +100,10 @@ Connection to mobile devices is a little iffy:
 - hit `Scan`
 - on the mobile device:
    - pair with `furble`
-- on `furble` the mobile device bluetooth MAC address should appear as a connectable target
-   - fixing the target name is tracked in [#100](https://github.com/gkoh/furble/issues/100).
+- on `furble` the mobile device should appear as a connectable target if the pairing was successful
+- connect to the mobile device to save the pairing
+  - the devices will remain paired even if you do not connect and save
+  - forget `furble` on the mobile device to remove such a pair
 
 ### GPS Location Tagging
 
@@ -123,6 +125,25 @@ Delay and shutter time can be figured with custom or preset values from 0 to 999
 ### Shutter Lock
 
 When in `Shutter` remote control, holding focus (button B) then release (button A) will engage shutter lock, holding the shutter open until a button is pressed.
+
+### Multi-Connect
+
+Multi-Connect enables simultaneous connection to multiple cameras to synchronise
+remote shutter control. Up to 9 (ESP32 hardware limit) cameras can be
+simultaneously controlled.
+
+To use:
+* Pair with one or more cameras
+* Enable `Settings->Multi-Connect`
+* In `Connect` select cameras
+   * Selected cameras will have a `*`
+* Select `Connect *`
+   * Selected cameras will be connected in sequence
+* If all cameras are connected, the standard remote control is shown
+
+WARNING:
+* mobile device connections are extremely finnicky
+* multi-connect involving mobile devices is not well tested and can easily crash
 
 ## Motivation
 

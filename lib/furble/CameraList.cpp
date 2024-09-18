@@ -13,7 +13,7 @@
 namespace Furble {
 
 std::vector<std::unique_ptr<Furble::Camera>> CameraList::m_ConnectList;
-static Preferences m_Prefs;
+Preferences CameraList::m_Prefs;
 
 /**
  * Non-volatile storage index entry.
@@ -23,10 +23,15 @@ static Preferences m_Prefs;
  */
 typedef struct {
   char name[16];
-  device_type_t type;
+  Camera::Type type;
 } index_entry_t;
 
-static void save_index(std::vector<index_entry_t> &index) {
+void CameraList::fillSaveEntry(CameraList::index_entry_t &entry, Camera *camera) {
+  snprintf(entry.name, 16, "%08llX", (uint64_t)camera->getAddress());
+  entry.type = camera->getType();
+}
+
+void CameraList::save_index(std::vector<CameraList::index_entry_t> &index) {
   if (index.size() > 0) {
     m_Prefs.putBytes(FURBLE_PREF_INDEX, index.data(), sizeof(index[0]) * index.size());
   } else {
@@ -34,19 +39,19 @@ static void save_index(std::vector<index_entry_t> &index) {
   }
 }
 
-static std::vector<index_entry_t> load_index(void) {
+std::vector<CameraList::index_entry_t> CameraList::load_index(void) {
   std::vector<index_entry_t> index;
 
   size_t bytes = m_Prefs.getBytesLength(FURBLE_PREF_INDEX);
   if (bytes > 0 && (bytes % sizeof(index_entry_t) == 0)) {
     uint8_t buffer[bytes] = {0};
     size_t count = bytes / sizeof(index_entry_t);
-    ESP_LOGI(LOG_TAG, "Index entries: %d\r\n", count);
+    ESP_LOGI(LOG_TAG, "Index entries: %d", count);
     m_Prefs.getBytes(FURBLE_PREF_INDEX, buffer, bytes);
     index_entry_t *entry = (index_entry_t *)buffer;
 
     for (int i = 0; i < count; i++) {
-      ESP_LOGI(LOG_TAG, "Loading index entry: %s\r\n", entry[i].name);
+      ESP_LOGI(LOG_TAG, "Loading index entry: %s", entry[i].name);
       index.push_back(entry[i]);
     }
   }
@@ -54,12 +59,12 @@ static std::vector<index_entry_t> load_index(void) {
   return index;
 }
 
-static void add_index(std::vector<index_entry_t> &index, index_entry_t &entry) {
+void CameraList::add_index(std::vector<CameraList::index_entry_t> &index, index_entry_t &entry) {
   bool exists = false;
   for (size_t i = 0; i < index.size(); i++) {
-    ESP_LOGI(LOG_TAG, "[%d] %s : %s\r\n", i, index[i].name, entry.name);
+    ESP_LOGI(LOG_TAG, "[%d] %s : %s", i, index[i].name, entry.name);
     if (strcmp(index[i].name, entry.name) == 0) {
-      ESP_LOGI(LOG_TAG, "Overwriting existing entry");
+      ESP_LOGI(LOG_TAG, "Overwriting existing entry: %s", entry.name);
       index[i] = entry;
       exists = true;
       break;
@@ -67,7 +72,7 @@ static void add_index(std::vector<index_entry_t> &index, index_entry_t &entry) {
   }
 
   if (!exists) {
-    ESP_LOGI(LOG_TAG, "Adding new entry");
+    ESP_LOGI(LOG_TAG, "Adding new entry: %s", entry.name);
     index.push_back(entry);
   }
 }
@@ -77,8 +82,7 @@ void CameraList::save(Furble::Camera *camera) {
   std::vector<index_entry_t> index = load_index();
 
   index_entry_t entry = {0};
-  camera->fillSaveName(entry.name);
-  entry.type = camera->getDeviceType();
+  fillSaveEntry(entry, camera);
 
   add_index(index, entry);
 
@@ -87,9 +91,9 @@ void CameraList::save(Furble::Camera *camera) {
   if (camera->serialise(dbuffer, dbytes)) {
     // Store the entry and the index if serialisation succeeds
     m_Prefs.putBytes(entry.name, dbuffer, dbytes);
-    ESP_LOGI(LOG_TAG, "Saved %s\r\n", entry.name);
+    ESP_LOGI(LOG_TAG, "Saved %s", entry.name);
     save_index(index);
-    ESP_LOGI(LOG_TAG, "Index entries: %d\r\n", index.size());
+    ESP_LOGI(LOG_TAG, "Index entries: %d", index.size());
   }
 
   m_Prefs.end();
@@ -100,13 +104,12 @@ void CameraList::remove(Furble::Camera *camera) {
   std::vector<index_entry_t> index = load_index();
 
   index_entry_t entry = {0};
-  camera->fillSaveName(entry.name);
+  fillSaveEntry(entry, camera);
 
   size_t i = 0;
   for (i = 0; i < index.size(); i++) {
     if (strcmp(index[i].name, entry.name) == 0) {
-      ESP_LOGI(LOG_TAG, "Deleting: ");
-      ESP_LOGI(LOG_TAG, "%s", entry.name);
+      ESP_LOGI(LOG_TAG, "Deleting: %s", entry.name);
       break;
     }
   }
@@ -117,6 +120,11 @@ void CameraList::remove(Furble::Camera *camera) {
   save_index(index);
 
   m_Prefs.end();
+
+  // delete bond if required
+  if (NimBLEDevice::isBonded(camera->getAddress())) {
+    NimBLEDevice::deleteBond(camera->getAddress());
+  }
 }
 
 /**
@@ -139,16 +147,16 @@ void CameraList::load(void) {
     m_Prefs.getBytes(index[i].name, dbuffer, dbytes);
 
     switch (index[i].type) {
-      case FURBLE_FUJIFILM:
+      case Camera::Type::FUJIFILM:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Fujifilm(dbuffer, dbytes)));
         break;
-      case FURBLE_CANON_EOS_M6:
+      case Camera::Type::CANON_EOS_M6:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new CanonEOSM6(dbuffer, dbytes)));
         break;
-      case FURBLE_CANON_EOS_RP:
+      case Camera::Type::CANON_EOS_RP:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new CanonEOSRP(dbuffer, dbytes)));
         break;
-      case FURBLE_MOBILE_DEVICE:
+      case Camera::Type::MOBILE_DEVICE:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new MobileDevice(dbuffer, dbytes)));
         break;
     }
@@ -176,10 +184,6 @@ Furble::Camera *CameraList::get(size_t n) {
   return m_ConnectList[n].get();
 }
 
-Furble::Camera *CameraList::back(void) {
-  return m_ConnectList.back().get();
-}
-
 bool CameraList::match(NimBLEAdvertisedDevice *pDevice) {
   if (Fujifilm::matches(pDevice)) {
     m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::Fujifilm(pDevice)));
@@ -195,8 +199,8 @@ bool CameraList::match(NimBLEAdvertisedDevice *pDevice) {
   return false;
 }
 
-void CameraList::add(NimBLEAddress address) {
-  m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::MobileDevice(address)));
+void CameraList::add(const NimBLEAddress &address, const std::string &name) {
+  m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::MobileDevice(address, name)));
 }
 
 }  // namespace Furble

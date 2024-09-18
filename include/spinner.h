@@ -16,8 +16,8 @@ struct __attribute__((packed)) SpinValue {
 
 void spinner_modify_value(const char *title, bool preset, SpinValue *sv);
 
-std::string sv2str(SpinValue *sv);
-unsigned long sv2ms(SpinValue *sv);
+std::string sv2str(const SpinValue *sv);
+unsigned long sv2ms(const SpinValue *sv);
 void ms2hms(unsigned long ms, unsigned int *h, unsigned int *m, unsigned int *s);
 
 #endif

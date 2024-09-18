@@ -9,7 +9,7 @@
 
 namespace Furble {
 
-CanonEOS::CanonEOS(const void *data, size_t len) {
+CanonEOS::CanonEOS(Type type, const void *data, size_t len) : Camera(type) {
   if (len != sizeof(eos_t))
     throw;
 
@@ -19,7 +19,7 @@ CanonEOS::CanonEOS(const void *data, size_t len) {
   memcpy(&m_Uuid, &eos->uuid, sizeof(Device::uuid128_t));
 }
 
-CanonEOS::CanonEOS(NimBLEAdvertisedDevice *pDevice) {
+CanonEOS::CanonEOS(Type type, NimBLEAdvertisedDevice *pDevice) : Camera(type) {
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
   ESP_LOGI(LOG_TAG, "Name = %s", m_Name.c_str());
@@ -106,7 +106,9 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
     NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(CANON_EOS_CHR_NAME_UUID);
     if ((pChr != nullptr) && pChr->canIndicate()) {
       ESP_LOGI(LOG_TAG, "Subscribed for pairing indication");
-      pChr->subscribe(false, std::bind(&CanonEOS::pairCallback, this, _1, _2, _3, _4));
+      pChr->subscribe(false,
+                      [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length,
+                             bool isNotify) { this->pairCallback(pChr, pData, length, isNotify); });
     }
   }
 
@@ -204,7 +206,7 @@ void CanonEOS::focusRelease(void) {
   return;
 }
 
-void CanonEOS::updateGeoData(gps_t &gps, timesync_t &timesync) {
+void CanonEOS::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
   // do nothing
   return;
 }

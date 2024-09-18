@@ -1,5 +1,6 @@
 #include <NimBLEAdvertisedDevice.h>
 #include <NimBLEDevice.h>
+#include <NimBLEScan.h>
 
 #include "Device.h"
 #include "Furble.h"
@@ -14,14 +15,10 @@ scanResultCallback *Scan::m_ScanResultCallback = nullptr;
 void *Scan::m_ScanResultPrivateData = nullptr;
 HIDServer *Scan::m_HIDServer = nullptr;
 
-void scanEndCB(NimBLEScanResults results) {
-  ESP_LOGI(LOG_TAG, "Scan ended");
-}
-
 /**
  * BLE Advertisement callback.
  */
-class Scan::AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
+class Scan::ScanCallback: public NimBLEScanCallbacks {
   void onResult(NimBLEAdvertisedDevice *pDevice) {
     if (CameraList::match(pDevice)) {
       if (m_ScanResultCallback != nullptr) {
@@ -35,10 +32,8 @@ class Scan::AdvertisedCallback: public NimBLEAdvertisedDeviceCallbacks {
  * HID server callback.
  */
 class Scan::HIDServerCallback: public HIDServerCallbacks {
-  void onConnect(NimBLEAddress address) { return; }
-
-  void onComplete(NimBLEAddress address) {
-    CameraList::add(address);
+  void onComplete(const NimBLEAddress &address, const std::string &name) {
+    CameraList::add(address, name);
     if (m_ScanResultCallback != nullptr) {
       (m_ScanResultCallback)(m_ScanResultPrivateData);
     }
@@ -49,25 +44,24 @@ void Scan::init(esp_power_level_t power) {
   NimBLEDevice::init(Device::getStringID());
   NimBLEDevice::setPower(power);
   NimBLEDevice::setSecurityAuth(true, true, true);
+  NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_PUBLIC);
 
   // NimBLE requires configuring server before scan
   m_HIDServer = HIDServer::getInstance();
 
   Scan::m_Scan = NimBLEDevice::getScan();
-  m_Scan->setAdvertisedDeviceCallbacks(new AdvertisedCallback());
+  m_Scan->setScanCallbacks(new ScanCallback());
   m_Scan->setActiveScan(true);
   m_Scan->setInterval(6553);
   m_Scan->setWindow(6553);
 }
 
-void Scan::start(const uint32_t scanDuration,
-                 scanResultCallback scanCallback,
-                 void *scanPrivateData) {
-  m_HIDServer->start(scanDuration, new HIDServerCallback());
+void Scan::start(scanResultCallback scanCallback, void *scanPrivateData) {
+  m_HIDServer->start(nullptr, new HIDServerCallback());
 
   m_ScanResultCallback = scanCallback;
   m_ScanResultPrivateData = scanPrivateData;
-  m_Scan->start(scanDuration, scanEndCB, false);
+  m_Scan->start(BLE_HS_FOREVER, false);
 }
 
 void Scan::stop(void) {

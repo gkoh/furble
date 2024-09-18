@@ -13,8 +13,7 @@ class HIDServer;
  */
 class HIDServerCallbacks {
  public:
-  virtual void onConnect(NimBLEAddress address);
-  virtual void onComplete(NimBLEAddress address);
+  virtual void onComplete(const NimBLEAddress &address, const std::string &name);
 };
 
 /**
@@ -29,16 +28,14 @@ class HIDServer: public NimBLEServerCallbacks {
    *
    * @param[in] address If specified, start directed advertising.
    */
-  void start(unsigned int duration,
-             HIDServerCallbacks *hidCallbacks,
-             NimBLEAddress *address = nullptr);
+  void start(NimBLEAddress *address = nullptr, HIDServerCallbacks *hidCallbacks = nullptr);
 
   void stop(void);
 
   NimBLECharacteristic *getInput(void);
   NimBLEConnInfo getConnInfo(NimBLEAddress &address);
   void disconnect(NimBLEAddress &address);
-  bool isConnected(void);
+  bool isConnected(NimBLEAddress &address);
 
  private:
   HIDServer();
@@ -46,11 +43,9 @@ class HIDServer: public NimBLEServerCallbacks {
 
   static HIDServer *hidServer;  // singleton
 
-  void onConnect(NimBLEServer *pServer, ble_gap_conn_desc *desc);
-  void onDisconnect(NimBLEServer *pServer, ble_gap_conn_desc *desc);
-  void onAuthenticationComplete(ble_gap_conn_desc *desc);
+  void onAuthenticationComplete(const NimBLEConnInfo &connInfo, const std::string &name) override;
+  void onIdentity(const NimBLEConnInfo &connInfo) override;
 
-  bool m_Connected = false;
   NimBLEServer *m_Server = nullptr;
   NimBLEHIDDevice *m_HID = nullptr;
   NimBLECharacteristic *m_Input = nullptr;

@@ -29,7 +29,7 @@ bool furble_gps_enable = false;
 /**
  * GPS serial event service handler.
  */
-static uint16_t service_grove_gps(void *private_data) {
+static uint16_t service_grove_gps(void *context) {
   if (!furble_gps_enable) {
     return GPS_SERVICE_MS;
   }
@@ -52,7 +52,7 @@ static uint16_t service_grove_gps(void *private_data) {
 /**
  * Update geotag data.
  */
-void furble_gps_update(Furble::Camera *camera) {
+void furble_gps_update(Furble::Control *control) {
   if (!furble_gps_enable) {
     return;
   }
@@ -60,13 +60,17 @@ void furble_gps_update(Furble::Camera *camera) {
   if (furble_gps.location.isUpdated() && furble_gps.location.isValid()
       && furble_gps.date.isUpdated() && furble_gps.date.isValid() && furble_gps.time.isValid()
       && furble_gps.time.isValid()) {
-    Furble::Camera::gps_t dgps = {furble_gps.location.lat(), furble_gps.location.lng(),
-                                  furble_gps.altitude.meters()};
-    Furble::Camera::timesync_t timesync = {furble_gps.date.year(),   furble_gps.date.month(),
-                                           furble_gps.date.day(),    furble_gps.time.hour(),
-                                           furble_gps.time.minute(), furble_gps.time.second()};
+    Furble::Camera::gps_t dgps = {
+        furble_gps.location.lat(),
+        furble_gps.location.lng(),
+        furble_gps.altitude.meters(),
+    };
+    Furble::Camera::timesync_t timesync = {
+        furble_gps.date.year(), furble_gps.date.month(),  furble_gps.date.day(),
+        furble_gps.time.hour(), furble_gps.time.minute(), furble_gps.time.second(),
+    };
 
-    control_update_gps(dgps, timesync);
+    control->updateGPS(dgps, timesync);
     ez.header.draw("gps");
   }
 }
@@ -101,12 +105,11 @@ static void current_draw_widget(uint16_t x, uint16_t y) {
   M5.Lcd.setTextDatum(TL_DATUM);
   int32_t ma = M5.Power.getBatteryCurrent();
   ESP_LOGI(LOG_TAG, "%d", ma);
-  char s[32] = {0};
-  snprintf(s, 32, "%d", ma);
-  M5.Lcd.drawString(s, x + ez.theme->header_hmargin, ez.theme->header_tmargin + 2);
+  M5.Lcd.drawString(std::to_string(ma).c_str(), x + ez.theme->header_hmargin,
+                    ez.theme->header_tmargin + 2);
 }
 
-static uint16_t current_service(void *private_data) {
+static uint16_t current_service(void *context) {
   ez.header.draw("current");
   return 1000;
 }

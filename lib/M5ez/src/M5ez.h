@@ -233,7 +233,7 @@ class ezCanvas: public Print {
       uint8_t c);  // These three are used to inherit print and println from Print class
   virtual size_t write(const char *str);
   virtual size_t write(const uint8_t *buffer, size_t size);
-  static uint16_t loop(void *private_data);
+  static uint16_t loop(void *context);
 
  private:
   static ezTFT tft;
@@ -297,7 +297,8 @@ class ezMenu {
       std::string name,
       std::string caption = "",
       void (*simpleFunction)() = NULL,
-      bool (*advancedFunction)(ezMenu *callingMenu) = NULL,
+      void *context = nullptr,
+      bool (*advancedFunction)(ezMenu *callingMenu, void *context) = NULL,
       void (*drawFunction)(ezMenu *callingMenu, int16_t x, int16_t y, int16_t w, int16_t h) = NULL);
   bool deleteItem(int16_t index);
   bool deleteItem(std::string name);
@@ -338,8 +339,9 @@ class ezMenu {
   struct MenuItem_t {
     std::string name;
     std::string caption;
+    void *context;
     void (*simpleFunction)();
-    bool (*advancedFunction)(ezMenu *callingMenu);
+    bool (*advancedFunction)(ezMenu *callingMenu, void *context);
     void (*drawFunction)(ezMenu *callingMenu, int16_t x, int16_t y, int16_t w, int16_t h);
   };
   std::vector<MenuItem_t> _items;
@@ -425,7 +427,7 @@ class ezBacklight {
   static void menu();
   static void inactivity(uint8_t half_minutes);
   static void activity();
-  static uint16_t loop(void *private_data);
+  static uint16_t loop(void *context);
 
  private:
   static uint8_t _brightness;
@@ -450,7 +452,7 @@ class ezBacklight {
 class ezBattery {
  public:
   static void begin();
-  static uint16_t loop(void *private_data);
+  static uint16_t loop(void *context);
   static uint8_t getTransformedBatteryLevel();
   static uint16_t getBatteryBarColor(uint8_t batteryLevel);
 
@@ -471,7 +473,7 @@ class ezBattery {
 
 struct event_t {
   uint16_t (*function)(void *);
-  void *private_data;
+  void *context;
   uint32_t when;
 };
 
@@ -503,10 +505,8 @@ class M5ez {
 
   static void yield();
 
-  static void addEvent(uint16_t (*function)(void *),
-                       void *private_data = nullptr,
-                       uint32_t when = 1);
-  static void removeEvent(uint16_t (*function)(void *private_data));
+  static void addEvent(uint16_t (*function)(void *), void *context = nullptr, uint32_t when = 1);
+  static void removeEvent(uint16_t (*function)(void *context));
   static void redraw();
 
   // ez.msgBox

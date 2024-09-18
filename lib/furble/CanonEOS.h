@@ -10,10 +10,6 @@ namespace Furble {
  */
 class CanonEOS: public Camera {
  public:
-  CanonEOS(const void *data, size_t len);
-  CanonEOS(NimBLEAdvertisedDevice *pDevice);
-  ~CanonEOS(void);
-
  protected:
   typedef struct _eos_t {
     char name[MAX_NAME];    /** Human readable device name. */
@@ -21,6 +17,10 @@ class CanonEOS: public Camera {
     uint8_t type;           /** Address type. */
     Device::uuid128_t uuid; /** Our UUID. */
   } eos_t;
+
+  CanonEOS(Type type, const void *data, size_t len);
+  CanonEOS(Type type, NimBLEAdvertisedDevice *pDevice);
+  ~CanonEOS(void);
 
   const char *CANON_EOS_SVC_IDEN_UUID = "00010000-0000-1000-0000-d8492fffa821";
   /** 0xf108 */
@@ -61,7 +61,7 @@ class CanonEOS: public Camera {
   void shutterRelease(void) override;
   void focusPress(void) override;
   void focusRelease(void) override;
-  void updateGeoData(gps_t &gps, timesync_t &timesync) override;
+  void updateGeoData(const gps_t &gps, const timesync_t &timesync) override;
   void disconnect(void) override;
   size_t getSerialisedBytes(void) override;
   bool serialise(void *buffer, size_t bytes) override;
