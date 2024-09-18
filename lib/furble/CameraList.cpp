@@ -13,7 +13,7 @@
 namespace Furble {
 
 std::vector<std::unique_ptr<Furble::Camera>> CameraList::m_ConnectList;
-static Preferences m_Prefs;
+Preferences CameraList::m_Prefs;
 
 /**
  * Non-volatile storage index entry.
@@ -26,11 +26,12 @@ typedef struct {
   Camera::Type type;
 } index_entry_t;
 
-static void fillSaveName(index_entry_t &entry, Camera *camera) {
+void CameraList::fillSaveEntry(CameraList::index_entry_t &entry, Camera *camera) {
   snprintf(entry.name, 16, "%08llX", (uint64_t)camera->getAddress());
+  entry.type = camera->getType();
 }
 
-static void save_index(std::vector<index_entry_t> &index) {
+void CameraList::save_index(std::vector<CameraList::index_entry_t> &index) {
   if (index.size() > 0) {
     m_Prefs.putBytes(FURBLE_PREF_INDEX, index.data(), sizeof(index[0]) * index.size());
   } else {
@@ -38,7 +39,7 @@ static void save_index(std::vector<index_entry_t> &index) {
   }
 }
 
-static std::vector<index_entry_t> load_index(void) {
+std::vector<CameraList::index_entry_t> CameraList::load_index(void) {
   std::vector<index_entry_t> index;
 
   size_t bytes = m_Prefs.getBytesLength(FURBLE_PREF_INDEX);
@@ -58,7 +59,7 @@ static std::vector<index_entry_t> load_index(void) {
   return index;
 }
 
-static void add_index(std::vector<index_entry_t> &index, index_entry_t &entry) {
+void CameraList::add_index(std::vector<CameraList::index_entry_t> &index, index_entry_t &entry) {
   bool exists = false;
   for (size_t i = 0; i < index.size(); i++) {
     ESP_LOGI(LOG_TAG, "[%d] %s : %s", i, index[i].name, entry.name);
@@ -81,8 +82,7 @@ void CameraList::save(Furble::Camera *camera) {
   std::vector<index_entry_t> index = load_index();
 
   index_entry_t entry = {0};
-  fillSaveName(entry, camera);
-  entry.type = camera->getType();
+  fillSaveEntry(entry, camera);
 
   add_index(index, entry);
 
@@ -104,7 +104,7 @@ void CameraList::remove(Furble::Camera *camera) {
   std::vector<index_entry_t> index = load_index();
 
   index_entry_t entry = {0};
-  fillSaveName(entry, camera);
+  fillSaveEntry(entry, camera);
 
   size_t i = 0;
   for (i = 0; i < index.size(); i++) {
@@ -182,10 +182,6 @@ void CameraList::clear(void) {
 
 Furble::Camera *CameraList::get(size_t n) {
   return m_ConnectList[n].get();
-}
-
-Furble::Camera *CameraList::back(void) {
-  return m_ConnectList.back().get();
 }
 
 bool CameraList::match(NimBLEAdvertisedDevice *pDevice) {

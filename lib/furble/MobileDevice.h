@@ -26,7 +26,7 @@ class MobileDevice: public Camera {
   void updateGeoData(const gps_t &gps, const timesync_t &timesync) override;
   void disconnect(void) override;
 
-  bool isConnected(void);
+  bool isConnected(void) override;
 
  private:
   typedef struct _mobile_device_t {
