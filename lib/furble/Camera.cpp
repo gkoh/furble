@@ -24,7 +24,7 @@ bool Camera::connect(esp_power_level_t power, progressFunc pFunc, void *pCtx) {
   return connected;
 }
 
-bool Camera::isActive(void) {
+bool Camera::isActive(void) const {
   return m_Active;
 }
 
@@ -32,15 +32,15 @@ void Camera::setActive(bool active) {
   m_Active = active;
 }
 
-const Camera::Type &Camera::getType(void) {
+const Camera::Type &Camera::getType(void) const {
   return m_Type;
 }
 
-const std::string &Camera::getName(void) {
+const std::string &Camera::getName(void) const {
   return m_Name;
 }
 
-const NimBLEAddress &Camera::getAddress(void) {
+const NimBLEAddress &Camera::getAddress(void) const {
   return m_Address;
 }
 
@@ -50,7 +50,7 @@ void Camera::updateProgress(progressFunc pFunc, void *ctx, float value) {
   }
 }
 
-bool Camera::isConnected(void) {
+bool Camera::isConnected(void) const {
   return m_Client->isConnected();
 }
 

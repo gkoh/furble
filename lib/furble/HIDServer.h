@@ -35,7 +35,7 @@ class HIDServer: public NimBLEServerCallbacks {
   NimBLECharacteristic *getInput(void);
   NimBLEConnInfo getConnInfo(NimBLEAddress &address);
   void disconnect(NimBLEAddress &address);
-  bool isConnected(NimBLEAddress &address);
+  bool isConnected(const NimBLEAddress &address);
 
  private:
   HIDServer();

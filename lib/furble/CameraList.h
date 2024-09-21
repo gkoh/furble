@@ -15,7 +15,7 @@ class CameraList {
   /**
    * Save camera to connection list.
    */
-  static void save(Furble::Camera *camera);
+  static void save(const Furble::Camera *camera);
 
   /**
    * Remove camera from connection list.
@@ -37,7 +37,7 @@ class CameraList {
    *
    * @return true if device matches
    */
-  static bool match(NimBLEAdvertisedDevice *pDevice);
+  static bool match(const NimBLEAdvertisedDevice *pDevice);
 
   /**
    * Add mobile device to the list.
@@ -65,7 +65,7 @@ class CameraList {
     Camera::Type type;
   } index_entry_t;
 
-  static void fillSaveEntry(index_entry_t &entry, Camera *camera);
+  static void fillSaveEntry(index_entry_t &entry, const Camera *camera);
   static std::vector<index_entry_t> load_index(void);
   static void save_index(std::vector<index_entry_t> &index);
   static void add_index(std::vector<index_entry_t> &index, index_entry_t &entry);
