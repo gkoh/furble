@@ -76,8 +76,6 @@ bool CanonEOS::write_prefix(NimBLEClient *pClient,
  * handled by the underlying NimBLE and ESP32 libraries.
  */
 bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
-  using namespace std::placeholders;
-
   if (NimBLEDevice::isBonded(m_Address)) {
     // Already bonded? Assume pair acceptance!
     m_PairResult = CANON_EOS_PAIR_ACCEPT;
