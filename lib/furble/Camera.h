@@ -87,29 +87,29 @@ class Camera {
    */
   virtual void updateGeoData(const gps_t &gps, const timesync_t &timesync) = 0;
 
-  virtual size_t getSerialisedBytes(void) = 0;
-  virtual bool serialise(void *buffer, size_t bytes) = 0;
+  virtual size_t getSerialisedBytes(void) const = 0;
+  virtual bool serialise(void *buffer, size_t bytes) const = 0;
 
   /**
    * Checks if the client is still connected.
    */
-  virtual bool isConnected(void);
+  virtual bool isConnected(void) const;
 
   /**
    * Camera is active (ie. connect() has succeeded previously).
    */
-  bool isActive(void);
+  bool isActive(void) const;
 
   /**
    * Set camera activity state.
    */
   void setActive(bool active);
 
-  const Type &getType(void);
+  const Type &getType(void) const;
 
-  const std::string &getName(void);
+  const std::string &getName(void) const;
 
-  const NimBLEAddress &getAddress(void);
+  const NimBLEAddress &getAddress(void) const;
 
  protected:
   Camera(Type type);

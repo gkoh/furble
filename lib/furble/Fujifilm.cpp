@@ -84,7 +84,7 @@ void Fujifilm::notify(BLERemoteCharacteristic *pChr, uint8_t *pData, size_t leng
 
 Fujifilm::Fujifilm(const void *data, size_t len) : Camera(Type::FUJIFILM) {
   if (len != sizeof(fujifilm_t))
-    throw;
+    abort();
 
   const fujifilm_t *fujifilm = static_cast<const fujifilm_t *>(data);
   m_Name = std::string(fujifilm->name);
@@ -92,7 +92,7 @@ Fujifilm::Fujifilm(const void *data, size_t len) : Camera(Type::FUJIFILM) {
   memcpy(m_Token.data(), fujifilm->token, FUJIFILM_TOKEN_LEN);
 }
 
-Fujifilm::Fujifilm(NimBLEAdvertisedDevice *pDevice) : Camera(Type::FUJIFILM) {
+Fujifilm::Fujifilm(const NimBLEAdvertisedDevice *pDevice) : Camera(Type::FUJIFILM) {
   const char *data = pDevice->getManufacturerData().data();
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
@@ -115,7 +115,7 @@ constexpr uint8_t FUJIFILM_TYPE_TOKEN = 0x02;
 /**
  * Determine if the advertised BLE device is a Fujifilm.
  */
-bool Fujifilm::matches(NimBLEAdvertisedDevice *pDevice) {
+bool Fujifilm::matches(const NimBLEAdvertisedDevice *pDevice) {
   if (pDevice->haveManufacturerData()
       && pDevice->getManufacturerData().length() == FUJIFILM_ADV_TOKEN_LEN) {
     const char *data = pDevice->getManufacturerData().data();
@@ -315,11 +315,11 @@ void Fujifilm::disconnect(void) {
   m_Client->disconnect();
 }
 
-size_t Fujifilm::getSerialisedBytes(void) {
+size_t Fujifilm::getSerialisedBytes(void) const {
   return sizeof(fujifilm_t);
 }
 
-bool Fujifilm::serialise(void *buffer, size_t bytes) {
+bool Fujifilm::serialise(void *buffer, size_t bytes) const {
   if (bytes != sizeof(fujifilm_t)) {
     return false;
   }

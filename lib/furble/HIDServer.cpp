@@ -113,7 +113,7 @@ void HIDServer::disconnect(NimBLEAddress &address) {
   m_Server->disconnect(info.getConnHandle());
 }
 
-bool HIDServer::isConnected(NimBLEAddress &address) {
+bool HIDServer::isConnected(const NimBLEAddress &address) {
   NimBLEConnInfo info = m_Server->getPeerInfo(address);
 
   return (!info.getIdAddress().isNull());

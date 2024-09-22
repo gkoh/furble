@@ -171,34 +171,34 @@ void settings_menu_gps(void) {
   submenu.run();
 }
 
-void settings_load_interval(interval_t *interval) {
+void settings_load_interval(interval_t &interval) {
   Preferences prefs;
 
   prefs.begin(FURBLE_STR, true);
-  size_t len = prefs.getBytes(PREFS_INTERVAL, interval, sizeof(interval_t));
+  size_t len = prefs.getBytes(PREFS_INTERVAL, &interval, sizeof(interval_t));
   if (len != sizeof(interval_t)) {
     // default values
-    interval->count.value = INTERVAL_DEFAULT_COUNT;
-    interval->count.unit = INTERVAL_DEFAULT_COUNT_UNIT;
-    interval->shutter.value = INTERVAL_DEFAULT_SHUTTER;
-    interval->shutter.unit = INTERVAL_DEFAULT_SHUTTER_UNIT;
-    interval->delay.value = INTERVAL_DEFAULT_DELAY;
-    interval->delay.unit = INTERVAL_DEFAULT_DELAY_UNIT;
+    interval.count.value = INTERVAL_DEFAULT_COUNT;
+    interval.count.unit = INTERVAL_DEFAULT_COUNT_UNIT;
+    interval.shutter.value = INTERVAL_DEFAULT_SHUTTER;
+    interval.shutter.unit = INTERVAL_DEFAULT_SHUTTER_UNIT;
+    interval.delay.value = INTERVAL_DEFAULT_DELAY;
+    interval.delay.unit = INTERVAL_DEFAULT_DELAY_UNIT;
   }
 
   prefs.end();
 }
 
-void settings_save_interval(interval_t *interval) {
+void settings_save_interval(const interval_t &interval) {
   Preferences prefs;
 
   prefs.begin(FURBLE_STR, false);
-  prefs.putBytes(PREFS_INTERVAL, interval, sizeof(interval_t));
+  prefs.putBytes(PREFS_INTERVAL, &interval, sizeof(interval_t));
   prefs.end();
 }
 
 static bool configure_count(ezMenu *menu, void *context) {
-  interval_t *interval = (interval_t *)context;
+  interval_t *interval = static_cast<interval_t *>(context);
 
   ezMenu submenu("Count");
   submenu.buttons({"OK", "down"});
@@ -209,26 +209,26 @@ static bool configure_count(ezMenu *menu, void *context) {
   submenu.runOnce();
   if (submenu.pickName() == "Custom") {
     interval->count.unit = SPIN_UNIT_NIL;
-    spinner_modify_value("Count", false, &interval->count);
+    spinner_modify_value("Count", false, interval->count);
   }
 
   if (submenu.pickName() == "Infinite") {
     interval->count.unit = SPIN_UNIT_INF;
   }
 
-  std::string countstr = sv2str(&interval->count);
+  std::string countstr = sv2str(interval->count);
   if (interval->count.unit == SPIN_UNIT_INF) {
     countstr = "INF";
   }
 
   menu->setCaption("interval_count", std::string("Count\t") + countstr);
-  settings_save_interval(interval);
+  settings_save_interval(*interval);
 
   return true;
 }
 
 static bool configure_delay(ezMenu *menu, void *context) {
-  interval_t *interval = (interval_t *)context;
+  interval_t *interval = static_cast<interval_t *>(context);
 
   ezMenu submenu("Delay");
   submenu.buttons({"OK", "down"});
@@ -246,15 +246,15 @@ static bool configure_delay(ezMenu *menu, void *context) {
     preset = true;
   }
 
-  spinner_modify_value("Delay", preset, &interval->delay);
-  menu->setCaption("interval_delay", "Delay\t" + sv2str(&interval->delay));
-  settings_save_interval(interval);
+  spinner_modify_value("Delay", preset, interval->delay);
+  menu->setCaption("interval_delay", "Delay\t" + sv2str(interval->delay));
+  settings_save_interval(*interval);
 
   return true;
 }
 
 static bool configure_shutter(ezMenu *menu, void *context) {
-  interval_t *interval = (interval_t *)context;
+  interval_t *interval = static_cast<interval_t *>(context);
 
   ezMenu submenu("Shutter");
   submenu.buttons({"OK", "down"});
@@ -272,30 +272,30 @@ static bool configure_shutter(ezMenu *menu, void *context) {
     preset = true;
   }
 
-  spinner_modify_value("Shutter", preset, &interval->shutter);
-  menu->setCaption("interval_shutter", "Shutter\t" + sv2str(&interval->shutter));
-  settings_save_interval(interval);
+  spinner_modify_value("Shutter", preset, interval->shutter);
+  menu->setCaption("interval_shutter", "Shutter\t" + sv2str(interval->shutter));
+  settings_save_interval(*interval);
 
   return true;
 }
 
-void settings_add_interval_items(ezMenu *submenu, interval_t *interval) {
-  submenu->addItem("interval_count", std::string("Count\t") + sv2str(&interval->count), NULL,
-                   interval, configure_count);
-  submenu->addItem("interval_delay", std::string("Delay\t") + sv2str(&interval->delay), NULL,
-                   interval, configure_delay);
-  submenu->addItem("interval_shutter", std::string("Shutter\t") + sv2str(&interval->shutter), NULL,
-                   interval, configure_shutter);
+void settings_add_interval_items(ezMenu *submenu, interval_t &interval) {
+  submenu->addItem("interval_count", std::string("Count\t") + sv2str(interval.count), NULL,
+                   &interval, configure_count);
+  submenu->addItem("interval_delay", std::string("Delay\t") + sv2str(interval.delay), NULL,
+                   &interval, configure_delay);
+  submenu->addItem("interval_shutter", std::string("Shutter\t") + sv2str(interval.shutter), NULL,
+                   &interval, configure_shutter);
 }
 
 void settings_menu_interval(void) {
   interval_t interval;
 
-  settings_load_interval(&interval);
+  settings_load_interval(interval);
 
   ezMenu submenu(FURBLE_STR " - Intervalometer settings");
   submenu.buttons({"OK", "down"});
-  settings_add_interval_items(&submenu, &interval);
+  settings_add_interval_items(&submenu, interval);
   submenu.addItem("Back");
   submenu.downOnLast("first");
   submenu.run();

@@ -26,7 +26,7 @@ typedef struct {
   Camera::Type type;
 } index_entry_t;
 
-void CameraList::fillSaveEntry(CameraList::index_entry_t &entry, Camera *camera) {
+void CameraList::fillSaveEntry(index_entry_t &entry, const Camera *camera) {
   snprintf(entry.name, 16, "%08llX", (uint64_t)camera->getAddress());
   entry.type = camera->getType();
 }
@@ -61,11 +61,11 @@ std::vector<CameraList::index_entry_t> CameraList::load_index(void) {
 
 void CameraList::add_index(std::vector<CameraList::index_entry_t> &index, index_entry_t &entry) {
   bool exists = false;
-  for (size_t i = 0; i < index.size(); i++) {
-    ESP_LOGI(LOG_TAG, "[%d] %s : %s", i, index[i].name, entry.name);
-    if (strcmp(index[i].name, entry.name) == 0) {
+  for (auto &i : index) {
+    ESP_LOGI(LOG_TAG, "%s : %s", i.name, entry.name);
+    if (strcmp(i.name, entry.name) == 0) {
       ESP_LOGI(LOG_TAG, "Overwriting existing entry: %s", entry.name);
-      index[i] = entry;
+      i = entry;
       exists = true;
       break;
     }
@@ -77,7 +77,7 @@ void CameraList::add_index(std::vector<CameraList::index_entry_t> &index, index_
   }
 }
 
-void CameraList::save(Furble::Camera *camera) {
+void CameraList::save(const Furble::Camera *camera) {
   m_Prefs.begin(FURBLE_STR, false);
   std::vector<index_entry_t> index = load_index();
 
@@ -110,11 +110,10 @@ void CameraList::remove(Furble::Camera *camera) {
   for (i = 0; i < index.size(); i++) {
     if (strcmp(index[i].name, entry.name) == 0) {
       ESP_LOGI(LOG_TAG, "Deleting: %s", entry.name);
+      index.erase(index.begin() + i);
       break;
     }
   }
-
-  index.erase(index.begin() + i);
 
   m_Prefs.remove(entry.name);
   save_index(index);
@@ -138,15 +137,15 @@ void CameraList::load(void) {
   m_Prefs.begin(FURBLE_STR, true);
   m_ConnectList.clear();
   std::vector<index_entry_t> index = load_index();
-  for (size_t i = 0; i < index.size(); i++) {
-    size_t dbytes = m_Prefs.getBytesLength(index[i].name);
+  for (const auto &i : index) {
+    size_t dbytes = m_Prefs.getBytesLength(i.name);
     if (dbytes == 0) {
       continue;
     }
     uint8_t dbuffer[dbytes] = {0};
-    m_Prefs.getBytes(index[i].name, dbuffer, dbytes);
+    m_Prefs.getBytes(i.name, dbuffer, dbytes);
 
-    switch (index[i].type) {
+    switch (i.type) {
       case Camera::Type::FUJIFILM:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Fujifilm(dbuffer, dbytes)));
         break;
@@ -184,7 +183,7 @@ Furble::Camera *CameraList::get(size_t n) {
   return m_ConnectList[n].get();
 }
 
-bool CameraList::match(NimBLEAdvertisedDevice *pDevice) {
+bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
   if (Fujifilm::matches(pDevice)) {
     m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::Fujifilm(pDevice)));
     return true;

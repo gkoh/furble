@@ -14,13 +14,13 @@ namespace Furble {
 class Fujifilm: public Camera {
  public:
   Fujifilm(const void *data, size_t len);
-  Fujifilm(NimBLEAdvertisedDevice *pDevice);
+  Fujifilm(const NimBLEAdvertisedDevice *pDevice);
   ~Fujifilm(void);
 
   /**
    * Determine if the advertised BLE device is a Fujifilm X-T30.
    */
-  static bool matches(NimBLEAdvertisedDevice *pDevice);
+  static bool matches(const NimBLEAdvertisedDevice *pDevice);
 
   bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr) override;
   void shutterPress(void) override;
@@ -29,8 +29,8 @@ class Fujifilm: public Camera {
   void focusRelease(void) override;
   void updateGeoData(const gps_t &gps, const timesync_t &timesync) override;
   void disconnect(void) override;
-  size_t getSerialisedBytes(void) override;
-  bool serialise(void *buffer, size_t bytes) override;
+  size_t getSerialisedBytes(void) const override;
+  bool serialise(void *buffer, size_t bytes) const override;
 
  private:
   /**

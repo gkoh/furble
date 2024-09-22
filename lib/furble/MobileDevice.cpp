@@ -11,7 +11,7 @@ namespace Furble {
 
 MobileDevice::MobileDevice(const void *data, size_t len) : Camera(Type::MOBILE_DEVICE) {
   if (len != sizeof(mobile_device_t))
-    throw;
+    abort();
 
   const mobile_device_t *mobile_device = static_cast<const mobile_device_t *>(data);
   m_Name = std::string(mobile_device->name);
@@ -98,15 +98,15 @@ void MobileDevice::disconnect(void) {
   m_HIDServer->disconnect(m_Address);
 }
 
-bool MobileDevice::isConnected(void) {
+bool MobileDevice::isConnected(void) const {
   return m_HIDServer->isConnected(m_Address);
 }
 
-size_t MobileDevice::getSerialisedBytes(void) {
+size_t MobileDevice::getSerialisedBytes(void) const {
   return sizeof(mobile_device_t);
 }
 
-bool MobileDevice::serialise(void *buffer, size_t bytes) {
+bool MobileDevice::serialise(void *buffer, size_t bytes) const {
   if (bytes != sizeof(mobile_device_t)) {
     return false;
   }

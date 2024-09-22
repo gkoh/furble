@@ -15,7 +15,7 @@ const uint8_t CANON_EOS_M6_XX_2 = 0x01;
 const uint8_t CANON_EOS_M6_XX_3 = 0xc5;
 const uint8_t CANON_EOS_M6_XX_4 = 0x32;
 
-bool CanonEOSM6::matches(NimBLEAdvertisedDevice *pDevice) {
+bool CanonEOSM6::matches(const NimBLEAdvertisedDevice *pDevice) {
   if (pDevice->haveManufacturerData()
       && pDevice->getManufacturerData().length() == CANON_EOS_M6_ADV_DATA_LEN) {
     const char *data = pDevice->getManufacturerData().data();

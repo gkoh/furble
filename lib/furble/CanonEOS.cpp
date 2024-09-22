@@ -11,7 +11,7 @@ namespace Furble {
 
 CanonEOS::CanonEOS(Type type, const void *data, size_t len) : Camera(type) {
   if (len != sizeof(eos_t))
-    throw;
+    abort();
 
   const eos_t *eos = static_cast<const eos_t *>(data);
   m_Name = std::string(eos->name);
@@ -19,7 +19,7 @@ CanonEOS::CanonEOS(Type type, const void *data, size_t len) : Camera(type) {
   memcpy(&m_Uuid, &eos->uuid, sizeof(Device::uuid128_t));
 }
 
-CanonEOS::CanonEOS(Type type, NimBLEAdvertisedDevice *pDevice) : Camera(type) {
+CanonEOS::CanonEOS(Type type, const NimBLEAdvertisedDevice *pDevice) : Camera(type) {
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
   ESP_LOGI(LOG_TAG, "Name = %s", m_Name.c_str());
@@ -76,8 +76,6 @@ bool CanonEOS::write_prefix(NimBLEClient *pClient,
  * handled by the underlying NimBLE and ESP32 libraries.
  */
 bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
-  using namespace std::placeholders;
-
   if (NimBLEDevice::isBonded(m_Address)) {
     // Already bonded? Assume pair acceptance!
     m_PairResult = CANON_EOS_PAIR_ACCEPT;
@@ -215,11 +213,11 @@ void CanonEOS::disconnect(void) {
   m_Client->disconnect();
 }
 
-size_t CanonEOS::getSerialisedBytes(void) {
+size_t CanonEOS::getSerialisedBytes(void) const {
   return sizeof(eos_t);
 }
 
-bool CanonEOS::serialise(void *buffer, size_t bytes) {
+bool CanonEOS::serialise(void *buffer, size_t bytes) const {
   if (bytes != sizeof(eos_t)) {
     return false;
   }

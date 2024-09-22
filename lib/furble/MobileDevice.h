@@ -26,7 +26,7 @@ class MobileDevice: public Camera {
   void updateGeoData(const gps_t &gps, const timesync_t &timesync) override;
   void disconnect(void) override;
 
-  bool isConnected(void) override;
+  bool isConnected(void) const override;
 
  private:
   typedef struct _mobile_device_t {
@@ -35,8 +35,8 @@ class MobileDevice: public Camera {
     uint8_t type;        /** Address type. */
   } mobile_device_t;
 
-  size_t getSerialisedBytes(void);
-  bool serialise(void *buffer, size_t bytes);
+  size_t getSerialisedBytes(void) const override;
+  bool serialise(void *buffer, size_t bytes) const override;
   void sendKeyReport(const uint8_t key);
 
   HIDServer *m_HIDServer;

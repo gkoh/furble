@@ -18,7 +18,7 @@ const uint8_t CANON_EOS_RP_XX_5 = 0x00;
 const uint8_t CANON_EOS_RP_XX_6 = 0x00;
 const uint8_t CANON_EOS_RP_XX_7 = 0x02;
 
-bool CanonEOSRP::matches(NimBLEAdvertisedDevice *pDevice) {
+bool CanonEOSRP::matches(const NimBLEAdvertisedDevice *pDevice) {
   if (pDevice->haveManufacturerData()
       && pDevice->getManufacturerData().length() == CANON_EOS_RP_ADV_DATA_LEN) {
     const char *data = pDevice->getManufacturerData().data();
