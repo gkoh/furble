@@ -81,14 +81,14 @@ static void display_spinner(const char *title,
   ez.msgBox(title, {spin_row}, buttons, false);
 }
 
-static void spinner_preset(const char *title, SpinValue *sv) {
+static void spinner_preset(const char *title, SpinValue &sv) {
   const unsigned int imax =
-      sv->unit == SPIN_UNIT_NIL ? fmt_preset_none.size() : fmt_preset_unit.size();
+      sv.unit == SPIN_UNIT_NIL ? fmt_preset_none.size() : fmt_preset_unit.size();
   unsigned int i = 0;
   unsigned int n = 0;
   bool ok = false;
 
-  uint16_t value = sv->value;
+  uint16_t value = sv.value;
   unsigned int h;
   unsigned int t;
   unsigned int u;
@@ -101,7 +101,7 @@ static void spinner_preset(const char *title, SpinValue *sv) {
   }
 
   value2htu(value, &h, &t, &u);
-  display_spinner(title, true, i, h, t, u, sv->unit);
+  display_spinner(title, true, i, h, t, u, sv.unit);
   M5.update();
 
   do {
@@ -118,23 +118,23 @@ static void spinner_preset(const char *title, SpinValue *sv) {
           value = spin_preset[n];
           break;
         case 2:
-          switch (sv->unit) {
+          switch (sv.unit) {
             case SPIN_UNIT_MS:
-              sv->unit = SPIN_UNIT_SEC;
+              sv.unit = SPIN_UNIT_SEC;
               break;
             case SPIN_UNIT_SEC:
-              sv->unit = SPIN_UNIT_MIN;
+              sv.unit = SPIN_UNIT_MIN;
               break;
             case SPIN_UNIT_MIN:
-              sv->unit = SPIN_UNIT_MS;
+              sv.unit = SPIN_UNIT_MS;
               break;
             default:
-              sv->unit = SPIN_UNIT_NIL;
+              sv.unit = SPIN_UNIT_NIL;
           }
           break;
       }
       value2htu(value, &h, &t, &u);
-      display_spinner(title, true, i, h, t, u, sv->unit);
+      display_spinner(title, true, i, h, t, u, sv.unit);
     }
 
     if (M5.BtnB.wasClicked()) {
@@ -142,18 +142,18 @@ static void spinner_preset(const char *title, SpinValue *sv) {
       if (i >= imax) {
         i = 0;
       }
-      display_spinner(title, true, i, h, t, u, sv->unit);
+      display_spinner(title, true, i, h, t, u, sv.unit);
     }
 
     ez.yield();
   } while (!ok);
 
   // reconstruct the value
-  sv->value = htu2value(h, t, u);
+  sv.value = htu2value(h, t, u);
 }
 
-static void spinner_custom(const char *title, SpinValue *sv) {
-  const unsigned int imax = sv->unit == SPIN_UNIT_NIL ? fmt_none.size() : fmt_unit.size();
+static void spinner_custom(const char *title, SpinValue &sv) {
+  const unsigned int imax = sv.unit == SPIN_UNIT_NIL ? fmt_none.size() : fmt_unit.size();
   unsigned int i = 0;
   bool ok = false;
 
@@ -161,8 +161,8 @@ static void spinner_custom(const char *title, SpinValue *sv) {
   unsigned int t = 0;
   unsigned int u = 0;
 
-  value2htu(sv->value, &h, &t, &u);
-  display_spinner(title, false, i, h, t, u, sv->unit);
+  value2htu(sv.value, &h, &t, &u);
+  display_spinner(title, false, i, h, t, u, sv.unit);
   M5.update();
 
   do {
@@ -190,22 +190,22 @@ static void spinner_custom(const char *title, SpinValue *sv) {
           }
           break;
         case 4:
-          switch (sv->unit) {
+          switch (sv.unit) {
             case SPIN_UNIT_MS:
-              sv->unit = SPIN_UNIT_SEC;
+              sv.unit = SPIN_UNIT_SEC;
               break;
             case SPIN_UNIT_SEC:
-              sv->unit = SPIN_UNIT_MIN;
+              sv.unit = SPIN_UNIT_MIN;
               break;
             case SPIN_UNIT_MIN:
-              sv->unit = SPIN_UNIT_MS;
+              sv.unit = SPIN_UNIT_MS;
               break;
             default:
-              sv->unit = SPIN_UNIT_NIL;
+              sv.unit = SPIN_UNIT_NIL;
           }
           break;
       }
-      display_spinner(title, false, i, h, t, u, sv->unit);
+      display_spinner(title, false, i, h, t, u, sv.unit);
     }
 
     if (M5.BtnB.wasClicked()) {
@@ -213,7 +213,7 @@ static void spinner_custom(const char *title, SpinValue *sv) {
       if (i >= imax) {
         i = 0;
       }
-      display_spinner(title, false, i, h, t, u, sv->unit);
+      display_spinner(title, false, i, h, t, u, sv.unit);
     }
 
     ez.yield();
@@ -221,10 +221,10 @@ static void spinner_custom(const char *title, SpinValue *sv) {
   } while (!ok);
 
   // reconstruct the value
-  sv->value = htu2value(h, t, u);
+  sv.value = htu2value(h, t, u);
 }
 
-void spinner_modify_value(const char *title, bool preset, SpinValue *sv) {
+void spinner_modify_value(const char *title, bool preset, SpinValue &sv) {
   if (preset) {
     spinner_preset(title, sv);
   } else {
@@ -232,18 +232,18 @@ void spinner_modify_value(const char *title, bool preset, SpinValue *sv) {
   }
 }
 
-std::string sv2str(const SpinValue *sv) {
-  return std::to_string(sv->value) + unit2str[sv->unit];
+std::string sv2str(const SpinValue &sv) {
+  return std::to_string(sv.value) + unit2str[sv.unit];
 }
 
-unsigned long sv2ms(const SpinValue *sv) {
-  switch (sv->unit) {
+unsigned long sv2ms(const SpinValue &sv) {
+  switch (sv.unit) {
     case SPIN_UNIT_MIN:
-      return (sv->value * 60 * 1000);
+      return (sv.value * 60 * 1000);
     case SPIN_UNIT_SEC:
-      return (sv->value * 1000);
+      return (sv.value * 1000);
     case SPIN_UNIT_MS:
-      return (sv->value);
+      return (sv.value);
     default:
       return 0;
   }

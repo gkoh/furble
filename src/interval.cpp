@@ -17,7 +17,7 @@ enum interval_state_t {
 
 static void display_interval_msg(interval_state_t state,
                                  unsigned int count,
-                                 SpinValue *sv_count,
+                                 const SpinValue &sv_count,
                                  unsigned long now,
                                  unsigned long next) {
   unsigned int rem_h = 0;
@@ -51,11 +51,11 @@ static void display_interval_msg(interval_state_t state,
   int len = 0;
   int clen = 0;
 
-  if (sv_count->unit == SPIN_UNIT_INF) {
+  if (sv_count.unit == SPIN_UNIT_INF) {
     clen = snprintf(ccount, 16, "%09u", count);
     len = snprintf(hms, 32, "%02u:%02u:%02u", rem_h, rem_m, rem_s);
   } else {
-    clen = snprintf(ccount, 16, "%03u/%03u", count, sv_count->value);
+    clen = snprintf(ccount, 16, "%03u/%03u", count, sv_count.value);
     len = snprintf(hms, 32, "%02u:%02u:%02u", rem_h, rem_m, rem_s);
   }
   // ESP_LOGI(LOG_TAG, hms);
@@ -68,10 +68,10 @@ static void display_interval_msg(interval_state_t state,
   }
 }
 
-static void do_interval(FurbleCtx *fctx, interval_t *interval) {
+static void do_interval(FurbleCtx *fctx, const interval_t &interval) {
   auto control = fctx->control;
-  const unsigned long config_delay = sv2ms(&interval->delay);
-  const unsigned long config_shutter = sv2ms(&interval->shutter);
+  const unsigned long config_delay = sv2ms(interval.delay);
+  const unsigned long config_shutter = sv2ms(interval.shutter);
 
   unsigned int icount = 0;
 
@@ -94,7 +94,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
 
     switch (state) {
       case INTERVAL_SHUTTER_OPEN:
-        if ((icount < interval->count.value) || (interval->count.unit == SPIN_UNIT_INF)) {
+        if ((icount < interval.count.value) || (interval.count.unit == SPIN_UNIT_INF)) {
           control->sendCommand(CONTROL_CMD_SHUTTER_PRESS);
           next = now + config_shutter;
           state = INTERVAL_SHUTTER_WAIT;
@@ -111,7 +111,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
         icount++;
         control->sendCommand(CONTROL_CMD_SHUTTER_RELEASE);
         next = now + config_delay;
-        if ((icount < interval->count.value) || (interval->count.unit == SPIN_UNIT_INF)) {
+        if ((icount < interval.count.value) || (interval.count.unit == SPIN_UNIT_INF)) {
           state = INTERVAL_DELAY;
         } else {
           state = INTERVAL_EXIT;
@@ -134,7 +134,7 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
       active = false;
     }
 
-    display_interval_msg(state, icount, &interval->count, now, next);
+    display_interval_msg(state, icount, interval.count, now, next);
   } while (active && control->isConnected());
   ez.backlight.inactivity(USER_SET);
 }
@@ -142,12 +142,12 @@ static void do_interval(FurbleCtx *fctx, interval_t *interval) {
 void remote_interval(FurbleCtx *fctx) {
   interval_t interval;
 
-  settings_load_interval(&interval);
+  settings_load_interval(interval);
 
   ezMenu submenu(FURBLE_STR " - Interval");
   submenu.buttons({"OK", "down"});
   submenu.addItem("Start");
-  settings_add_interval_items(&submenu, &interval);
+  settings_add_interval_items(&submenu, interval);
   submenu.addItem("Back");
   submenu.downOnLast("first");
 
@@ -158,7 +158,7 @@ void remote_interval(FurbleCtx *fctx) {
     }
 
     if (submenu.pickName() == "Start") {
-      do_interval(fctx, &interval);
+      do_interval(fctx, interval);
     }
 
   } while (submenu.pickName() != "Back");

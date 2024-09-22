@@ -12,10 +12,10 @@ esp_power_level_t settings_load_esp_tx_power(void);
 bool settings_load_gps(void);
 void settings_menu_gps(void);
 
-void settings_load_interval(interval_t *interval);
-void settings_save_interval(interval_t *interval);
+void settings_load_interval(interval_t &interval);
+void settings_save_interval(const interval_t &interval);
 
-void settings_add_interval_items(ezMenu *submenu, interval_t *interval);
+void settings_add_interval_items(ezMenu *submenu, interval_t &interval);
 void settings_menu_interval(void);
 
 bool settings_load_multiconnect(void);

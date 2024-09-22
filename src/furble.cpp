@@ -80,7 +80,7 @@ static void show_shutter_control(bool shutter_locked, unsigned long lock_start_m
 }
 
 static void remote_control(FurbleCtx *fctx) {
-  auto control = fctx->control;
+  auto *control = fctx->control;
   static unsigned long shutter_lock_start_ms = 0;
   static bool shutter_lock = false;
 
@@ -153,7 +153,7 @@ static void remote_control(FurbleCtx *fctx) {
  */
 static uint16_t statusRefresh(void *context) {
   FurbleCtx *fctx = static_cast<FurbleCtx *>(context);
-  auto control = fctx->control;
+  auto *control = fctx->control;
 
   if (control->isConnected()) {
     furble_gps_update(control);
@@ -216,13 +216,13 @@ static void menu_remote(FurbleCtx *fctx) {
 }
 
 static bool do_connect(ezMenu *menu, void *context) {
-  auto ctx = static_cast<ui_context_t *>(context);
+  auto *ctx = static_cast<ui_context_t *>(context);
 
   FurbleCtx fctx = {ctx->control, false};
 
   if (!ctx->scan && ctx->multiconnect) {
     for (int n = 0; n < Furble::CameraList::size(); n++) {
-      auto camera = Furble::CameraList::get(n);
+      auto *camera = Furble::CameraList::get(n);
       if (camera->isActive()) {
         ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to ") + camera->getName()},
                                    {""});
@@ -235,7 +235,7 @@ static bool do_connect(ezMenu *menu, void *context) {
       }
     }
   } else {
-    auto camera = Furble::CameraList::get(menu->pick() - 1);
+    auto *camera = Furble::CameraList::get(menu->pick() - 1);
 
     ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to ") + camera->getName()},
                                {""});
@@ -254,7 +254,7 @@ static bool do_connect(ezMenu *menu, void *context) {
 }
 
 static bool toggleCameraSelect(ezMenu *menu, void *context) {
-  auto camera = static_cast<Furble::Camera *>(context);
+  auto *camera = static_cast<Furble::Camera *>(context);
   camera->setActive(!camera->isActive());
   menu->setCaption(camera->getAddress().toString(),
                    camera->getName() + "\t" + (camera->isActive() ? "*" : ""));
@@ -266,15 +266,15 @@ static bool toggleCameraSelect(ezMenu *menu, void *context) {
  * Scan callback to update connection menu with new devices.
  */
 static void updateConnectItems(void *context) {
-  auto ctx = static_cast<ui_context_t *>(context);
-  auto menu = ctx->menu;
+  auto *ctx = static_cast<ui_context_t *>(context);
+  auto *menu = ctx->menu;
 
   if (!ctx->scan && ctx->multiconnect) {
     menu->deleteItem(CONNECT_STAR);
   }
   menu->deleteItem("Back");
   for (int i = menu->countItems(); i < Furble::CameraList::size(); i++) {
-    auto camera = Furble::CameraList::get(i);
+    auto *camera = Furble::CameraList::get(i);
 
     if (!ctx->scan && ctx->multiconnect) {
       menu->addItem(camera->getAddress().toString(),
@@ -331,7 +331,7 @@ static void menu_connect(Furble::Control *control, bool scan) {
  * Scan for devices, then present connection menu.
  */
 static bool do_scan(ezMenu *menu, void *context) {
-  auto control = static_cast<Furble::Control *>(context);
+  auto *control = static_cast<Furble::Control *>(context);
 
   Furble::CameraList::clear();
   Furble::Scan::clear();
@@ -344,7 +344,7 @@ static bool do_scan(ezMenu *menu, void *context) {
  * Retrieve saved devices, then present connection menu.
  */
 static bool do_saved(ezMenu *menu, void *context) {
-  auto control = static_cast<Furble::Control *>(context);
+  auto *control = static_cast<Furble::Control *>(context);
 
   Furble::CameraList::load();
   menu_connect(control, false);
@@ -408,7 +408,7 @@ static void mainmenu_poweroff(void) {
 }
 
 void vUITask(void *param) {
-  auto control = static_cast<Furble::Control *>(param);
+  auto *control = static_cast<Furble::Control *>(param);
 
 #include <themes/dark.h>
 #include <themes/default.h>
