@@ -142,11 +142,6 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
 
   ESP_LOGI(LOG_TAG, "Identifying 5!");
 
-  /* write to 0xf204 */
-  x = 0x0a;
-  if (!write_value(m_Client, CANON_EOS_SVC_UNK0_UUID, CANON_EOS_CHR_UNK0_UUID, &x, 1))
-    return false;
-
   // Give the user 60s to confirm/deny pairing
   ESP_LOGI(LOG_TAG, "Waiting for user to confirm/deny pairing.");
   for (unsigned int i = 0; i < 60; i++) {
@@ -164,6 +159,8 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
     return false;
   }
 
+  ESP_LOGI(LOG_TAG, "Paired!");
+
   /* write to 0xf104 */
   x = 0x01;
   if (!write_value(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, &x, 1))
@@ -171,14 +168,13 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
 
   updateProgress(pFunc, pCtx, 80.0f);
 
-  ESP_LOGI(LOG_TAG, "Identifying 6!");
+  ESP_LOGI(LOG_TAG, "Switching mode!");
 
   /* write to 0xf307 */
-  x = 0x03;
-  if (!write_value(m_Client, CANON_EOS_SVC_UNK1_UUID, CANON_EOS_CHR_UNK1_UUID, &x, 1))
+  if (!write_value(m_Client, CANON_EOS_SVC_MODE_UUID, CANON_EOS_CHR_MODE_UUID, &CANON_EOS_MODE_SHOOT, sizeof(CANON_EOS_MODE_SHOOT)))
     return false;
 
-  ESP_LOGI(LOG_TAG, "Paired!");
+  ESP_LOGI(LOG_TAG, "Done!");
   updateProgress(pFunc, pCtx, 100.0f);
 
   return true;
