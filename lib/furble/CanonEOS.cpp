@@ -171,7 +171,8 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
   ESP_LOGI(LOG_TAG, "Switching mode!");
 
   /* write to 0xf307 */
-  if (!write_value(m_Client, CANON_EOS_SVC_MODE_UUID, CANON_EOS_CHR_MODE_UUID, &CANON_EOS_MODE_SHOOT, sizeof(CANON_EOS_MODE_SHOOT)))
+  if (!write_value(m_Client, CANON_EOS_SVC_MODE_UUID, CANON_EOS_CHR_MODE_UUID,
+                   &CANON_EOS_MODE_SHOOT, sizeof(CANON_EOS_MODE_SHOOT)))
     return false;
 
   ESP_LOGI(LOG_TAG, "Done!");
