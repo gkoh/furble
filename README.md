@@ -53,7 +53,7 @@ Currently supported features in `furble`:
 | Scanning & Pairing | ✔️ | ✔️ | ✔️ | ✔️ |
 | Shutter Release | ✔️ | ✔️ | ✔️ | ✔️ |
 | Focus | ✔️ (see [#99](https://github.com/gkoh/furble/discussions/99)) | :x: | :x: (see [#29](https://github.com/gkoh/furble/issues/29)) | :x: |
-| GPS location tagging | ✔️ | :x: | :x: | :x: |
+| GPS location tagging | ✔️ | :x: (WiFi only) | :x: | :x: |
 
 ## Installation
 

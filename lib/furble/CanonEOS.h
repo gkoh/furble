@@ -28,13 +28,9 @@ class CanonEOS: public Camera {
   /** 0xf104 */
   const char *CANON_EOS_CHR_IDEN_UUID = "0001000a-0000-1000-0000-d8492fffa821";
 
-  const char *CANON_EOS_SVC_UNK0_UUID = "00020000-0000-1000-0000-d8492fffa821";
-  /** 0xf204 */
-  const char *CANON_EOS_CHR_UNK0_UUID = "00020002-0000-1000-0000-d8492fffa821";
-
-  const char *CANON_EOS_SVC_UNK1_UUID = "00030000-0000-1000-0000-d8492fffa821";
+  const char *CANON_EOS_SVC_MODE_UUID = "00030000-0000-1000-0000-d8492fffa821";
   /** 0xf307 */
-  const char *CANON_EOS_CHR_UNK1_UUID = "00030010-0000-1000-0000-d8492fffa821";
+  const char *CANON_EOS_CHR_MODE_UUID = "00030010-0000-1000-0000-d8492fffa821";
 
   const char *CANON_EOS_SVC_SHUTTER_UUID = "00030000-0000-1000-0000-d8492fffa821";
   /** 0xf311 */
@@ -42,6 +38,9 @@ class CanonEOS: public Camera {
 
   const uint8_t CANON_EOS_PAIR_ACCEPT = 0x02;
   const uint8_t CANON_EOS_PAIR_REJECT = 0x03;
+  uint8_t CANON_EOS_MODE_PLAYBACK = 0x01;
+  uint8_t CANON_EOS_MODE_SHOOT = 0x02;
+  uint8_t CANON_EOS_MODE_WAKE = 0x03;
 
   bool write_value(NimBLEClient *pClient,
                    const char *serviceUUID,
