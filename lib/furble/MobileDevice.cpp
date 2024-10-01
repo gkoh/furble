@@ -43,18 +43,17 @@ bool MobileDevice::matches(NimBLEAdvertisedDevice *pDevice) {
  * connection.
  * All this logic is encapsulated in the HIDServer class.
  */
-bool MobileDevice::connect(void) {
+bool MobileDevice::_connect(void) {
   unsigned int timeout_secs = 60;
 
-  m_Progress = 0.0f;
+  m_Progress = 0;
 
   m_HIDServer->start(&m_Address);
 
   ESP_LOGI(LOG_TAG, "Waiting for %us for connection from %s", timeout_secs, m_Name.c_str());
   while (--timeout_secs && !isConnected()) {
-    float progress = m_Progress.load() + 1.0f;
-    m_Progress = progress;
-    delay(1000);
+    m_Progress = m_Progress.load() + 1;
+    vTaskDelay(pdMS_TO_TICKS(1000));
   };
 
   if (timeout_secs == 0) {
@@ -63,7 +62,7 @@ bool MobileDevice::connect(void) {
   }
 
   ESP_LOGI(LOG_TAG, "Connected to %s.", m_Name.c_str());
-  m_Progress = 100.0f;
+  m_Progress = 100;
   m_HIDServer->stop();
 
   return true;
@@ -94,10 +93,9 @@ void MobileDevice::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
   // not supported
 }
 
-void MobileDevice::disconnect(void) {
-  m_Progress = 0.0f;
-  m_Connected = false;
+void MobileDevice::_disconnect(void) {
   m_HIDServer->disconnect(m_Address);
+  m_Connected = false;
 }
 
 bool MobileDevice::isConnected(void) const {

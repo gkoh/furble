@@ -18,15 +18,17 @@ class MobileDevice: public Camera {
 
   static bool matches(NimBLEAdvertisedDevice *pDevice);
 
-  bool connect(void) override;
   void shutterPress(void) override;
   void shutterRelease(void) override;
   void focusPress(void) override;
   void focusRelease(void) override;
   void updateGeoData(const gps_t &gps, const timesync_t &timesync) override;
-  void disconnect(void) override;
 
   bool isConnected(void) const override;
+
+ protected:
+  bool _connect(void) override;
+  void _disconnect(void) override;
 
  private:
   typedef struct _mobile_device_t {

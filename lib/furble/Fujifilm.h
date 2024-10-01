@@ -15,22 +15,23 @@ class Fujifilm: public Camera {
  public:
   Fujifilm(const void *data, size_t len);
   Fujifilm(const NimBLEAdvertisedDevice *pDevice);
-  ~Fujifilm(void);
 
   /**
    * Determine if the advertised BLE device is a Fujifilm X-T30.
    */
   static bool matches(const NimBLEAdvertisedDevice *pDevice);
 
-  bool connect(void) override;
   void shutterPress(void) override;
   void shutterRelease(void) override;
   void focusPress(void) override;
   void focusRelease(void) override;
   void updateGeoData(const gps_t &gps, const timesync_t &timesync) override;
-  void disconnect(void) override;
   size_t getSerialisedBytes(void) const override;
   bool serialise(void *buffer, size_t bytes) const override;
+
+ protected:
+  bool _connect(void) override;
+  void _disconnect(void) override;
 
  private:
   /**

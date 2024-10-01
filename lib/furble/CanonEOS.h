@@ -20,7 +20,6 @@ class CanonEOS: public Camera {
 
   CanonEOS(Type type, const void *data, size_t len);
   CanonEOS(Type type, const NimBLEAdvertisedDevice *pDevice);
-  ~CanonEOS(void);
 
   const char *CANON_EOS_SVC_IDEN_UUID = "00010000-0000-1000-0000-d8492fffa821";
   /** 0xf108 */
@@ -55,17 +54,19 @@ class CanonEOS: public Camera {
                     uint8_t *data,
                     size_t length);
 
-  bool connect(void) override;
   void shutterPress(void) override;
   void shutterRelease(void) override;
   void focusPress(void) override;
   void focusRelease(void) override;
   void updateGeoData(const gps_t &gps, const timesync_t &timesync) override;
-  void disconnect(void) override;
   size_t getSerialisedBytes(void) const override;
   bool serialise(void *buffer, size_t bytes) const override;
 
   Device::uuid128_t m_Uuid;
+
+ protected:
+  bool _connect(void) override;
+  void _disconnect(void) override;
 
  private:
   volatile uint8_t m_PairResult = 0x00;

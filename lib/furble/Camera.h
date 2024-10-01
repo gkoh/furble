@@ -2,6 +2,7 @@
 #define CAMERA_H
 
 #include <atomic>
+#include <mutex>
 
 #include <NimBLEAddress.h>
 #include <NimBLEClient.h>
@@ -26,6 +27,7 @@ class Camera {
     CANON_EOS_M6 = 2,
     CANON_EOS_RP = 3,
     MOBILE_DEVICE = 4,
+    FAUXNY = 5,
   };
 
   /**
@@ -52,14 +54,14 @@ class Camera {
   ~Camera();
 
   /**
-   * Wrapper for protected pure virtual Camera::connect().
+   * Wrapper for protected pure virtual Camera::_connect().
    */
   bool connect(esp_power_level_t power);
 
   /**
-   * Disconnect from the target.
+   * Wrapper for protected pure virtual Camera::_disconnect();
    */
-  virtual void disconnect(void) = 0;
+  void disconnect(void);
 
   /**
    * Send a shutter button press command.
@@ -110,11 +112,12 @@ class Camera {
 
   const NimBLEAddress &getAddress(void) const;
 
-  float getConnectProgress(void) const;
+  /** Get connection progress percentage (0-100). */
+  uint8_t getConnectProgress(void) const;
 
  protected:
   Camera(Type type);
-  std::atomic<float> m_Progress;
+  std::atomic<uint8_t> m_Progress;
 
   /**
    * Connect to the target camera such that it is ready for shutter control.
@@ -124,7 +127,12 @@ class Camera {
    *
    * @return true if the client is now ready for shutter control
    */
-  virtual bool connect(void) = 0;
+  virtual bool _connect(void) = 0;
+
+  /**
+   * Disconnect from the target.
+   */
+  virtual void _disconnect(void) = 0;
 
   NimBLEAddress m_Address = NimBLEAddress{};
   NimBLEClient *m_Client;
@@ -141,6 +149,9 @@ class Camera {
 
   const Type m_Type;
 
+  std::mutex m_Mutex;
+
+  bool m_FromScan = false;
   bool m_Active = false;
 };
 }  // namespace Furble

@@ -11,7 +11,7 @@ const char *LOG_TAG = FURBLE_STR;
 namespace Furble {
 
 NimBLEScan *Scan::m_Scan = nullptr;
-scanResultCallback *Scan::m_ScanResultCallback = nullptr;
+std::function<void(void *)> Scan::m_ScanResultCallback = nullptr;
 void *Scan::m_ScanResultPrivateData = nullptr;
 HIDServer *Scan::m_HIDServer = nullptr;
 
@@ -57,7 +57,7 @@ void Scan::init(esp_power_level_t power) {
   m_Scan->setWindow(6553);
 }
 
-void Scan::start(scanResultCallback scanCallback, void *scanPrivateData) {
+void Scan::start(std::function<void(void *)> scanCallback, void *scanPrivateData) {
   m_HIDServer->start(nullptr, new HIDServerCallback());
 
   m_ScanResultCallback = scanCallback;
