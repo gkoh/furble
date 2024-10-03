@@ -167,16 +167,18 @@ static uint16_t statusRefresh(void *context) {
     auto camera = target->getCamera();
     if (!camera->isConnected()) {
       ezProgressBar progress_bar(FURBLE_STR, {"Reconnecting ..."}, {""});
-      if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
-        ez.screen.clear();
-        ez.header.show(header);
-        ez.buttons.show(buttons);
+      do {
+        if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
+          ez.screen.clear();
+          ez.header.show(header);
+          ez.buttons.show(buttons);
 
-        fctx->reconnected = true;
+          fctx->reconnected = true;
 
-        ez.redraw();
-        return 500;
-      }
+          ez.redraw();
+          return 500;
+        }
+      } while (settings_load_reconnect());
     }
   }
 
@@ -383,10 +385,25 @@ static bool multiconnect_toggle(ezMenu *menu, void *context) {
   return true;
 }
 
+/**
+ * Toggle Infinite-ReConnect menu setting.
+ */
+static bool reconnect_toggle(ezMenu *menu, void *context) {
+  bool *reconnect = static_cast<bool *>(context);
+  *reconnect = !*reconnect;
+  menu->setCaption("reconnectonoff",
+                   std::string("Infinite-ReConnect\t") + (*reconnect ? "ON" : "OFF"));
+
+  settings_save_reconnect(*reconnect);
+
+  return true;
+}
+
 static void menu_settings(void) {
   ezMenu submenu(FURBLE_STR " - Settings");
 
   bool multiconnect = settings_load_multiconnect();
+  bool reconnect = settings_load_reconnect();
 
   submenu.buttons({"OK", "down"});
   submenu.addItem("Backlight", "", ez.backlight.menu);
@@ -395,6 +412,9 @@ static void menu_settings(void) {
   submenu.addItem("multiconnectonoff",
                   std::string("Multi-Connect\t") + (multiconnect ? "ON" : "OFF"), nullptr,
                   &multiconnect, multiconnect_toggle);
+  submenu.addItem("reconnectonoff",
+                  std::string("Infinite-ReConnect\t") + (reconnect ? "ON" : "OFF"), nullptr,
+                  &reconnect, reconnect_toggle);
   submenu.addItem("Theme", "", ez.theme->menu);
   submenu.addItem("Transmit Power", "", settings_menu_tx_power);
   submenu.addItem("About", "", about);
