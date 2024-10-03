@@ -157,7 +157,6 @@ To use:
 
 WARNING:
 * this will not be kind to battery life
-* You must Forceful power off by holding the power button
 
 ## Motivation
 
