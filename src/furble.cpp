@@ -27,14 +27,6 @@ static uint64_t get_time_secs(void) {
 }
 
 /**
- * Progress bar update function.
- */
-void update_progress_bar(void *ctx, float value) {
-  ezProgressBar *progress_bar = static_cast<ezProgressBar *>(ctx);
-  progress_bar->value(value);
-}
-
-/**
  * Display the version.
  */
 static void about(void) {
@@ -97,8 +89,6 @@ static void remote_control(FurbleCtx *fctx) {
 
   do {
     ez.yield();
-
-    // show_shutter_control(shutter_lock, shutter_lock_start_ms);
 
     if (M5.BtnPWR.wasClicked() || M5.BtnC.wasPressed()) {
       if (shutter_lock) {
@@ -187,7 +177,10 @@ static uint16_t statusRefresh(void *context) {
   FurbleCtx *fctx = static_cast<FurbleCtx *>(context);
   auto *control = fctx->control;
 
+  static uint8_t reconnect_count = 0;
+
   if (control->allConnected()) {
+    reconnect_count = 0;
     furble_gps_update(control);
     return 500;
   }
@@ -196,13 +189,19 @@ static uint16_t statusRefresh(void *context) {
     return 500;
   }
 
+  bool reconnect = settings_load_reconnect();
   auto buttons = ez.buttons.get();
   std::string header = ez.header.title();
 
   for (const auto &target : control->getTargets()) {
     auto camera = target->getCamera();
     if (!camera->isConnected()) {
-      if (!connect_with_progress(control, camera)) {
+      reconnect_count++;
+      if ((reconnect_count > 1) && !reconnect) {
+        fctx->cancelled = true;
+      }
+
+      if (!fctx->cancelled && !connect_with_progress(control, camera)) {
         fctx->cancelled = true;
       }
       ez.screen.clear();
@@ -232,11 +231,11 @@ static void menu_remote(FurbleCtx *fctx) {
   ez.addEvent(statusRefresh, fctx, 500);
 
   do {
+    submenu.runOnce();
+
     if (fctx->cancelled) {
       break;
     }
-
-    submenu.runOnce();
 
     if (submenu.pickName() == "Shutter") {
       remote_control(fctx);
@@ -443,13 +442,13 @@ static void menu_settings(void) {
   submenu.buttons({"OK", "down"});
   submenu.addItem("Backlight", "", ez.backlight.menu);
   submenu.addItem("GPS", "", settings_menu_gps);
+  submenu.addItem("reconnectonoff",
+                  std::string("Infinite-ReConnect\t") + (reconnect ? "ON" : "OFF"), nullptr,
+                  &reconnect, reconnect_toggle);
   submenu.addItem("Intervalometer", "", settings_menu_interval);
   submenu.addItem("multiconnectonoff",
                   std::string("Multi-Connect\t") + (multiconnect ? "ON" : "OFF"), nullptr,
                   &multiconnect, multiconnect_toggle);
-  submenu.addItem("reconnectonoff",
-                  std::string("Infinite-ReConnect\t") + (reconnect ? "ON" : "OFF"), nullptr,
-                  &reconnect, reconnect_toggle);
   submenu.addItem("Theme", "", ez.theme->menu);
   submenu.addItem("Transmit Power", "", settings_menu_tx_power);
   submenu.addItem("About", "", about);
