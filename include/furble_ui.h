@@ -5,7 +5,7 @@
 
 struct FurbleCtx {
   Furble::Control *control;
-  bool reconnected;
+  bool cancelled;
 };
 
 void vUITask(void *param);

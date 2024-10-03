@@ -88,8 +88,8 @@ static void do_interval(FurbleCtx *fctx, const interval_t &interval) {
     ez.yield();
     now = millis();
 
-    if (fctx->reconnected) {
-      fctx->reconnected = false;
+    if (fctx->cancelled) {
+      break;
     }
 
     switch (state) {
@@ -135,7 +135,7 @@ static void do_interval(FurbleCtx *fctx, const interval_t &interval) {
     }
 
     display_interval_msg(state, icount, interval.count, now, next);
-  } while (active && control->isConnected());
+  } while (active && control->allConnected());
   ez.backlight.inactivity(USER_SET);
 }
 

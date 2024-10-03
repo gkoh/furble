@@ -55,7 +55,7 @@ class CanonEOS: public Camera {
                     uint8_t *data,
                     size_t length);
 
-  bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr) override;
+  bool connect(void) override;
   void shutterPress(void) override;
   void shutterRelease(void) override;
   void focusPress(void) override;

@@ -1058,10 +1058,14 @@ void M5ez::begin() {
   ez.settings.begin();
 }
 
-void M5ez::yield() {
+void M5ez::yield(bool events) {
   vTaskDelay(1);  // allow lower priority tasks to run
   ::yield();      // execute the Arduino yield in the root namespace
   M5.update();
+  if (!events) {
+    return;
+  }
+
   for (uint8_t n = 0; n < _events.size(); n++) {
     if (millis() > _events[n].when) {
       uint16_t r = (_events[n].function)(_events[n].context);

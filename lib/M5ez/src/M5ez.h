@@ -503,7 +503,7 @@ class M5ez {
 
   static void begin();
 
-  static void yield();
+  static void yield(bool events = true);
 
   static void addEvent(uint16_t (*function)(void *), void *context = nullptr, uint32_t when = 1);
   static void removeEvent(uint16_t (*function)(void *context));

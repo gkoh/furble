@@ -20,6 +20,13 @@ typedef struct {
 #define CONNECT_STAR "Connect *"
 
 /**
+ * Get seconds since boot.
+ */
+static uint64_t get_time_secs(void) {
+  return (esp_timer_get_time() / 1000000LL);
+}
+
+/**
  * Progress bar update function.
  */
 void update_progress_bar(void *ctx, float value) {
@@ -91,10 +98,7 @@ static void remote_control(FurbleCtx *fctx) {
   do {
     ez.yield();
 
-    if (fctx->reconnected) {
-      show_shutter_control(shutter_lock, shutter_lock_start_ms);
-      fctx->reconnected = false;
-    }
+    // show_shutter_control(shutter_lock, shutter_lock_start_ms);
 
     if (M5.BtnPWR.wasClicked() || M5.BtnC.wasPressed()) {
       if (shutter_lock) {
@@ -143,7 +147,35 @@ static void remote_control(FurbleCtx *fctx) {
         continue;
       }
     }
-  } while (control->isConnected());
+  } while (!fctx->cancelled && control->allConnected());
+}
+
+/**
+ * Attempt a connection with a progress bar.
+ *
+ * @return false if the attempt was cancelled
+ */
+static bool connect_with_progress(Furble::Control *control, Furble::Camera *camera) {
+  ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to"), camera->getName()},
+                             {"", "Cancel"});
+  control->connect(camera, settings_load_esp_tx_power());
+
+  // Wait up to 30 seconds
+  uint64_t timeout = get_time_secs() + 30;
+  while (get_time_secs() <= timeout) {
+    progress_bar.value(camera->getConnectProgress());
+    ez.yield(false);
+    if (M5.BtnB.wasClicked()) {
+      // issue a cancel to the backend stack
+      ble_gap_conn_cancel();
+      return false;
+    }
+    if (camera->isConnected()) {
+      return true;
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -155,8 +187,12 @@ static uint16_t statusRefresh(void *context) {
   FurbleCtx *fctx = static_cast<FurbleCtx *>(context);
   auto *control = fctx->control;
 
-  if (control->isConnected()) {
+  if (control->allConnected()) {
     furble_gps_update(control);
+    return 500;
+  }
+
+  if (fctx->cancelled) {
     return 500;
   }
 
@@ -166,17 +202,15 @@ static uint16_t statusRefresh(void *context) {
   for (const auto &target : control->getTargets()) {
     auto camera = target->getCamera();
     if (!camera->isConnected()) {
-      ezProgressBar progress_bar(FURBLE_STR, {"Reconnecting ..."}, {""});
-      if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
-        ez.screen.clear();
-        ez.header.show(header);
-        ez.buttons.show(buttons);
-
-        fctx->reconnected = true;
-
-        ez.redraw();
-        return 500;
+      if (!connect_with_progress(control, camera)) {
+        fctx->cancelled = true;
       }
+      ez.screen.clear();
+      ez.header.show(header);
+      ez.buttons.show(buttons);
+      ez.redraw();
+
+      return 500;
     }
   }
 
@@ -198,6 +232,10 @@ static void menu_remote(FurbleCtx *fctx) {
   ez.addEvent(statusRefresh, fctx, 500);
 
   do {
+    if (fctx->cancelled) {
+      break;
+    }
+
     submenu.runOnce();
 
     if (submenu.pickName() == "Shutter") {
@@ -224,9 +262,8 @@ static bool do_connect(ezMenu *menu, void *context) {
     for (int n = 0; n < Furble::CameraList::size(); n++) {
       auto *camera = Furble::CameraList::get(n);
       if (camera->isActive()) {
-        ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to ") + camera->getName()},
-                                   {""});
-        if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
+        connect_with_progress(ctx->control, camera);
+        if (camera->isConnected()) {
           ctx->control->addActive(camera);
         } else {
           // Fail all if any connect fails
@@ -236,15 +273,15 @@ static bool do_connect(ezMenu *menu, void *context) {
     }
   } else {
     auto *camera = Furble::CameraList::get(menu->pick() - 1);
+    connect_with_progress(ctx->control, camera);
 
-    ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to ") + camera->getName()},
-                               {""});
-    if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
+    if (camera->isConnected()) {
       if (ctx->scan) {
         Furble::CameraList::save(camera);
       }
       ctx->control->addActive(camera);
     } else {
+      camera->disconnect();
       return false;
     }
   }

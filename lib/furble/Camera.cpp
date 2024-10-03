@@ -12,13 +12,16 @@ Camera::~Camera() {
   NimBLEDevice::deleteClient(m_Client);
 }
 
-bool Camera::connect(esp_power_level_t power, progressFunc pFunc, void *pCtx) {
+bool Camera::connect(esp_power_level_t power) {
   // try extending range by adjusting connection parameters
-  bool connected = this->connect(pFunc, pCtx);
+  bool connected = this->connect();
   if (connected) {
     // Set BLE transmit power after connection is established.
     NimBLEDevice::setPower(power);
     m_Client->updateConnParams(m_MinInterval, m_MaxInterval, m_Latency, m_Timeout);
+    m_Connected = true;
+  } else {
+    m_Connected = false;
   }
 
   return connected;
@@ -44,14 +47,12 @@ const NimBLEAddress &Camera::getAddress(void) const {
   return m_Address;
 }
 
-void Camera::updateProgress(progressFunc pFunc, void *ctx, float value) {
-  if (pFunc != nullptr) {
-    (pFunc)(ctx, value);
-  }
+float Camera::getConnectProgress(void) const {
+  return m_Progress.load();
 }
 
 bool Camera::isConnected(void) const {
-  return m_Client->isConnected();
+  return m_Connected && m_Client->isConnected();
 }
 
 }  // namespace Furble
