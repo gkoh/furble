@@ -14,6 +14,7 @@ const char *PREFS_TX_POWER = "txpower";
 const char *PREFS_GPS = "gps";
 const char *PREFS_INTERVAL = "interval";
 const char *PREFS_MULTICONNECT = "multiconnect";
+const char *PREFS_RECONNECT = "reconnect";
 
 /**
  * Save BLE transmit power to preferences.
@@ -316,5 +317,23 @@ void settings_save_multiconnect(bool multiconnect) {
 
   prefs.begin(FURBLE_STR, false);
   prefs.putBool(PREFS_MULTICONNECT, multiconnect);
+  prefs.end();
+}
+
+bool settings_load_reconnect(void) {
+  Preferences prefs;
+
+  prefs.begin(FURBLE_STR, true);
+  bool reconnect = prefs.getBool(PREFS_RECONNECT, false);
+  prefs.end();
+
+  return reconnect;
+}
+
+void settings_save_reconnect(bool reconnect) {
+  Preferences prefs;
+
+  prefs.begin(FURBLE_STR, false);
+  prefs.putBool(PREFS_RECONNECT, reconnect);
   prefs.end();
 }

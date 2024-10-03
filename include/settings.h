@@ -9,6 +9,9 @@
 void settings_menu_tx_power(void);
 esp_power_level_t settings_load_esp_tx_power(void);
 
+bool settings_load_reconnect(void);
+void settings_save_reconnect(bool reconnect);
+
 bool settings_load_gps(void);
 void settings_menu_gps(void);
 
