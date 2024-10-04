@@ -17,6 +17,8 @@ void setup() {
 
   Serial.begin(115200);
 
+  ESP_LOGI(LOG_TAG, "furble version: '%s'", FURBLE_VERSION);
+
   Furble::Device::init();
   Furble::Scan::init(settings_load_esp_tx_power());
 
