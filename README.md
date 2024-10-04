@@ -22,6 +22,7 @@ The following devices have actually been tested and confirmed to work:
    - Fujifiml X-H1
    - Fujifilm X-H2S ([@val123456](https://github.com/val123456))
    - Fujifilm X-S10 ([@dimitrij2k](https://github.com/dimitrij2k))
+   - Fujifilm X-S20 ([@kelvincabaldo07](https://github.com/kelvincabaldo07))
    - Fujifilm X-T200 ([@Cronkan](https://github.com/Cronkan))
    - Fujifilm X-T30
    - Fujifilm X-T5 ([@stulevine](https://github.com/stulevine))
