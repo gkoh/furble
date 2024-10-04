@@ -21,6 +21,7 @@ HIDServer *Scan::m_HIDServer = nullptr;
 class Scan::ScanCallback: public NimBLEScanCallbacks {
   void onResult(NimBLEAdvertisedDevice *pDevice) {
     if (CameraList::match(pDevice)) {
+      ESP_LOGI(LOG_TAG, "RSSI(%s) = %d", pDevice->getName().c_str(), pDevice->getRSSI());
       if (m_ScanResultCallback != nullptr) {
         (m_ScanResultCallback)(m_ScanResultPrivateData);
       }
