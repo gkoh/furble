@@ -17,7 +17,7 @@ void setup() {
 
   Serial.begin(115200);
 
-  ESP_LOGI(LOG_TAG, "furble version: '%s'", FURBLE_VERSION);
+  ESP_LOGI(FURBLE_TAG, "furble version: '%s'", FURBLE_VERSION);
 
   Furble::Device::init();
   Furble::Scan::init(settings_load_esp_tx_power());
@@ -26,14 +26,14 @@ void setup() {
 
   xRet = xTaskCreatePinnedToCore(control_task, "control", 8192, control, 4, &xControlHandle, 1);
   if (xRet != pdPASS) {
-    ESP_LOGE(LOG_TAG, "Failed to create control task.");
+    ESP_LOGE(FURBLE_TAG, "Failed to create control task.");
     abort();
   }
 
   // Pin UI to same core (0) as NimBLE
   xRet = xTaskCreatePinnedToCore(vUITask, "UI-M5ez", 32768, control, 2, &xUIHandle, 0);
   if (xRet != pdPASS) {
-    ESP_LOGE(LOG_TAG, "Failed to create UI task.");
+    ESP_LOGE(FURBLE_TAG, "Failed to create UI task.");
     abort();
   }
 }

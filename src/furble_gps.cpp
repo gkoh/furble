@@ -104,7 +104,7 @@ static void current_draw_widget(uint16_t x, uint16_t y) {
   M5.Lcd.setTextColor(ez.theme->header_fgcolor);
   M5.Lcd.setTextDatum(TL_DATUM);
   int32_t ma = M5.Power.getBatteryCurrent();
-  ESP_LOGI(LOG_TAG, "%d", ma);
+  ESP_LOGI(FURBLE_TAG, "%d", ma);
   M5.Lcd.drawString(std::to_string(ma).c_str(), x + ez.theme->header_hmargin,
                     ez.theme->header_tmargin + 2);
 }

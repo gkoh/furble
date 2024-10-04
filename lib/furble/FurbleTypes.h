@@ -3,6 +3,6 @@
 
 #define FURBLE_STR "furble"
 
-extern const char *LOG_TAG;
+extern const char *FURBLE_TAG;
 
 #endif

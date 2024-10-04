@@ -50,7 +50,7 @@ bool MobileDevice::connect(progressFunc pFunc, void *pCtx) {
 
   m_HIDServer->start(&m_Address);
 
-  ESP_LOGI(LOG_TAG, "Waiting for %us for connection from %s", timeout_secs, m_Name.c_str());
+  ESP_LOGI(FURBLE_TAG, "Waiting for %us for connection from %s", timeout_secs, m_Name.c_str());
   while (--timeout_secs && !isConnected()) {
     progress += 1.0f;
     updateProgress(pFunc, pCtx, progress);
@@ -58,11 +58,11 @@ bool MobileDevice::connect(progressFunc pFunc, void *pCtx) {
   };
 
   if (timeout_secs == 0) {
-    ESP_LOGI(LOG_TAG, "Connection timed out.");
+    ESP_LOGI(FURBLE_TAG, "Connection timed out.");
     return false;
   }
 
-  ESP_LOGI(LOG_TAG, "Connected to %s.", m_Name.c_str());
+  ESP_LOGI(FURBLE_TAG, "Connected to %s.", m_Name.c_str());
   progress = 100.0f;
   updateProgress(pFunc, pCtx, progress);
   m_HIDServer->stop();

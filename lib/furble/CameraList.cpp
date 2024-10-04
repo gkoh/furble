@@ -46,12 +46,12 @@ std::vector<CameraList::index_entry_t> CameraList::load_index(void) {
   if (bytes > 0 && (bytes % sizeof(index_entry_t) == 0)) {
     uint8_t buffer[bytes] = {0};
     size_t count = bytes / sizeof(index_entry_t);
-    ESP_LOGI(LOG_TAG, "Index entries: %d", count);
+    ESP_LOGI(FURBLE_TAG, "Index entries: %d", count);
     m_Prefs.getBytes(FURBLE_PREF_INDEX, buffer, bytes);
     index_entry_t *entry = (index_entry_t *)buffer;
 
     for (int i = 0; i < count; i++) {
-      ESP_LOGI(LOG_TAG, "Loading index entry: %s", entry[i].name);
+      ESP_LOGI(FURBLE_TAG, "Loading index entry: %s", entry[i].name);
       index.push_back(entry[i]);
     }
   }
@@ -62,9 +62,9 @@ std::vector<CameraList::index_entry_t> CameraList::load_index(void) {
 void CameraList::add_index(std::vector<CameraList::index_entry_t> &index, index_entry_t &entry) {
   bool exists = false;
   for (auto &i : index) {
-    ESP_LOGI(LOG_TAG, "%s : %s", i.name, entry.name);
+    ESP_LOGI(FURBLE_TAG, "%s : %s", i.name, entry.name);
     if (strcmp(i.name, entry.name) == 0) {
-      ESP_LOGI(LOG_TAG, "Overwriting existing entry: %s", entry.name);
+      ESP_LOGI(FURBLE_TAG, "Overwriting existing entry: %s", entry.name);
       i = entry;
       exists = true;
       break;
@@ -72,7 +72,7 @@ void CameraList::add_index(std::vector<CameraList::index_entry_t> &index, index_
   }
 
   if (!exists) {
-    ESP_LOGI(LOG_TAG, "Adding new entry: %s", entry.name);
+    ESP_LOGI(FURBLE_TAG, "Adding new entry: %s", entry.name);
     index.push_back(entry);
   }
 }
@@ -91,9 +91,9 @@ void CameraList::save(const Furble::Camera *camera) {
   if (camera->serialise(dbuffer, dbytes)) {
     // Store the entry and the index if serialisation succeeds
     m_Prefs.putBytes(entry.name, dbuffer, dbytes);
-    ESP_LOGI(LOG_TAG, "Saved %s", entry.name);
+    ESP_LOGI(FURBLE_TAG, "Saved %s", entry.name);
     save_index(index);
-    ESP_LOGI(LOG_TAG, "Index entries: %d", index.size());
+    ESP_LOGI(FURBLE_TAG, "Index entries: %d", index.size());
   }
 
   m_Prefs.end();
@@ -109,7 +109,7 @@ void CameraList::remove(Furble::Camera *camera) {
   size_t i = 0;
   for (i = 0; i < index.size(); i++) {
     if (strcmp(index[i].name, entry.name) == 0) {
-      ESP_LOGI(LOG_TAG, "Deleting: %s", entry.name);
+      ESP_LOGI(FURBLE_TAG, "Deleting: %s", entry.name);
       index.erase(index.begin() + i);
       break;
     }

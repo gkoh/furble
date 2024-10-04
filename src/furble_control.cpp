@@ -12,23 +12,23 @@ static void target_task(void *param) {
     control_cmd_t cmd = target->getCommand();
     switch (cmd) {
       case CONTROL_CMD_SHUTTER_PRESS:
-        ESP_LOGI(LOG_TAG, "shutterPress(%s)", name);
+        ESP_LOGI(FURBLE_TAG, "shutterPress(%s)", name);
         camera->shutterPress();
         break;
       case CONTROL_CMD_SHUTTER_RELEASE:
-        ESP_LOGI(LOG_TAG, "shutterRelease(%s)", name);
+        ESP_LOGI(FURBLE_TAG, "shutterRelease(%s)", name);
         camera->shutterRelease();
         break;
       case CONTROL_CMD_FOCUS_PRESS:
-        ESP_LOGI(LOG_TAG, "focusPress(%s)", name);
+        ESP_LOGI(FURBLE_TAG, "focusPress(%s)", name);
         camera->focusPress();
         break;
       case CONTROL_CMD_FOCUS_RELEASE:
-        ESP_LOGI(LOG_TAG, "focusRelease(%s)", name);
+        ESP_LOGI(FURBLE_TAG, "focusRelease(%s)", name);
         camera->focusRelease();
         break;
       case CONTROL_CMD_GPS_UPDATE:
-        ESP_LOGI(LOG_TAG, "updateGeoData(%s)", name);
+        ESP_LOGI(FURBLE_TAG, "updateGeoData(%s)", name);
         camera->updateGeoData(target->getGPS(), target->getTimesync());
         break;
       case CONTROL_CMD_ERROR:
@@ -37,7 +37,7 @@ static void target_task(void *param) {
       case CONTROL_CMD_DISCONNECT:
         goto task_exit;
       default:
-        ESP_LOGE(LOG_TAG, "Invalid control command %d.", cmd);
+        ESP_LOGE(FURBLE_TAG, "Invalid control command %d.", cmd);
     }
   }
 task_exit:
@@ -64,7 +64,7 @@ Camera *Control::Target::getCamera(void) {
 void Control::Target::sendCommand(control_cmd_t cmd) {
   BaseType_t ret = xQueueSend(m_Queue, &cmd, 0);
   if (ret != pdTRUE) {
-    ESP_LOGE(LOG_TAG, "Failed to send command to target.");
+    ESP_LOGE(FURBLE_TAG, "Failed to send command to target.");
   }
 }
 
@@ -93,7 +93,7 @@ void Control::Target::updateGPS(Camera::gps_t &gps, Camera::timesync_t &timesync
 Control::Control(void) {
   m_Queue = xQueueCreate(CONTROL_CMD_QUEUE_LEN, sizeof(control_cmd_t));
   if (m_Queue == NULL) {
-    ESP_LOGE(LOG_TAG, "Failed to create control queue.");
+    ESP_LOGE(FURBLE_TAG, "Failed to create control queue.");
     abort();
   }
 }
@@ -118,7 +118,7 @@ void Control::task(void) {
             target->sendCommand(cmd);
             break;
           default:
-            ESP_LOGE(LOG_TAG, "Invalid control command %d.", cmd);
+            ESP_LOGE(FURBLE_TAG, "Invalid control command %d.", cmd);
             break;
         }
       }
@@ -168,7 +168,7 @@ void Control::addActive(Camera *camera) {
   BaseType_t ret = xTaskCreatePinnedToCore(target_task, camera->getName().c_str(), 4096,
                                            target.get(), 3, NULL, 1);
   if (ret != pdPASS) {
-    ESP_LOGE(LOG_TAG, "Failed to create task for '%s'.", camera->getName());
+    ESP_LOGE(FURBLE_TAG, "Failed to create task for '%s'.", camera->getName());
   } else {
     m_Targets.push_back(std::move(target));
   }

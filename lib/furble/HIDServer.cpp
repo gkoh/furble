@@ -88,14 +88,14 @@ void HIDServer::stop(void) {
   m_Server->stopAdvertising();
 }
 
-void HIDServer::onAuthenticationComplete(const NimBLEConnInfo &connInfo, const std::string &name) {
+void HIDServer::onAuthenticationComplete(NimBLEConnInfo &connInfo, const std::string &name) {
   NimBLEAddress address = connInfo.getIdAddress();
   if (m_hidCallbacks != nullptr) {
     m_hidCallbacks->onComplete(address, name);
   }
 }
 
-void HIDServer::onIdentity(const NimBLEConnInfo &connInfo) {
+void HIDServer::onIdentity(NimBLEConnInfo &connInfo) {
   ESP_LOGI("HID", "identity resolved: address = %s, type = %d",
            connInfo.getIdAddress().toString().c_str(), connInfo.getIdAddress().getType());
 }

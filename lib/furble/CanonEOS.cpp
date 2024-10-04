@@ -22,8 +22,8 @@ CanonEOS::CanonEOS(Type type, const void *data, size_t len) : Camera(type) {
 CanonEOS::CanonEOS(Type type, const NimBLEAdvertisedDevice *pDevice) : Camera(type) {
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
-  ESP_LOGI(LOG_TAG, "Name = %s", m_Name.c_str());
-  ESP_LOGI(LOG_TAG, "Address = %s", m_Address.toString().c_str());
+  ESP_LOGI(FURBLE_TAG, "Name = %s", m_Name.c_str());
+  ESP_LOGI(FURBLE_TAG, "Address = %s", m_Address.toString().c_str());
   Device::getUUID128(&m_Uuid);
 }
 
@@ -38,7 +38,7 @@ void CanonEOS::pairCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
                             size_t length,
                             bool isNotify) {
   if (!isNotify && (length > 0)) {
-    ESP_LOGI(LOG_TAG, "Got pairing callback: 0x%02x", pData[0]);
+    ESP_LOGI(FURBLE_TAG, "Got pairing callback: 0x%02x", pData[0]);
     m_PairResult = pData[0];
   }
 }
@@ -83,34 +83,34 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
     m_PairResult = 0x00;
   }
 
-  ESP_LOGI(LOG_TAG, "Connecting");
+  ESP_LOGI(FURBLE_TAG, "Connecting");
   if (!m_Client->connect(m_Address)) {
-    ESP_LOGI(LOG_TAG, "Connection failed!!!");
+    ESP_LOGI(FURBLE_TAG, "Connection failed!!!");
     return false;
   }
 
-  ESP_LOGI(LOG_TAG, "Connected");
+  ESP_LOGI(FURBLE_TAG, "Connected");
   updateProgress(pFunc, pCtx, 10.0f);
 
-  ESP_LOGI(LOG_TAG, "Securing");
+  ESP_LOGI(FURBLE_TAG, "Securing");
   if (!m_Client->secureConnection()) {
     return false;
   }
-  ESP_LOGI(LOG_TAG, "Secured!");
+  ESP_LOGI(FURBLE_TAG, "Secured!");
   updateProgress(pFunc, pCtx, 20.0f);
 
   NimBLERemoteService *pSvc = m_Client->getService(CANON_EOS_SVC_IDEN_UUID);
   if (pSvc) {
     NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(CANON_EOS_CHR_NAME_UUID);
     if ((pChr != nullptr) && pChr->canIndicate()) {
-      ESP_LOGI(LOG_TAG, "Subscribed for pairing indication");
+      ESP_LOGI(FURBLE_TAG, "Subscribed for pairing indication");
       pChr->subscribe(false,
                       [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length,
                              bool isNotify) { this->pairCallback(pChr, pData, length, isNotify); });
     }
   }
 
-  ESP_LOGI(LOG_TAG, "Identifying 1!");
+  ESP_LOGI(FURBLE_TAG, "Identifying 1!");
   const char *name = Device::getStringID();
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_NAME_UUID, 0x01,
                     (uint8_t *)name, strlen(name)))
@@ -118,21 +118,21 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
 
   updateProgress(pFunc, pCtx, 30.0f);
 
-  ESP_LOGI(LOG_TAG, "Identifying 2!");
+  ESP_LOGI(FURBLE_TAG, "Identifying 2!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x03, m_Uuid.uint8,
                     UUID128_LEN))
     return false;
 
   updateProgress(pFunc, pCtx, 40.0f);
 
-  ESP_LOGI(LOG_TAG, "Identifying 3!");
+  ESP_LOGI(FURBLE_TAG, "Identifying 3!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x04,
                     (uint8_t *)name, strlen(name)))
     return false;
 
   updateProgress(pFunc, pCtx, 50.0f);
 
-  ESP_LOGI(LOG_TAG, "Identifying 4!");
+  ESP_LOGI(FURBLE_TAG, "Identifying 4!");
 
   uint8_t x = 0x02;
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x05, &x, 1))
@@ -140,10 +140,10 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
 
   updateProgress(pFunc, pCtx, 60.0f);
 
-  ESP_LOGI(LOG_TAG, "Identifying 5!");
+  ESP_LOGI(FURBLE_TAG, "Identifying 5!");
 
   // Give the user 60s to confirm/deny pairing
-  ESP_LOGI(LOG_TAG, "Waiting for user to confirm/deny pairing.");
+  ESP_LOGI(FURBLE_TAG, "Waiting for user to confirm/deny pairing.");
   for (unsigned int i = 0; i < 60; i++) {
     float progress = 70.0f + (float(i) / 6.0f);
     updateProgress(pFunc, pCtx, progress);
@@ -155,11 +155,11 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
 
   if (m_PairResult != CANON_EOS_PAIR_ACCEPT) {
     bool deleted = NimBLEDevice::deleteBond(m_Address);
-    ESP_LOGW(LOG_TAG, "Rejected, delete pairing: %d", deleted);
+    ESP_LOGW(FURBLE_TAG, "Rejected, delete pairing: %d", deleted);
     return false;
   }
 
-  ESP_LOGI(LOG_TAG, "Paired!");
+  ESP_LOGI(FURBLE_TAG, "Paired!");
 
   /* write to 0xf104 */
   x = 0x01;
@@ -168,14 +168,14 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
 
   updateProgress(pFunc, pCtx, 80.0f);
 
-  ESP_LOGI(LOG_TAG, "Switching mode!");
+  ESP_LOGI(FURBLE_TAG, "Switching mode!");
 
   /* write to 0xf307 */
   if (!write_value(m_Client, CANON_EOS_SVC_MODE_UUID, CANON_EOS_CHR_MODE_UUID,
                    &CANON_EOS_MODE_SHOOT, sizeof(CANON_EOS_MODE_SHOOT)))
     return false;
 
-  ESP_LOGI(LOG_TAG, "Done!");
+  ESP_LOGI(FURBLE_TAG, "Done!");
   updateProgress(pFunc, pCtx, 100.0f);
 
   return true;

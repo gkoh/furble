@@ -84,7 +84,7 @@ static void remote_control(FurbleCtx *fctx) {
   static unsigned long shutter_lock_start_ms = 0;
   static bool shutter_lock = false;
 
-  ESP_LOGI(LOG_TAG, "Remote Control");
+  ESP_LOGI(FURBLE_TAG, "Remote Control");
 
   show_shutter_control(false, 0);
 
@@ -101,7 +101,7 @@ static void remote_control(FurbleCtx *fctx) {
         // ensure shutter is released on exit
         control->sendCommand(CONTROL_CMD_SHUTTER_RELEASE);
       }
-      ESP_LOGI(LOG_TAG, "Exit shutter");
+      ESP_LOGI(FURBLE_TAG, "Exit shutter");
       break;
     }
 
@@ -126,7 +126,7 @@ static void remote_control(FurbleCtx *fctx) {
           shutter_lock = true;
           shutter_lock_start_ms = millis();
           show_shutter_control(true, shutter_lock_start_ms);
-          ESP_LOGI(LOG_TAG, "shutter lock");
+          ESP_LOGI(FURBLE_TAG, "shutter lock");
         } else {
           control->sendCommand(CONTROL_CMD_SHUTTER_RELEASE);
         }

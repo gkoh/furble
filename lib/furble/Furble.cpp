@@ -6,7 +6,7 @@
 #include "Furble.h"
 
 // log tag
-const char *LOG_TAG = FURBLE_STR;
+const char *FURBLE_TAG = FURBLE_STR;
 
 namespace Furble {
 
@@ -21,7 +21,7 @@ HIDServer *Scan::m_HIDServer = nullptr;
 class Scan::ScanCallback: public NimBLEScanCallbacks {
   void onResult(NimBLEAdvertisedDevice *pDevice) {
     if (CameraList::match(pDevice)) {
-      ESP_LOGI(LOG_TAG, "RSSI(%s) = %d", pDevice->getName().c_str(), pDevice->getRSSI());
+      ESP_LOGI(FURBLE_TAG, "RSSI(%s) = %d", pDevice->getName().c_str(), pDevice->getRSSI());
       if (m_ScanResultCallback != nullptr) {
         (m_ScanResultCallback)(m_ScanResultPrivateData);
       }

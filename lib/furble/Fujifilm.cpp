@@ -57,15 +57,15 @@ static constexpr std::array<uint8_t, 2> FUJIFILM_SHUTTER_FOCUS = {0x03, 0x00};
 namespace Furble {
 
 static void print_token(const std::array<uint8_t, FUJIFILM_TOKEN_LEN> &token) {
-  ESP_LOGI(LOG_TAG, "Token = %02x%02x%02x%02x", token[0], token[1], token[2], token[3]);
+  ESP_LOGI(FURBLE_TAG, "Token = %02x%02x%02x%02x", token[0], token[1], token[2], token[3]);
 }
 
 void Fujifilm::notify(BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
-  ESP_LOGI(LOG_TAG, "Got %s callback: %u bytes from %s", isNotify ? "notification" : "indication",
+  ESP_LOGI(FURBLE_TAG, "Got %s callback: %u bytes from %s", isNotify ? "notification" : "indication",
            length, pChr->getUUID().toString().c_str());
   if (length > 0) {
     for (int i = 0; i < length; i++) {
-      ESP_LOGI(LOG_TAG, "  [%d] 0x%02x", i, pData[i]);
+      ESP_LOGI(FURBLE_TAG, "  [%d] 0x%02x", i, pData[i]);
     }
   }
 
@@ -78,7 +78,7 @@ void Fujifilm::notify(BLERemoteCharacteristic *pChr, uint8_t *pData, size_t leng
       m_GeoRequested = true;
     }
   } else {
-    ESP_LOGW(LOG_TAG, "Unhandled notification handle.");
+    ESP_LOGW(FURBLE_TAG, "Unhandled notification handle.");
   }
 }
 
@@ -97,8 +97,8 @@ Fujifilm::Fujifilm(const NimBLEAdvertisedDevice *pDevice) : Camera(Type::FUJIFIL
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
   m_Token = {data[3], data[4], data[5], data[6]};
-  ESP_LOGI(LOG_TAG, "Name = %s", m_Name.c_str());
-  ESP_LOGI(LOG_TAG, "Address = %s", m_Address.toString().c_str());
+  ESP_LOGI(FURBLE_TAG, "Name = %s", m_Name.c_str());
+  ESP_LOGI(FURBLE_TAG, "Address = %s", m_Address.toString().c_str());
   print_token(m_Token);
 }
 
@@ -141,17 +141,17 @@ bool Fujifilm::connect(progressFunc pFunc, void *pCtx) {
   NimBLERemoteService *pSvc = nullptr;
   NimBLERemoteCharacteristic *pChr = nullptr;
 
-  ESP_LOGI(LOG_TAG, "Connecting");
+  ESP_LOGI(FURBLE_TAG, "Connecting");
   if (!m_Client->connect(m_Address))
     return false;
 
-  ESP_LOGI(LOG_TAG, "Connected");
+  ESP_LOGI(FURBLE_TAG, "Connected");
   updateProgress(pFunc, pCtx, 20.0f);
   pSvc = m_Client->getService(FUJIFILM_SVC_PAIR_UUID);
   if (pSvc == nullptr)
     return false;
 
-  ESP_LOGI(LOG_TAG, "Pairing");
+  ESP_LOGI(FURBLE_TAG, "Pairing");
   pChr = pSvc->getCharacteristic(FUJIFILM_CHR_PAIR_UUID);
   if (pChr == nullptr)
     return false;
@@ -161,19 +161,19 @@ bool Fujifilm::connect(progressFunc pFunc, void *pCtx) {
   print_token(m_Token);
   if (!pChr->writeValue(m_Token.data(), sizeof(m_Token), true))
     return false;
-  ESP_LOGI(LOG_TAG, "Paired!");
+  ESP_LOGI(FURBLE_TAG, "Paired!");
   updateProgress(pFunc, pCtx, 30.0f);
 
-  ESP_LOGI(LOG_TAG, "Identifying");
+  ESP_LOGI(FURBLE_TAG, "Identifying");
   pChr = pSvc->getCharacteristic(FUJIFILM_CHR_IDEN_UUID);
   if (!pChr->canWrite())
     return false;
   if (!pChr->writeValue(Device::getStringID(), true))
     return false;
-  ESP_LOGI(LOG_TAG, "Identified!");
+  ESP_LOGI(FURBLE_TAG, "Identified!");
   updateProgress(pFunc, pCtx, 40.0f);
 
-  ESP_LOGI(LOG_TAG, "Configuring");
+  ESP_LOGI(FURBLE_TAG, "Configuring");
   pSvc = m_Client->getService(FUJIFILM_SVC_CONF_UUID);
   // indications
   pSvc->getCharacteristic(FUJIFILM_CHR_IND1_UUID)
@@ -229,7 +229,7 @@ bool Fujifilm::connect(progressFunc pFunc, void *pCtx) {
             this->notify(pChr, pData, length, isNotify);
           },
           true);
-  ESP_LOGI(LOG_TAG, "Configured");
+  ESP_LOGI(FURBLE_TAG, "Configured");
 
   updateProgress(pFunc, pCtx, 100.0f);
 
@@ -288,11 +288,11 @@ void Fujifilm::sendGeoData(const gps_t &gps, const timesync_t &timesync) {
                 }
     };
 
-    ESP_LOGI(LOG_TAG, "Sending geotag data (%u bytes) to 0x%04x", sizeof(geotag),
+    ESP_LOGI(FURBLE_TAG, "Sending geotag data (%u bytes) to 0x%04x", sizeof(geotag),
              pChr->getHandle());
-    ESP_LOGI(LOG_TAG, "  lat: %f, %d", gps.latitude, geotag.latitude);
-    ESP_LOGI(LOG_TAG, "  lon: %f, %d", gps.longitude, geotag.longitude);
-    ESP_LOGI(LOG_TAG, "  alt: %f, %d", gps.altitude, geotag.altitude);
+    ESP_LOGI(FURBLE_TAG, "  lat: %f, %d", gps.latitude, geotag.latitude);
+    ESP_LOGI(FURBLE_TAG, "  lon: %f, %d", gps.longitude, geotag.longitude);
+    ESP_LOGI(FURBLE_TAG, "  alt: %f, %d", gps.altitude, geotag.altitude);
 
     pChr->writeValue((uint8_t *)&geotag, sizeof(geotag), true);
   }
@@ -306,9 +306,9 @@ void Fujifilm::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
 }
 
 void Fujifilm::print(void) {
-  ESP_LOGI(LOG_TAG, "Name: %s", m_Name.c_str());
-  ESP_LOGI(LOG_TAG, "Address: %s", m_Address.toString().c_str());
-  ESP_LOGI(LOG_TAG, "Type: %d", m_Address.getType());
+  ESP_LOGI(FURBLE_TAG, "Name: %s", m_Name.c_str());
+  ESP_LOGI(FURBLE_TAG, "Address: %s", m_Address.toString().c_str());
+  ESP_LOGI(FURBLE_TAG, "Type: %d", m_Address.getType());
 }
 
 void Fujifilm::disconnect(void) {

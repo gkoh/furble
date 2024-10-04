@@ -58,7 +58,7 @@ static void display_interval_msg(interval_state_t state,
     clen = snprintf(ccount, 16, "%03u/%03u", count, sv_count.value);
     len = snprintf(hms, 32, "%02u:%02u:%02u", rem_h, rem_m, rem_s);
   }
-  // ESP_LOGI(LOG_TAG, hms);
+  // ESP_LOGI(FURBLE_TAG, hms);
 
   if (((len > 0) && memcmp(prev_hms, hms, len))
       || ((clen > 0) && memcmp(prev_count, ccount, clen))) {
