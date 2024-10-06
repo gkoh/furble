@@ -146,6 +146,18 @@ WARNING:
 * mobile device connections are extremely finnicky
 * multi-connect involving mobile devices is not well tested and can easily crash
 
+### Infinite-ReConnect
+
+This is useful for using furble as a passive, always on GPS data source.
+With this, the camera will attempt to reconnect indefinitely.
+You don't need to turn on this setting if you are actively using furble.
+
+To use:
+* Enable `Settings->Infinite-ReConnect`
+
+WARNING:
+* this will not be kind to battery life
+
 ## Motivation
 
 I found current smartphone apps for basic wireless remote shutter control to be

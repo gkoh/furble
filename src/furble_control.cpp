@@ -4,44 +4,7 @@
 
 static void target_task(void *param) {
   auto *target = static_cast<Furble::Control::Target *>(param);
-
-  Furble::Camera *camera = target->getCamera();
-  const char *name = camera->getName().c_str();
-
-  while (true) {
-    control_cmd_t cmd = target->getCommand();
-    switch (cmd) {
-      case CONTROL_CMD_SHUTTER_PRESS:
-        ESP_LOGI(LOG_TAG, "shutterPress(%s)", name);
-        camera->shutterPress();
-        break;
-      case CONTROL_CMD_SHUTTER_RELEASE:
-        ESP_LOGI(LOG_TAG, "shutterRelease(%s)", name);
-        camera->shutterRelease();
-        break;
-      case CONTROL_CMD_FOCUS_PRESS:
-        ESP_LOGI(LOG_TAG, "focusPress(%s)", name);
-        camera->focusPress();
-        break;
-      case CONTROL_CMD_FOCUS_RELEASE:
-        ESP_LOGI(LOG_TAG, "focusRelease(%s)", name);
-        camera->focusRelease();
-        break;
-      case CONTROL_CMD_GPS_UPDATE:
-        ESP_LOGI(LOG_TAG, "updateGeoData(%s)", name);
-        camera->updateGeoData(target->getGPS(), target->getTimesync());
-        break;
-      case CONTROL_CMD_ERROR:
-        // ignore continue
-        break;
-      case CONTROL_CMD_DISCONNECT:
-        goto task_exit;
-      default:
-        ESP_LOGE(LOG_TAG, "Invalid control command %d.", cmd);
-    }
-  }
-task_exit:
-  vTaskDelete(NULL);
+  target->task();
 }
 
 namespace Furble {
@@ -77,17 +40,48 @@ control_cmd_t Control::Target::getCommand(void) {
   return cmd;
 }
 
-const Camera::gps_t &Control::Target::getGPS(void) {
-  return m_GPS;
-}
-
-const Camera::timesync_t &Control::Target::getTimesync(void) {
-  return m_Timesync;
-}
-
 void Control::Target::updateGPS(Camera::gps_t &gps, Camera::timesync_t &timesync) {
   m_GPS = gps;
   m_Timesync = timesync;
+}
+
+void Control::Target::task(void) {
+  const char *name = m_Camera->getName().c_str();
+
+  while (true) {
+    control_cmd_t cmd = this->getCommand();
+    switch (cmd) {
+      case CONTROL_CMD_SHUTTER_PRESS:
+        ESP_LOGI(LOG_TAG, "shutterPress(%s)", name);
+        m_Camera->shutterPress();
+        break;
+      case CONTROL_CMD_SHUTTER_RELEASE:
+        ESP_LOGI(LOG_TAG, "shutterRelease(%s)", name);
+        m_Camera->shutterRelease();
+        break;
+      case CONTROL_CMD_FOCUS_PRESS:
+        ESP_LOGI(LOG_TAG, "focusPress(%s)", name);
+        m_Camera->focusPress();
+        break;
+      case CONTROL_CMD_FOCUS_RELEASE:
+        ESP_LOGI(LOG_TAG, "focusRelease(%s)", name);
+        m_Camera->focusRelease();
+        break;
+      case CONTROL_CMD_GPS_UPDATE:
+        ESP_LOGI(LOG_TAG, "updateGeoData(%s)", name);
+        m_Camera->updateGeoData(m_GPS, m_Timesync);
+        break;
+      case CONTROL_CMD_DISCONNECT:
+        goto task_exit;
+      case CONTROL_CMD_ERROR:
+        // ignore continue
+        break;
+      default:
+        ESP_LOGE(LOG_TAG, "Invalid control command %d.", cmd);
+    }
+  }
+task_exit:
+  vTaskDelete(NULL);
 }
 
 Control::Control(void) {
@@ -108,6 +102,15 @@ void Control::task(void) {
     control_cmd_t cmd;
     BaseType_t ret = xQueueReceive(m_Queue, &cmd, pdMS_TO_TICKS(50));
     if (ret == pdTRUE) {
+      if (cmd == CONTROL_CMD_CONNECT) {
+        ESP_LOGI(LOG_TAG, "connect(%s)", m_ConnectCamera->getName().c_str());
+        if (m_ConnectCamera == nullptr) {
+          abort();
+        }
+        m_ConnectCamera->connect(m_Power);
+        continue;
+      }
+
       for (const auto &target : m_Targets) {
         switch (cmd) {
           case CONTROL_CMD_SHUTTER_PRESS:
@@ -139,7 +142,7 @@ BaseType_t Control::updateGPS(Camera::gps_t &gps, Camera::timesync_t &timesync) 
   return xQueueSend(m_Queue, &cmd, 0);
 }
 
-bool Control::isConnected(void) {
+bool Control::allConnected(void) {
   for (const auto &target : m_Targets) {
     if (!target->getCamera()->isConnected()) {
       return false;
@@ -151,6 +154,12 @@ bool Control::isConnected(void) {
 
 const std::vector<std::unique_ptr<Control::Target>> &Control::getTargets(void) {
   return m_Targets;
+}
+
+void Control::connect(Camera *camera, esp_power_level_t power) {
+  m_ConnectCamera = camera;
+  m_Power = power;
+  this->sendCommand(CONTROL_CMD_CONNECT);
 }
 
 void Control::disconnect(void) {

@@ -22,7 +22,7 @@ class Fujifilm: public Camera {
    */
   static bool matches(const NimBLEAdvertisedDevice *pDevice);
 
-  bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr) override;
+  bool connect(void) override;
   void shutterPress(void) override;
   void shutterRelease(void) override;
   void focusPress(void) override;
@@ -58,6 +58,7 @@ class Fujifilm: public Camera {
 
   void print(void);
   void notify(NimBLERemoteCharacteristic *, uint8_t *, size_t, bool);
+  bool subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool notifications);
   void sendGeoData(const gps_t &gps, const timesync_t &timesync);
 
   template <std::size_t N>

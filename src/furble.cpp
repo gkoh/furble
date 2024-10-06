@@ -20,11 +20,10 @@ typedef struct {
 #define CONNECT_STAR "Connect *"
 
 /**
- * Progress bar update function.
+ * Get seconds since boot.
  */
-void update_progress_bar(void *ctx, float value) {
-  ezProgressBar *progress_bar = static_cast<ezProgressBar *>(ctx);
-  progress_bar->value(value);
+static uint64_t get_time_secs(void) {
+  return (esp_timer_get_time() / 1000000LL);
 }
 
 /**
@@ -91,11 +90,6 @@ static void remote_control(FurbleCtx *fctx) {
   do {
     ez.yield();
 
-    if (fctx->reconnected) {
-      show_shutter_control(shutter_lock, shutter_lock_start_ms);
-      fctx->reconnected = false;
-    }
-
     if (M5.BtnPWR.wasClicked() || M5.BtnC.wasPressed()) {
       if (shutter_lock) {
         // ensure shutter is released on exit
@@ -143,7 +137,35 @@ static void remote_control(FurbleCtx *fctx) {
         continue;
       }
     }
-  } while (control->isConnected());
+  } while (!fctx->cancelled && control->allConnected());
+}
+
+/**
+ * Attempt a connection with a progress bar.
+ *
+ * @return false if the attempt was cancelled
+ */
+static bool connect_with_progress(Furble::Control *control, Furble::Camera *camera) {
+  ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to"), camera->getName()},
+                             {"", "Cancel"});
+  control->connect(camera, settings_load_esp_tx_power());
+
+  // Wait up to 30 seconds
+  uint64_t timeout = get_time_secs() + 30;
+  while (get_time_secs() <= timeout) {
+    progress_bar.value(camera->getConnectProgress());
+    ez.yield(false);
+    if (M5.BtnB.wasClicked()) {
+      // issue a cancel to the backend stack
+      ble_gap_conn_cancel();
+      return false;
+    }
+    if (camera->isConnected()) {
+      return true;
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -155,28 +177,39 @@ static uint16_t statusRefresh(void *context) {
   FurbleCtx *fctx = static_cast<FurbleCtx *>(context);
   auto *control = fctx->control;
 
-  if (control->isConnected()) {
+  static uint8_t reconnect_count = 0;
+
+  if (control->allConnected()) {
+    reconnect_count = 0;
     furble_gps_update(control);
     return 500;
   }
 
+  if (fctx->cancelled) {
+    return 500;
+  }
+
+  bool reconnect = settings_load_reconnect();
   auto buttons = ez.buttons.get();
   std::string header = ez.header.title();
 
   for (const auto &target : control->getTargets()) {
     auto camera = target->getCamera();
     if (!camera->isConnected()) {
-      ezProgressBar progress_bar(FURBLE_STR, {"Reconnecting ..."}, {""});
-      if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
-        ez.screen.clear();
-        ez.header.show(header);
-        ez.buttons.show(buttons);
-
-        fctx->reconnected = true;
-
-        ez.redraw();
-        return 500;
+      reconnect_count++;
+      if ((reconnect_count > 1) && !reconnect) {
+        fctx->cancelled = true;
       }
+
+      if (!fctx->cancelled && !connect_with_progress(control, camera)) {
+        fctx->cancelled = true;
+      }
+      ez.screen.clear();
+      ez.header.show(header);
+      ez.buttons.show(buttons);
+      ez.redraw();
+
+      return 500;
     }
   }
 
@@ -199,6 +232,10 @@ static void menu_remote(FurbleCtx *fctx) {
 
   do {
     submenu.runOnce();
+
+    if (fctx->cancelled) {
+      break;
+    }
 
     if (submenu.pickName() == "Shutter") {
       remote_control(fctx);
@@ -224,9 +261,8 @@ static bool do_connect(ezMenu *menu, void *context) {
     for (int n = 0; n < Furble::CameraList::size(); n++) {
       auto *camera = Furble::CameraList::get(n);
       if (camera->isActive()) {
-        ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to ") + camera->getName()},
-                                   {""});
-        if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
+        connect_with_progress(ctx->control, camera);
+        if (camera->isConnected()) {
           ctx->control->addActive(camera);
         } else {
           // Fail all if any connect fails
@@ -236,15 +272,15 @@ static bool do_connect(ezMenu *menu, void *context) {
     }
   } else {
     auto *camera = Furble::CameraList::get(menu->pick() - 1);
+    connect_with_progress(ctx->control, camera);
 
-    ezProgressBar progress_bar(FURBLE_STR, {std::string("Connecting to ") + camera->getName()},
-                               {""});
-    if (camera->connect(settings_load_esp_tx_power(), &update_progress_bar, &progress_bar)) {
+    if (camera->isConnected()) {
       if (ctx->scan) {
         Furble::CameraList::save(camera);
       }
       ctx->control->addActive(camera);
     } else {
+      camera->disconnect();
       return false;
     }
   }
@@ -383,14 +419,32 @@ static bool multiconnect_toggle(ezMenu *menu, void *context) {
   return true;
 }
 
+/**
+ * Toggle Infinite-ReConnect menu setting.
+ */
+static bool reconnect_toggle(ezMenu *menu, void *context) {
+  bool *reconnect = static_cast<bool *>(context);
+  *reconnect = !*reconnect;
+  menu->setCaption("reconnectonoff",
+                   std::string("Infinite-ReConnect\t") + (*reconnect ? "ON" : "OFF"));
+
+  settings_save_reconnect(*reconnect);
+
+  return true;
+}
+
 static void menu_settings(void) {
   ezMenu submenu(FURBLE_STR " - Settings");
 
   bool multiconnect = settings_load_multiconnect();
+  bool reconnect = settings_load_reconnect();
 
   submenu.buttons({"OK", "down"});
   submenu.addItem("Backlight", "", ez.backlight.menu);
   submenu.addItem("GPS", "", settings_menu_gps);
+  submenu.addItem("reconnectonoff",
+                  std::string("Infinite-ReConnect\t") + (reconnect ? "ON" : "OFF"), nullptr,
+                  &reconnect, reconnect_toggle);
   submenu.addItem("Intervalometer", "", settings_menu_interval);
   submenu.addItem("multiconnectonoff",
                   std::string("Multi-Connect\t") + (multiconnect ? "ON" : "OFF"), nullptr,

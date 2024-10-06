@@ -18,7 +18,7 @@ class MobileDevice: public Camera {
 
   static bool matches(NimBLEAdvertisedDevice *pDevice);
 
-  bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr) override;
+  bool connect(void) override;
   void shutterPress(void) override;
   void shutterRelease(void) override;
   void focusPress(void) override;

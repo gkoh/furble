@@ -75,7 +75,7 @@ bool CanonEOS::write_prefix(NimBLEClient *pClient,
  * The EOS uses the 'just works' BLE bonding to pair, all bond management is
  * handled by the underlying NimBLE and ESP32 libraries.
  */
-bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
+bool CanonEOS::connect(void) {
   if (NimBLEDevice::isBonded(m_Address)) {
     // Already bonded? Assume pair acceptance!
     m_PairResult = CANON_EOS_PAIR_ACCEPT;
@@ -90,14 +90,14 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
   }
 
   ESP_LOGI(LOG_TAG, "Connected");
-  updateProgress(pFunc, pCtx, 10.0f);
+  m_Progress = 10.0f;
 
   ESP_LOGI(LOG_TAG, "Securing");
   if (!m_Client->secureConnection()) {
     return false;
   }
   ESP_LOGI(LOG_TAG, "Secured!");
-  updateProgress(pFunc, pCtx, 20.0f);
+  m_Progress = 20.0f;
 
   NimBLERemoteService *pSvc = m_Client->getService(CANON_EOS_SVC_IDEN_UUID);
   if (pSvc) {
@@ -116,21 +116,21 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
                     (uint8_t *)name, strlen(name)))
     return false;
 
-  updateProgress(pFunc, pCtx, 30.0f);
+  m_Progress = 30.0f;
 
   ESP_LOGI(LOG_TAG, "Identifying 2!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x03, m_Uuid.uint8,
                     UUID128_LEN))
     return false;
 
-  updateProgress(pFunc, pCtx, 40.0f);
+  m_Progress = 40.0f;
 
   ESP_LOGI(LOG_TAG, "Identifying 3!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x04,
                     (uint8_t *)name, strlen(name)))
     return false;
 
-  updateProgress(pFunc, pCtx, 50.0f);
+  m_Progress = 50.0f;
 
   ESP_LOGI(LOG_TAG, "Identifying 4!");
 
@@ -138,15 +138,14 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x05, &x, 1))
     return false;
 
-  updateProgress(pFunc, pCtx, 60.0f);
+  m_Progress = 60.0f;
 
   ESP_LOGI(LOG_TAG, "Identifying 5!");
 
   // Give the user 60s to confirm/deny pairing
   ESP_LOGI(LOG_TAG, "Waiting for user to confirm/deny pairing.");
   for (unsigned int i = 0; i < 60; i++) {
-    float progress = 70.0f + (float(i) / 6.0f);
-    updateProgress(pFunc, pCtx, progress);
+    m_Progress = 70.0f + (float(i) / 6.0f);
     if (m_PairResult != 0x00) {
       break;
     }
@@ -166,7 +165,7 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
   if (!write_value(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, &x, 1))
     return false;
 
-  updateProgress(pFunc, pCtx, 80.0f);
+  m_Progress = 80.0f;
 
   ESP_LOGI(LOG_TAG, "Switching mode!");
 
@@ -176,7 +175,7 @@ bool CanonEOS::connect(progressFunc pFunc, void *pCtx) {
     return false;
 
   ESP_LOGI(LOG_TAG, "Done!");
-  updateProgress(pFunc, pCtx, 100.0f);
+  m_Progress = 100.0f;
 
   return true;
 }
@@ -207,6 +206,8 @@ void CanonEOS::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
 }
 
 void CanonEOS::disconnect(void) {
+  m_Progress = 0.0f;
+  m_Connected = false;
   m_Client->disconnect();
 }
 

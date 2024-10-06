@@ -82,6 +82,25 @@ void Fujifilm::notify(BLERemoteCharacteristic *pChr, uint8_t *pData, size_t leng
   }
 }
 
+bool Fujifilm::subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool notifications) {
+  auto pSvc = m_Client->getService(svc);
+  if (pSvc == nullptr) {
+    return false;
+  }
+
+  auto pChr = pSvc->getCharacteristic(chr);
+  if (pChr == nullptr) {
+    return false;
+  }
+
+  return pChr->subscribe(
+      notifications,
+      [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
+        this->notify(pChr, pData, length, isNotify);
+      },
+      true);
+}
+
 Fujifilm::Fujifilm(const void *data, size_t len) : Camera(Type::FUJIFILM) {
   if (len != sizeof(fujifilm_t))
     abort();
@@ -133,10 +152,8 @@ bool Fujifilm::matches(const NimBLEAdvertisedDevice *pDevice) {
  * is what we use to identify ourselves upfront and during subsequent
  * re-pairing.
  */
-bool Fujifilm::connect(progressFunc pFunc, void *pCtx) {
-  using namespace std::placeholders;
-
-  updateProgress(pFunc, pCtx, 10.0f);
+bool Fujifilm::connect(void) {
+  m_Progress = 10.0f;
 
   NimBLERemoteService *pSvc = nullptr;
   NimBLERemoteCharacteristic *pChr = nullptr;
@@ -146,7 +163,7 @@ bool Fujifilm::connect(progressFunc pFunc, void *pCtx) {
     return false;
 
   ESP_LOGI(LOG_TAG, "Connected");
-  updateProgress(pFunc, pCtx, 20.0f);
+  m_Progress = 20.0f;
   pSvc = m_Client->getService(FUJIFILM_SVC_PAIR_UUID);
   if (pSvc == nullptr)
     return false;
@@ -162,7 +179,7 @@ bool Fujifilm::connect(progressFunc pFunc, void *pCtx) {
   if (!pChr->writeValue(m_Token.data(), sizeof(m_Token), true))
     return false;
   ESP_LOGI(LOG_TAG, "Paired!");
-  updateProgress(pFunc, pCtx, 30.0f);
+  m_Progress = 30.0f;
 
   ESP_LOGI(LOG_TAG, "Identifying");
   pChr = pSvc->getCharacteristic(FUJIFILM_CHR_IDEN_UUID);
@@ -171,67 +188,50 @@ bool Fujifilm::connect(progressFunc pFunc, void *pCtx) {
   if (!pChr->writeValue(Device::getStringID(), true))
     return false;
   ESP_LOGI(LOG_TAG, "Identified!");
-  updateProgress(pFunc, pCtx, 40.0f);
+  m_Progress = 40.0f;
 
-  ESP_LOGI(LOG_TAG, "Configuring");
-  pSvc = m_Client->getService(FUJIFILM_SVC_CONF_UUID);
   // indications
-  pSvc->getCharacteristic(FUJIFILM_CHR_IND1_UUID)
-      ->subscribe(
-          false,
-          [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
-            this->notify(pChr, pData, length, isNotify);
-          },
-          true);
-  updateProgress(pFunc, pCtx, 50.0f);
+  ESP_LOGI(LOG_TAG, "Configuring");
+  if (!this->subscribe(FUJIFILM_SVC_CONF_UUID, FUJIFILM_CHR_IND1_UUID, false)) {
+    return false;
+  }
 
-  pSvc->getCharacteristic(FUJIFILM_CHR_IND2_UUID)
-      ->subscribe(
-          false,
-          [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
-            this->notify(pChr, pData, length, isNotify);
-          },
-          true);
+  if (!this->subscribe(FUJIFILM_SVC_CONF_UUID, FUJIFILM_CHR_IND2_UUID, false)) {
+    return false;
+  }
+  m_Progress = 50.0f;
 
   // wait for up to 5000ms callback
   for (unsigned int i = 0; i < 5000; i += 100) {
     if (m_Configured) {
       break;
     }
-    updateProgress(pFunc, pCtx, 50.0f + (((float)i / 5000.0f) * 10.0f));
+    // 5000 / 100 = 50
+    // 10 / 50 = 0.2
+    float progress = m_Progress.load() + 0.2f;
+    m_Progress = progress;
     delay(100);
   }
 
-  updateProgress(pFunc, pCtx, 60.0f);
+  m_Progress = 60.0f;
   // notifications
-  pSvc->getCharacteristic(FUJIFILM_CHR_NOT1_UUID)
-      ->subscribe(
-          true,
-          [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
-            this->notify(pChr, pData, length, isNotify);
-          },
-          true);
+  if (!this->subscribe(FUJIFILM_SVC_CONF_UUID, FUJIFILM_CHR_NOT1_UUID, true)) {
+    return false;
+  }
+  m_Progress = 70.0f;
 
-  updateProgress(pFunc, pCtx, 70.0f);
-  pSvc->getCharacteristic(FUJIFILM_CHR_NOT2_UUID)
-      ->subscribe(
-          true,
-          [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
-            this->notify(pChr, pData, length, isNotify);
-          },
-          true);
+  if (!this->subscribe(FUJIFILM_SVC_CONF_UUID, FUJIFILM_CHR_NOT2_UUID, true)) {
+    return false;
+  }
+  m_Progress = 80.0f;
 
-  updateProgress(pFunc, pCtx, 80.0f);
-  pSvc->getCharacteristic(FUJIFILM_CHR_IND3_UUID)
-      ->subscribe(
-          false,
-          [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
-            this->notify(pChr, pData, length, isNotify);
-          },
-          true);
+  if (!this->subscribe(FUJIFILM_SVC_CONF_UUID, FUJIFILM_CHR_IND3_UUID, false)) {
+    return false;
+  }
+  m_Progress = 100.0f;
+
   ESP_LOGI(LOG_TAG, "Configured");
-
-  updateProgress(pFunc, pCtx, 100.0f);
+  ESP_LOGI(LOG_TAG, "Connected");
 
   return true;
 }
@@ -240,9 +240,13 @@ template <std::size_t N>
 void Fujifilm::sendShutterCommand(const std::array<uint8_t, N> &cmd,
                                   const std::array<uint8_t, N> &param) {
   NimBLERemoteService *pSvc = m_Client->getService(FUJIFILM_SVC_SHUTTER_UUID);
-  NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(FUJIFILM_CHR_SHUTTER_UUID);
-  pChr->writeValue(cmd.data(), sizeof(cmd), true);
-  pChr->writeValue(param.data(), sizeof(cmd), true);
+  if (pSvc) {
+    NimBLERemoteCharacteristic *pChr = pSvc->getCharacteristic(FUJIFILM_CHR_SHUTTER_UUID);
+    if ((pChr != nullptr) && pChr->canWrite()) {
+      pChr->writeValue(cmd.data(), sizeof(cmd), true);
+      pChr->writeValue(param.data(), sizeof(cmd), true);
+    }
+  }
 }
 
 void Fujifilm::shutterPress(void) {
@@ -312,7 +316,9 @@ void Fujifilm::print(void) {
 }
 
 void Fujifilm::disconnect(void) {
+  m_Progress = 0.0f;
   m_Client->disconnect();
+  m_Connected = false;
 }
 
 size_t Fujifilm::getSerialisedBytes(void) const {

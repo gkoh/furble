@@ -1,6 +1,8 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include <atomic>
+
 #include <NimBLEAddress.h>
 #include <NimBLEClient.h>
 #include <NimBLEDevice.h>
@@ -8,9 +10,6 @@
 #include "FurbleTypes.h"
 
 #define MAX_NAME (64)
-
-// Progress update function
-typedef void(progressFunc(void *, float));
 
 namespace Furble {
 
@@ -55,7 +54,7 @@ class Camera {
   /**
    * Wrapper for protected pure virtual Camera::connect().
    */
-  bool connect(esp_power_level_t power, progressFunc pFunc = nullptr, void *pCtx = nullptr);
+  bool connect(esp_power_level_t power);
 
   /**
    * Disconnect from the target.
@@ -111,8 +110,11 @@ class Camera {
 
   const NimBLEAddress &getAddress(void) const;
 
+  float getConnectProgress(void) const;
+
  protected:
   Camera(Type type);
+  std::atomic<float> m_Progress;
 
   /**
    * Connect to the target camera such that it is ready for shutter control.
@@ -122,13 +124,12 @@ class Camera {
    *
    * @return true if the client is now ready for shutter control
    */
-  virtual bool connect(progressFunc pFunc = nullptr, void *pCtx = nullptr) = 0;
+  virtual bool connect(void) = 0;
 
   NimBLEAddress m_Address = NimBLEAddress{};
   NimBLEClient *m_Client;
   std::string m_Name;
-
-  void updateProgress(progressFunc pFunc, void *ctx, float value);
+  bool m_Connected = false;
 
  private:
   const uint16_t m_MinInterval = BLE_GAP_INITIAL_CONN_ITVL_MIN;
