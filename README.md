@@ -108,6 +108,7 @@ Connection to mobile devices is a little iffy:
 
 ### GPS Location Tagging
 
+[!WARNING] This unit is EOL, support for the replacement is pending (see #141).
 For Fujifilm cameras, location tagging is supported with the M5Stack GPS unit:
 - [Mini GPS/BDS Unit](https://shop.m5stack.com/products/mini-gps-bds-unit)
 
@@ -155,8 +156,7 @@ You don't need to turn on this setting if you are actively using furble.
 To use:
 * Enable `Settings->Infinite-ReConnect`
 
-WARNING:
-* this will not be kind to battery life
+[!WARNING] This will not be kind to battery life
 
 ## Motivation
 
