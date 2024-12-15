@@ -1,3 +1,4 @@
+#include <nimble/nimble/host/services/gap/include/services/gap/ble_svc_gap.h>
 #include <NimBLEDevice.h>
 
 #include "HIDServer.h"
@@ -41,21 +42,21 @@ HIDServer::HIDServer() {
   m_Server->advertiseOnDisconnect(false);
 
   m_HID = new NimBLEHIDDevice(m_Server);
-  m_Input = m_HID->inputReport(1);
+  m_Input = m_HID->getInputReport(1);
 
   // set manufacturer name
-  m_HID->manufacturer()->setValue("Maker Community");
+  m_HID->setManufacturer("Maker Community");
   // set USB vendor and product ID
-  m_HID->pnp(0x02, 0xe502, 0xa111, 0x0210);
+  m_HID->setPnp(0x02, 0xe502, 0xa111, 0x0210);
   // information about HID device: device is not localized, device can be connected
-  m_HID->hidInfo(0x00, 0x02);
+  m_HID->setHidInfo(0x00, 0x02);
 
-  m_HID->reportMap((uint8_t *)hidReportDescriptor, sizeof(hidReportDescriptor));
+  m_HID->setReportMap((uint8_t *)hidReportDescriptor, sizeof(hidReportDescriptor));
 
   // advertise the services
   m_Advertising = m_Server->getAdvertising();
   m_Advertising->setAppearance(HID_GENERIC_REMOTE);
-  m_Advertising->addServiceUUID(m_HID->hidService()->getUUID());
+  m_Advertising->addServiceUUID(m_HID->getHidService()->getUUID());
 }
 
 HIDServer::~HIDServer() {
@@ -74,13 +75,10 @@ void HIDServer::start(NimBLEAddress *address, HIDServerCallbacks *hidCallback) {
   m_hidCallbacks = hidCallback;
   m_HID->startServices();
 
-  m_Server->getPeerNameOnConnect((address == nullptr) ? true : false);
-
   // Cannot get directed advertising working properly.
   // m_Advertising->setAdvertisementType((address == nullptr) ? BLE_GAP_CONN_MODE_UND :
   // BLE_GAP_CONN_MODE_DIR);
-  m_Advertising->setAdvertisementType(BLE_GAP_CONN_MODE_UND);
-  m_Advertising->start(BLE_HS_FOREVER, nullptr, address);
+  m_Advertising->start(BLE_HS_FOREVER, address);
 }
 
 void HIDServer::stop(void) {
@@ -88,14 +86,16 @@ void HIDServer::stop(void) {
   m_Server->stopAdvertising();
 }
 
-void HIDServer::onAuthenticationComplete(const NimBLEConnInfo &connInfo, const std::string &name) {
-  NimBLEAddress address = connInfo.getIdAddress();
+void HIDServer::onAuthenticationComplete(NimBLEConnInfo &connInfo) {
+  auto address = connInfo.getIdAddress();
+  auto peer = NimBLEDevice::getServer()->getClient(connInfo);
+  auto name = peer->getValue(NimBLEUUID((uint16_t)BLE_SVC_GAP_UUID16), NimBLEUUID((uint16_t)BLE_SVC_GAP_CHR_UUID16_DEVICE_NAME));
   if (m_hidCallbacks != nullptr) {
-    m_hidCallbacks->onComplete(address, name);
+    m_hidCallbacks->onComplete(address, name.c_str());
   }
 }
 
-void HIDServer::onIdentity(const NimBLEConnInfo &connInfo) {
+void HIDServer::onIdentity(NimBLEConnInfo &connInfo) {
   ESP_LOGI("HID", "identity resolved: address = %s, type = %d",
            connInfo.getIdAddress().toString().c_str(), connInfo.getIdAddress().getType());
 }

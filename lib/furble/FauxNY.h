@@ -36,7 +36,7 @@ class FauxNY: public Camera {
   } fauxNY_t;
 
   static constexpr const char *m_FauxNYStr = "FauxNY";
-  uint32_t m_ID;
+  uint64_t m_ID;
 };
 
 }  // namespace Furble

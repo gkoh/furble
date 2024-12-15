@@ -43,8 +43,8 @@ class HIDServer: public NimBLEServerCallbacks {
 
   static HIDServer *hidServer;  // singleton
 
-  void onAuthenticationComplete(const NimBLEConnInfo &connInfo, const std::string &name) override;
-  void onIdentity(const NimBLEConnInfo &connInfo) override;
+  void onAuthenticationComplete(NimBLEConnInfo &connInfo) override;
+  void onIdentity(NimBLEConnInfo &connInfo) override;
 
   NimBLEServer *m_Server = nullptr;
   NimBLEHIDDevice *m_HID = nullptr;

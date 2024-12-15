@@ -12,13 +12,13 @@ FauxNY::FauxNY(const void *data, size_t len) : Camera(Type::FAUXNY) {
   const auto *fauxNY = static_cast<const fauxNY_t *>(data);
   m_Name = std::string(fauxNY->name);
   m_ID = fauxNY->id;
-  m_Address = NimBLEAddress(m_ID);
+  m_Address = NimBLEAddress(m_ID, 0);
 }
 
 FauxNY::FauxNY(void) : Camera(Type::FAUXNY) {
   m_ID = esp_random();
   m_Name = std::string("FauxNY-") + std::to_string(m_ID % 42);
-  m_Address = NimBLEAddress(m_ID);
+  m_Address = NimBLEAddress(m_ID, 0);
 }
 
 bool FauxNY::matches(void) {
