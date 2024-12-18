@@ -41,7 +41,7 @@ void CanonEOS::pairCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
 bool CanonEOS::write_value(NimBLEClient *pClient,
                            const char *serviceUUID,
                            const char *characteristicUUID,
-                           uint8_t *data,
+                           const uint8_t *data,
                            size_t length) {
   NimBLERemoteService *pSvc = pClient->getService(serviceUUID);
   if (pSvc) {
@@ -55,8 +55,8 @@ bool CanonEOS::write_value(NimBLEClient *pClient,
 bool CanonEOS::write_prefix(NimBLEClient *pClient,
                             const char *serviceUUID,
                             const char *characteristicUUID,
-                            uint8_t prefix,
-                            uint8_t *data,
+                            const uint8_t prefix,
+                            const uint8_t *data,
                             size_t length) {
   uint8_t buffer[length + 1] = {0};
   buffer[0] = prefix;
@@ -106,23 +106,23 @@ bool CanonEOS::_connect(void) {
   }
 
   ESP_LOGI(LOG_TAG, "Identifying 1!");
-  const char *name = Device::getStringID();
+  const auto name = Device::getStringID();
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_NAME_UUID, 0x01,
-                    (uint8_t *)name, strlen(name)))
+                    (uint8_t *)name.c_str(), name.length()))
     return false;
 
   m_Progress = 30;
 
   ESP_LOGI(LOG_TAG, "Identifying 2!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x03, m_Uuid.uint8,
-                    UUID128_LEN))
+                    Device::UUID128_LEN))
     return false;
 
   m_Progress = 40;
 
   ESP_LOGI(LOG_TAG, "Identifying 3!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x04,
-                    (uint8_t *)name, strlen(name)))
+                    (uint8_t *)name.c_str(), name.length()))
     return false;
 
   m_Progress = 50;

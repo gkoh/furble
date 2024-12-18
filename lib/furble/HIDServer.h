@@ -43,6 +43,7 @@ class HIDServer: public NimBLEServerCallbacks {
 
   static HIDServer *hidServer;  // singleton
 
+  void onConnect(NimBLEServer *p_Server, NimBLEConnInfo &connInfo) override;
   void onAuthenticationComplete(NimBLEConnInfo &connInfo) override;
   void onIdentity(NimBLEConnInfo &connInfo) override;
 

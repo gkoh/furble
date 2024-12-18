@@ -242,7 +242,7 @@ class UI {
   void addSettingItem(lv_obj_t *page, const char *symbol, Settings::type_t setting);
 
   /** Add camera menu item. */
-  static lv_obj_t *addCameraItem(Camera *camera, menu_t &menu, const CameraListMode_t mode);
+  static lv_obj_t *addCameraItem(Camera *camera, const menu_t &menu, const CameraListMode_t mode);
 
   /** Create a menu entry. */
   menu_t &addMenu(const char *entry,
@@ -292,7 +292,7 @@ class UI {
   menu_t &addConnectedMenu(void);
 
   /** Update entries in connect page. */
-  static void updateItems(void *param);
+  static void updateItems(const menu_t &menu);
 
   /** Stop GPS Data timer. */
   static void gpsDataStop(lv_event_t *e);

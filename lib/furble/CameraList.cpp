@@ -43,17 +43,19 @@ void CameraList::save_index(std::vector<CameraList::index_entry_t> &index) {
 std::vector<CameraList::index_entry_t> CameraList::load_index(void) {
   std::vector<index_entry_t> index;
 
-  size_t bytes = m_Prefs.getBytesLength(FURBLE_PREF_INDEX);
-  if (bytes > 0 && (bytes % sizeof(index_entry_t) == 0)) {
-    uint8_t buffer[bytes] = {0};
-    size_t count = bytes / sizeof(index_entry_t);
-    ESP_LOGI(LOG_TAG, "Index entries: %d", count);
-    m_Prefs.getBytes(FURBLE_PREF_INDEX, buffer, bytes);
-    index_entry_t *entry = (index_entry_t *)buffer;
+  if (m_Prefs.isKey(FURBLE_PREF_INDEX)) {
+    size_t bytes = m_Prefs.getBytesLength(FURBLE_PREF_INDEX);
+    if (bytes > 0 && (bytes % sizeof(index_entry_t) == 0)) {
+      uint8_t buffer[bytes] = {0};
+      size_t count = bytes / sizeof(index_entry_t);
+      ESP_LOGI(LOG_TAG, "Index entries: %d", count);
+      m_Prefs.getBytes(FURBLE_PREF_INDEX, buffer, bytes);
+      index_entry_t *entry = (index_entry_t *)buffer;
 
-    for (int i = 0; i < count; i++) {
-      ESP_LOGI(LOG_TAG, "Loading index entry: %s", entry[i].name);
-      index.push_back(entry[i]);
+      for (int i = 0; i < count; i++) {
+        ESP_LOGI(LOG_TAG, "Loading index entry: %s", entry[i].name);
+        index.push_back(entry[i]);
+      }
     }
   }
 

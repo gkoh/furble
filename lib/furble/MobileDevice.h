@@ -41,6 +41,7 @@ class MobileDevice: public Camera {
   bool serialise(void *buffer, size_t bytes) const override;
   void sendKeyReport(const uint8_t key);
 
+  volatile bool m_DisconnectRequested = false;
   HIDServer *m_HIDServer;
 };
 

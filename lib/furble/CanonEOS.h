@@ -44,14 +44,14 @@ class CanonEOS: public Camera {
   bool write_value(NimBLEClient *pClient,
                    const char *serviceUUID,
                    const char *characteristicUUID,
-                   uint8_t *data,
+                   const uint8_t *data,
                    size_t length);
 
   bool write_prefix(NimBLEClient *pClient,
                     const char *serviceUUID,
                     const char *characteristicUUID,
-                    uint8_t prefix,
-                    uint8_t *data,
+                    const uint8_t prefix,
+                    const uint8_t *data,
                     size_t length);
 
   void shutterPress(void) override;

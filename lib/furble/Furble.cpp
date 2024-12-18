@@ -19,7 +19,7 @@ HIDServer *Scan::m_HIDServer = nullptr;
  * BLE Advertisement callback.
  */
 class Scan::ScanCallback: public NimBLEScanCallbacks {
-  void onResult(NimBLEAdvertisedDevice *pDevice) {
+  void onResult(const NimBLEAdvertisedDevice *pDevice) override {
     if (CameraList::match(pDevice)) {
       ESP_LOGI(LOG_TAG, "RSSI(%s) = %d", pDevice->getName().c_str(), pDevice->getRSSI());
       if (m_ScanResultCallback != nullptr) {
@@ -45,7 +45,7 @@ void Scan::init(esp_power_level_t power) {
   NimBLEDevice::init(Device::getStringID());
   NimBLEDevice::setPower(power);
   NimBLEDevice::setSecurityAuth(true, true, true);
-  NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_PUBLIC);
+  // NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_PUBLIC);
 
   // NimBLE requires configuring server before scan
   m_HIDServer = HIDServer::getInstance();
@@ -62,7 +62,7 @@ void Scan::start(std::function<void(void *)> scanCallback, void *scanPrivateData
 
   m_ScanResultCallback = scanCallback;
   m_ScanResultPrivateData = scanPrivateData;
-  m_Scan->start(BLE_HS_FOREVER, false);
+  m_Scan->start(0, false);
 }
 
 void Scan::stop(void) {

@@ -180,7 +180,8 @@ bool Fujifilm::_connect(void) {
   pChr = pSvc->getCharacteristic(FUJIFILM_CHR_IDEN_UUID);
   if (!pChr->canWrite())
     return false;
-  if (!pChr->writeValue(Device::getStringID(), true))
+  const auto name = Device::getStringID();
+  if (!pChr->writeValue(name.c_str(), name.length(), true))
     return false;
   ESP_LOGI(LOG_TAG, "Identified!");
   m_Progress = 40;

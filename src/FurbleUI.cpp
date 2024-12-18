@@ -664,7 +664,7 @@ void UI::addSettingItem(lv_obj_t *page, const char *symbol, Settings::type_t set
   }
 }
 
-lv_obj_t *UI::addCameraItem(Camera *camera, menu_t &menu, const CameraListMode_t mode) {
+lv_obj_t *UI::addCameraItem(Camera *camera, const menu_t &menu, const CameraListMode_t mode) {
   bool checkbox = (mode == MODE_MULTICONNECT);
 
   lv_obj_t *item = addMenuItem(menu, NULL, camera->getName().c_str(), checkbox);
@@ -790,15 +790,16 @@ void UI::addMainMenu(void) {
 
           if (Settings::load<bool>(Settings::FAUXNY)) {
             CameraList::addFauxNY();
-            updateItems(&menu);
+            updateItems(menu);
           }
 
           Scan::clear();
           Scan::start(
               [](void *param) {
+                auto *menu = static_cast<menu_t *>(param);
                 // Can be called asychronously from NimBLE scan thread,
                 m_Mutex.lock();
-                updateItems(param);
+                updateItems(*menu);
                 m_Mutex.unlock();
               },
               &menu);
@@ -1180,14 +1181,14 @@ void UI::addConnectMenu(void) {
 
   // create, but immediately hide the connect message box
   m_ConnectMessageBox = lv_msgbox_create(m_Screen);
-  lv_msgbox_add_title(m_ConnectMessageBox, "Connecting to");
+  lv_msgbox_add_title(m_ConnectMessageBox, "Connecting");
   lv_obj_set_width(m_ConnectMessageBox, LV_PCT(100));
   lv_obj_update_layout(m_ConnectMessageBox);
   lv_obj_t *c = lv_msgbox_get_content(m_ConnectMessageBox);
   lv_obj_set_flex_align(c, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_clear_flag(c, LV_OBJ_FLAG_SCROLLABLE);
   m_ConnectLabel = lv_label_create(c);
-  lv_label_set_long_mode(m_ConnectLabel, LV_LABEL_LONG_SCROLL_CIRCULAR);
+  lv_label_set_long_mode(m_ConnectLabel, LV_LABEL_LONG_DOT);
   lv_obj_set_width(m_ConnectLabel, LV_PCT(80));
 
   m_ConnectBar = lv_bar_create(c);
@@ -1567,22 +1568,23 @@ void UI::addBacklightMenu(const menu_t &parent) {
   lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
   lv_obj_set_width(label, LV_PCT(100));
 
-  slider = lv_slider_create(cont);
-  lv_obj_set_width(slider, LV_PCT(90));
-  lv_slider_set_range(slider, 0, 2);  // 0 = never, 2 = 2 * 60s
+  lv_obj_t *roller = lv_roller_create(cont);
+  lv_obj_set_width(roller, LV_PCT(90));
+  lv_roller_set_options(roller, "Never\n30 secs\n60 secs", LV_ROLLER_MODE_INFINITE);
+  lv_roller_set_visible_row_count(roller, 1);
   uint8_t inactivity = Settings::load<uint8_t>(Settings::INACTIVITY);
-  lv_slider_set_value(slider, inactivity, LV_ANIM_ON);
+  lv_roller_set_selected(roller, inactivity, LV_ANIM_ON);
 
   lv_obj_add_event_cb(
-      slider,
+      roller,
       [](lv_event_t *e) {
         auto *ui = static_cast<UI *>(lv_event_get_user_data(e));
-        auto *slider = static_cast<lv_obj_t *>(lv_event_get_target(e));
-        auto inactivity = lv_slider_get_value(slider);
+        auto *roller = static_cast<lv_obj_t *>(lv_event_get_target(e));
+        auto inactivity = lv_roller_get_selected(roller);
         Settings::save<uint8_t>(Settings::INACTIVITY, inactivity);
         ui->setInactivityTimeout(inactivity);
       },
-      LV_EVENT_RELEASED, this);
+      LV_EVENT_VALUE_CHANGED, this);
 
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
@@ -1649,7 +1651,7 @@ void UI::addAboutMenu(const menu_t &parent) {
   lv_label_set_text_fmt(version, "Version: %s", FURBLE_VERSION);
 
   lv_obj_t *id = lv_label_create(cont);
-  lv_label_set_text_fmt(id, "ID: %s", Device::getStringID());
+  lv_label_set_text_fmt(id, "ID: %s", Device::getStringID().c_str());
 
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
@@ -1668,11 +1670,14 @@ void UI::addSettingsMenu(void) {
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
 
-void UI::updateItems(void *param) {
-  auto *menu = static_cast<menu_t *>(param);
+void UI::updateItems(const menu_t &menu) {
   auto *camera = CameraList::last();
 
-  addCameraItem(camera, *menu, MODE_SCAN);
+  addCameraItem(camera, menu, MODE_SCAN);
+  if (camera->getType() == Camera::Type::MOBILE_DEVICE) {
+    // if we get here, mobile devices are already bonded
+    CameraList::save(camera);
+  }
 }
 
 void UI::setInactivityTimeout(uint8_t timeout) {

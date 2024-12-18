@@ -3,7 +3,9 @@
 #include <NimBLEDevice.h>
 #include <NimBLERemoteCharacteristic.h>
 #include <NimBLERemoteService.h>
+#include <nimble/nimble/host/services/gap/include/services/gap/ble_svc_gap.h>
 
+#include "CameraList.h"
 #include "Device.h"
 #include "MobileDevice.h"
 
@@ -47,18 +49,34 @@ bool MobileDevice::_connect(void) {
   unsigned int timeout_secs = 60;
 
   m_Progress = 0;
+  m_DisconnectRequested = false;
 
   m_HIDServer->start(&m_Address);
 
   ESP_LOGI(LOG_TAG, "Waiting for %us for connection from %s", timeout_secs, m_Name.c_str());
   while (--timeout_secs && !isConnected()) {
     m_Progress = m_Progress.load() + 1;
+    if (m_DisconnectRequested) {
+      ESP_LOGI(LOG_TAG, "Disconnect requested.");
+      return false;
+    }
     vTaskDelay(pdMS_TO_TICKS(1000));
   };
 
   if (timeout_secs == 0) {
     ESP_LOGI(LOG_TAG, "Connection timed out.");
     return false;
+  }
+
+  // Retrieve device name and update if needed
+  auto server = NimBLEDevice::getServer();
+  auto peerInfo = server->getPeerInfo(m_Address);
+  auto peer = server->getClient(peerInfo);
+  auto name = peer->getValue(NimBLEUUID((uint16_t)BLE_SVC_GAP_UUID16),
+                             NimBLEUUID((uint16_t)BLE_SVC_GAP_CHR_UUID16_DEVICE_NAME));
+  if (m_Name != name.c_str()) {
+    m_Name = name.c_str();
+    CameraList::save(this);
   }
 
   ESP_LOGI(LOG_TAG, "Connected to %s.", m_Name.c_str());
@@ -94,6 +112,7 @@ void MobileDevice::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
 }
 
 void MobileDevice::_disconnect(void) {
+  m_DisconnectRequested = true;
   m_HIDServer->disconnect(m_Address);
   m_Connected = false;
 }
