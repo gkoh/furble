@@ -3,10 +3,10 @@
 namespace Furble {
 constexpr std::array<const char *, 5> SpinValue::m_UnitMap;
 
-SpinValue::SpinValue(nvs_t &nvs) : m_Value(nvs.value), m_Unit(nvs.unit){};
+SpinValue::SpinValue(nvs_t &nvs) : m_Value(nvs.value), m_Unit(nvs.unit) {};
 
 SpinValue::nvs_t SpinValue::toNVS(void) {
-  return (nvs_t){m_Value, m_Unit};
+  return (nvs_t) {m_Value, m_Unit};
 }
 
 uint32_t SpinValue::toMilliseconds(void) {
@@ -28,6 +28,6 @@ const char *SpinValue::getUnitString(void) {
 }
 
 SpinValue::hms_t SpinValue::toHMS(uint32_t ms) {
-  return (hms_t){(ms / 1000) / (60 * 60), ((ms / 1000) / 60) % 60, (ms / 1000) % 60};
+  return (hms_t) {(ms / 1000) / (60 * 60), ((ms / 1000) / 60) % 60, (ms / 1000) % 60};
 }
 }  // namespace Furble

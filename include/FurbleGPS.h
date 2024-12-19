@@ -26,7 +26,7 @@ class GPS {
   void update(void);
 
  private:
-  GPS(){};
+  GPS() {};
 
   static constexpr const uint32_t BAUD = 9600;
 #if FURBLE_GROVE_CORE

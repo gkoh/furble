@@ -134,7 +134,7 @@ class Camera {
    */
   virtual void _disconnect(void) = 0;
 
-  NimBLEAddress m_Address = NimBLEAddress{};
+  NimBLEAddress m_Address = NimBLEAddress {};
   NimBLEClient *m_Client;
   std::string m_Name;
   bool m_Connected = false;

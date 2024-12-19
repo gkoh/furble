@@ -82,7 +82,7 @@ std::unordered_map<const char *, UI::menu_t> UI::m_Menu = {
     {m_IntervalometerRunStr, {}},
 };
 
-UI::UI(const interval_t &interval) : m_GPS{GPS::getInstance()}, m_Intervalometer(interval) {
+UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalometer(interval) {
   lv_init();
   lv_tick_set_cb(tick);
 
@@ -1228,8 +1228,7 @@ void UI::addDeleteMenu(void) {
   menu_t &menu = addMenu(m_DeleteStr, LV_SYMBOL_TRASH);
 
   // refresh connection list every time
-  lv_obj_add_event_cb(
-      menu.button, [](lv_event_t *e) { refreshDelete(); }, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(menu.button, [](lv_event_t *e) { refreshDelete(); }, LV_EVENT_CLICKED, NULL);
 
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
@@ -1609,8 +1608,7 @@ void UI::addThemeMenu(const menu_t &parent) {
 
   // add restart button
   lv_obj_t *restart = addMenuItem(menu, NULL, "Restart");
-  lv_obj_add_event_cb(
-      restart, [](lv_event_t *e) { esp_restart(); }, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(restart, [](lv_event_t *e) { esp_restart(); }, LV_EVENT_CLICKED, NULL);
 
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }

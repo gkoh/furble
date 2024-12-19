@@ -65,7 +65,7 @@ class UI {
     class Spinner {
      public:
       Spinner(Intervalometer *intervalometer, SpinValue::nvs_t nvs, bool infinite = false)
-          : m_Intervalometer{intervalometer}, m_SpinValue{nvs}, m_Infinite{infinite} {};
+          : m_Intervalometer {intervalometer}, m_SpinValue {nvs}, m_Infinite {infinite} {};
 
       static constexpr const char *m_SpinDigitRoller = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9";
       static constexpr const char *m_SpinUnitsRoller = "msec\nsecs\nmins";

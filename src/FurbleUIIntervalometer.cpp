@@ -5,7 +5,7 @@
 namespace Furble {
 
 UI::Intervalometer::Intervalometer(const interval_t &interval)
-    : m_State{STATE_IDLE},
+    : m_State {STATE_IDLE},
       m_Count(this, interval.count, true),
       m_Delay(this, interval.delay),
       m_Shutter(this, interval.shutter) {}
