@@ -1198,10 +1198,9 @@ void UI::addConnectMenu(void) {
   m_ConnectCancel = lv_msgbox_add_footer_button(m_ConnectMessageBox, "Cancel");
   lv_obj_t *footer = lv_msgbox_get_footer(m_ConnectMessageBox);
   lv_obj_update_layout(footer);
+  // @todo cancel button bottom is clipped, weird
   // lv_obj_set_height(m_ConnectCancel, LV_SIZE_CONTENT);
   // lv_obj_set_height(footer, lv_obj_get_height(m_ConnectCancel) * 1.2f);
-  ESP_LOGI("ui", "footer height = %u", lv_obj_get_height(footer));
-  ESP_LOGI("ui", "cancel height = %u", lv_obj_get_height(m_ConnectCancel));
 
   lv_obj_add_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN);
 
