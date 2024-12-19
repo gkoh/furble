@@ -120,7 +120,7 @@ class Control {
   void setPower(esp_power_level_t power);
 
  private:
-  Control() {};
+  Control(){};
 
   /** Iterate over cameras and attempt connection. */
   state_t connectAll(void);

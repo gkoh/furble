@@ -3,7 +3,7 @@
 namespace Furble {
 constexpr std::array<const char *, 5> SpinValue::m_UnitMap;
 
-SpinValue::SpinValue(nvs_t &nvs) : m_Value(nvs.value), m_Unit(nvs.unit) {};
+SpinValue::SpinValue(nvs_t &nvs) : m_Value(nvs.value), m_Unit(nvs.unit){};
 
 SpinValue::nvs_t SpinValue::toNVS(void) {
   return (nvs_t){m_Value, m_Unit};
