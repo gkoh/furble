@@ -15,7 +15,7 @@ const std::unordered_map<Settings::type_t, Settings::setting_t> Settings::m_Sett
     {GPS,          {GPS, "GPS", "gps", FURBLE_STR}                            },
     {INTERVAL,     {INTERVAL, "Interval", "interval", FURBLE_STR}             },
     {MULTICONNECT, {MULTICONNECT, "Multi-Connect", "multiconnect", FURBLE_STR}},
-    {RECONNECT,    {RECONNECT, "Infinite-Reconnect", "reconnect", FURBLE_STR} },
+    {RECONNECT,    {RECONNECT, "Infinite-ReConnect", "reconnect", FURBLE_STR} },
     {FAUXNY,       {FAUXNY, "FauxNY", "fauxNY", FURBLE_STR}                   }
 };
 
