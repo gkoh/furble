@@ -212,7 +212,8 @@ Connection to mobile devices is a little iffy:
 
 ### GPS Location Tagging
 
-[!WARNING] This unit is EOL, support for the replacement is pending (see #141).
+> [!WARNING] This unit is EOL, support for the replacement is pending (see #141).
+
 For Fujifilm cameras, location tagging is supported with the M5Stack GPS unit:
 - [Mini GPS/BDS Unit](https://shop.m5stack.com/products/mini-gps-bds-unit)
 
@@ -246,10 +247,10 @@ To use:
    * Selected cameras will be connected in sequence
 * If all cameras are connected, the standard remote control is shown
 
-[!WARNING]:
-* mobile device connections are extremely finnicky
-* multi-connect involving mobile devices is not well tested and can easily crash
-   * multi-connect involving mobile devices is not recommended
+> [!WARNING]
+> * mobile device connections are extremely finnicky
+> * multi-connect involving mobile devices is not well tested and can easily crash
+>   * multi-connect involving mobile devices is not recommended
 
 ### Infinite-ReConnect
 
@@ -260,7 +261,7 @@ You don't need to turn on this setting if you are actively using the remote.
 To use:
 * Enable `Settings->Features->Infinite-ReConnect`
 
-[!WARNING] This will not be kind to battery life
+> [!WARNING] This will not be kind to battery life
 
 ### Themes
 
