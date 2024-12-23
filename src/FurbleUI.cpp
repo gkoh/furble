@@ -1642,15 +1642,19 @@ void UI::addTransmitPowerMenu(const menu_t &parent) {
 void UI::addAboutMenu(const menu_t &parent) {
   menu_t &menu = addMenu(m_AboutStr, NULL, true, parent);
   lv_obj_t *cont = lv_menu_cont_create(menu.page);
-  lv_obj_set_height(cont, LV_PCT(100));
+  lv_obj_set_size(cont, LV_PCT(100), LV_PCT(100));
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
   lv_obj_t *version = lv_label_create(cont);
-  lv_label_set_text_fmt(version, "Version: %s", FURBLE_VERSION);
+  lv_obj_set_width(version, LV_PCT(100));
+  lv_label_set_long_mode(version, LV_LABEL_LONG_WRAP);
+  lv_label_set_text_fmt(version, "Version:\n%s", FURBLE_VERSION);
 
   lv_obj_t *id = lv_label_create(cont);
-  lv_label_set_text_fmt(id, "ID: %s", Device::getStringID().c_str());
+  lv_obj_set_width(id, LV_PCT(100));
+  lv_label_set_long_mode(id, LV_LABEL_LONG_WRAP);
+  lv_label_set_text_fmt(id, "ID:\n%s", Device::getStringID().c_str());
 
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
