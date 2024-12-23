@@ -45,6 +45,11 @@ class CameraList {
   static void add(const NimBLEAddress &address, const std::string &name);
 
   /**
+   * Add FauxNY device to the list.
+   */
+  static void addFauxNY(void);
+
+  /**
    * Number of connectable devices.
    */
   static size_t size(void);
@@ -53,6 +58,11 @@ class CameraList {
    * Clear connectable devices.
    */
   static void clear(void);
+
+  /**
+   * Get last added entry.
+   */
+  static Furble::Camera *last(void);
 
   /**
    * Retrieve device by index.

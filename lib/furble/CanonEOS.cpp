@@ -27,11 +27,6 @@ CanonEOS::CanonEOS(Type type, const NimBLEAdvertisedDevice *pDevice) : Camera(ty
   Device::getUUID128(&m_Uuid);
 }
 
-CanonEOS::~CanonEOS(void) {
-  NimBLEDevice::deleteClient(m_Client);
-  m_Client = nullptr;
-}
-
 // Handle pairing notification
 void CanonEOS::pairCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
                             uint8_t *pData,
@@ -46,7 +41,7 @@ void CanonEOS::pairCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
 bool CanonEOS::write_value(NimBLEClient *pClient,
                            const char *serviceUUID,
                            const char *characteristicUUID,
-                           uint8_t *data,
+                           const uint8_t *data,
                            size_t length) {
   NimBLERemoteService *pSvc = pClient->getService(serviceUUID);
   if (pSvc) {
@@ -60,8 +55,8 @@ bool CanonEOS::write_value(NimBLEClient *pClient,
 bool CanonEOS::write_prefix(NimBLEClient *pClient,
                             const char *serviceUUID,
                             const char *characteristicUUID,
-                            uint8_t prefix,
-                            uint8_t *data,
+                            const uint8_t prefix,
+                            const uint8_t *data,
                             size_t length) {
   uint8_t buffer[length + 1] = {0};
   buffer[0] = prefix;
@@ -75,7 +70,7 @@ bool CanonEOS::write_prefix(NimBLEClient *pClient,
  * The EOS uses the 'just works' BLE bonding to pair, all bond management is
  * handled by the underlying NimBLE and ESP32 libraries.
  */
-bool CanonEOS::connect(void) {
+bool CanonEOS::_connect(void) {
   if (NimBLEDevice::isBonded(m_Address)) {
     // Already bonded? Assume pair acceptance!
     m_PairResult = CANON_EOS_PAIR_ACCEPT;
@@ -90,14 +85,14 @@ bool CanonEOS::connect(void) {
   }
 
   ESP_LOGI(LOG_TAG, "Connected");
-  m_Progress = 10.0f;
+  m_Progress = 10;
 
   ESP_LOGI(LOG_TAG, "Securing");
   if (!m_Client->secureConnection()) {
     return false;
   }
   ESP_LOGI(LOG_TAG, "Secured!");
-  m_Progress = 20.0f;
+  m_Progress = 20;
 
   NimBLERemoteService *pSvc = m_Client->getService(CANON_EOS_SVC_IDEN_UUID);
   if (pSvc) {
@@ -111,26 +106,26 @@ bool CanonEOS::connect(void) {
   }
 
   ESP_LOGI(LOG_TAG, "Identifying 1!");
-  const char *name = Device::getStringID();
+  const auto name = Device::getStringID();
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_NAME_UUID, 0x01,
-                    (uint8_t *)name, strlen(name)))
+                    (uint8_t *)name.c_str(), name.length()))
     return false;
 
-  m_Progress = 30.0f;
+  m_Progress = 30;
 
   ESP_LOGI(LOG_TAG, "Identifying 2!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x03, m_Uuid.uint8,
-                    UUID128_LEN))
+                    Device::UUID128_LEN))
     return false;
 
-  m_Progress = 40.0f;
+  m_Progress = 40;
 
   ESP_LOGI(LOG_TAG, "Identifying 3!");
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x04,
-                    (uint8_t *)name, strlen(name)))
+                    (uint8_t *)name.c_str(), name.length()))
     return false;
 
-  m_Progress = 50.0f;
+  m_Progress = 50;
 
   ESP_LOGI(LOG_TAG, "Identifying 4!");
 
@@ -138,18 +133,18 @@ bool CanonEOS::connect(void) {
   if (!write_prefix(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, 0x05, &x, 1))
     return false;
 
-  m_Progress = 60.0f;
+  m_Progress = 60;
 
   ESP_LOGI(LOG_TAG, "Identifying 5!");
 
   // Give the user 60s to confirm/deny pairing
   ESP_LOGI(LOG_TAG, "Waiting for user to confirm/deny pairing.");
   for (unsigned int i = 0; i < 60; i++) {
-    m_Progress = 70.0f + (float(i) / 6.0f);
+    m_Progress = m_Progress.load() + (i % 2);
     if (m_PairResult != 0x00) {
       break;
     }
-    delay(1000);
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 
   if (m_PairResult != CANON_EOS_PAIR_ACCEPT) {
@@ -165,7 +160,7 @@ bool CanonEOS::connect(void) {
   if (!write_value(m_Client, CANON_EOS_SVC_IDEN_UUID, CANON_EOS_CHR_IDEN_UUID, &x, 1))
     return false;
 
-  m_Progress = 80.0f;
+  m_Progress = 90;
 
   ESP_LOGI(LOG_TAG, "Switching mode!");
 
@@ -175,7 +170,7 @@ bool CanonEOS::connect(void) {
     return false;
 
   ESP_LOGI(LOG_TAG, "Done!");
-  m_Progress = 100.0f;
+  m_Progress = 100;
 
   return true;
 }
@@ -205,10 +200,9 @@ void CanonEOS::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
   return;
 }
 
-void CanonEOS::disconnect(void) {
-  m_Progress = 0.0f;
-  m_Connected = false;
+void CanonEOS::_disconnect(void) {
   m_Client->disconnect();
+  m_Connected = false;
 }
 
 size_t CanonEOS::getSerialisedBytes(void) const {

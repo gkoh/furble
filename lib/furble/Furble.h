@@ -11,8 +11,6 @@
 #define FURBLE_VERSION "unknown"
 #endif
 
-typedef void(scanResultCallback(void *context));
-
 namespace Furble {
 /**
  * BLE advertisement scanning class.
@@ -30,7 +28,7 @@ class Scan {
    * Start the scan for BLE advertisements with a callback function when a matching reseult is
    * encountered.
    */
-  static void start(scanResultCallback scanCallBack, void *scanResultPrivateData);
+  static void start(std::function<void(void *)> scanCallback, void *scanResultPrivateData);
 
   /**
    * Stop the scan.
@@ -50,7 +48,7 @@ class Scan {
   class HIDServerCallback;
 
   static NimBLEScan *m_Scan;
-  static scanResultCallback *m_ScanResultCallback;
+  static std::function<void(void *)> m_ScanResultCallback;
   static void *m_ScanResultPrivateData;
   static HIDServer *m_HIDServer;
 };

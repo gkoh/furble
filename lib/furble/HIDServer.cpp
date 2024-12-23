@@ -1,5 +1,6 @@
 #include <NimBLEDevice.h>
 
+#include "FurbleTypes.h"
 #include "HIDServer.h"
 
 #define HID_GENERIC_REMOTE (0x180)
@@ -41,21 +42,23 @@ HIDServer::HIDServer() {
   m_Server->advertiseOnDisconnect(false);
 
   m_HID = new NimBLEHIDDevice(m_Server);
-  m_Input = m_HID->inputReport(1);
+  m_Input = m_HID->getInputReport(1);
 
   // set manufacturer name
-  m_HID->manufacturer()->setValue("Maker Community");
+  m_HID->setManufacturer("Maker Community");
   // set USB vendor and product ID
-  m_HID->pnp(0x02, 0xe502, 0xa111, 0x0210);
+  m_HID->setPnp(0x02, 0xe502, 0xa111, 0x0210);
   // information about HID device: device is not localized, device can be connected
-  m_HID->hidInfo(0x00, 0x02);
+  m_HID->setHidInfo(0x00, 0x02);
 
-  m_HID->reportMap((uint8_t *)hidReportDescriptor, sizeof(hidReportDescriptor));
+  m_HID->setReportMap((uint8_t *)hidReportDescriptor, sizeof(hidReportDescriptor));
 
   // advertise the services
   m_Advertising = m_Server->getAdvertising();
+  m_Advertising->setName(FURBLE_STR);
   m_Advertising->setAppearance(HID_GENERIC_REMOTE);
-  m_Advertising->addServiceUUID(m_HID->hidService()->getUUID());
+  m_Advertising->addServiceUUID(m_HID->getHidService()->getUUID());
+  m_Advertising->enableScanResponse(true);
 }
 
 HIDServer::~HIDServer() {
@@ -74,13 +77,13 @@ void HIDServer::start(NimBLEAddress *address, HIDServerCallbacks *hidCallback) {
   m_hidCallbacks = hidCallback;
   m_HID->startServices();
 
-  m_Server->getPeerNameOnConnect((address == nullptr) ? true : false);
-
+#if 0
   // Cannot get directed advertising working properly.
-  // m_Advertising->setAdvertisementType((address == nullptr) ? BLE_GAP_CONN_MODE_UND :
-  // BLE_GAP_CONN_MODE_DIR);
-  m_Advertising->setAdvertisementType(BLE_GAP_CONN_MODE_UND);
-  m_Advertising->start(BLE_HS_FOREVER, nullptr, address);
+  if (address != nullptr) {
+    m_Advertising->setConnectableMode(BLE_GAP_CONN_MODE_DIR);
+  }
+#endif
+  m_Advertising->start(0, address);
 }
 
 void HIDServer::stop(void) {
@@ -88,16 +91,26 @@ void HIDServer::stop(void) {
   m_Server->stopAdvertising();
 }
 
-void HIDServer::onAuthenticationComplete(const NimBLEConnInfo &connInfo, const std::string &name) {
-  NimBLEAddress address = connInfo.getIdAddress();
-  if (m_hidCallbacks != nullptr) {
-    m_hidCallbacks->onComplete(address, name);
-  }
+void HIDServer::onConnect(NimBLEServer *p_Server, NimBLEConnInfo &connInfo) {
+  // NimBLEDevice::startSecurity(connInfo.getConnHandle());
 }
 
-void HIDServer::onIdentity(const NimBLEConnInfo &connInfo) {
-  ESP_LOGI("HID", "identity resolved: address = %s, type = %d",
-           connInfo.getIdAddress().toString().c_str(), connInfo.getIdAddress().getType());
+void HIDServer::onAuthenticationComplete(NimBLEConnInfo &connInfo) {
+  // do nothing
+}
+
+void HIDServer::onIdentity(NimBLEConnInfo &connInfo) {
+  auto address = connInfo.getIdAddress();
+#if 0
+  // Moved to _connect() call in MobileDevice
+  auto peer = NimBLEDevice::getServer()->getClient(connInfo);
+  // getValue() hangs, likely due to being called within the callback
+  auto name = peer->getValue(NimBLEUUID((uint16_t)BLE_SVC_GAP_UUID16), NimBLEUUID((uint16_t)BLE_SVC_GAP_CHR_UUID16_DEVICE_NAME));
+  ESP_LOGI("HID", "peer = %s", name.c_str());
+#endif
+  if (m_hidCallbacks != nullptr) {
+    m_hidCallbacks->onComplete(address, (std::string)address);
+  }
 }
 
 NimBLECharacteristic *HIDServer::getInput(void) {
@@ -110,7 +123,7 @@ NimBLEConnInfo HIDServer::getConnInfo(NimBLEAddress &address) {
 
 void HIDServer::disconnect(NimBLEAddress &address) {
   NimBLEConnInfo info = m_Server->getPeerInfo(address);
-  m_Server->disconnect(info.getConnHandle());
+  m_Server->disconnect(info);
 }
 
 bool HIDServer::isConnected(const NimBLEAddress &address) {

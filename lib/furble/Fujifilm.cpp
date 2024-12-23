@@ -121,11 +121,6 @@ Fujifilm::Fujifilm(const NimBLEAdvertisedDevice *pDevice) : Camera(Type::FUJIFIL
   print_token(m_Token);
 }
 
-Fujifilm::~Fujifilm(void) {
-  NimBLEDevice::deleteClient(m_Client);
-  m_Client = nullptr;
-}
-
 constexpr size_t FUJIFILM_ADV_TOKEN_LEN = 7;
 constexpr uint8_t FUJIFILM_ID_0 = 0xd8;
 constexpr uint8_t FUJIFILM_ID_1 = 0x04;
@@ -152,8 +147,8 @@ bool Fujifilm::matches(const NimBLEAdvertisedDevice *pDevice) {
  * is what we use to identify ourselves upfront and during subsequent
  * re-pairing.
  */
-bool Fujifilm::connect(void) {
-  m_Progress = 10.0f;
+bool Fujifilm::_connect(void) {
+  m_Progress = 10;
 
   NimBLERemoteService *pSvc = nullptr;
   NimBLERemoteCharacteristic *pChr = nullptr;
@@ -163,7 +158,7 @@ bool Fujifilm::connect(void) {
     return false;
 
   ESP_LOGI(LOG_TAG, "Connected");
-  m_Progress = 20.0f;
+  m_Progress = 20;
   pSvc = m_Client->getService(FUJIFILM_SVC_PAIR_UUID);
   if (pSvc == nullptr)
     return false;
@@ -179,16 +174,17 @@ bool Fujifilm::connect(void) {
   if (!pChr->writeValue(m_Token.data(), sizeof(m_Token), true))
     return false;
   ESP_LOGI(LOG_TAG, "Paired!");
-  m_Progress = 30.0f;
+  m_Progress = 30;
 
   ESP_LOGI(LOG_TAG, "Identifying");
   pChr = pSvc->getCharacteristic(FUJIFILM_CHR_IDEN_UUID);
   if (!pChr->canWrite())
     return false;
-  if (!pChr->writeValue(Device::getStringID(), true))
+  const auto name = Device::getStringID();
+  if (!pChr->writeValue(name.c_str(), name.length(), true))
     return false;
   ESP_LOGI(LOG_TAG, "Identified!");
-  m_Progress = 40.0f;
+  m_Progress = 40;
 
   // indications
   ESP_LOGI(LOG_TAG, "Configuring");
@@ -199,36 +195,33 @@ bool Fujifilm::connect(void) {
   if (!this->subscribe(FUJIFILM_SVC_CONF_UUID, FUJIFILM_CHR_IND2_UUID, false)) {
     return false;
   }
-  m_Progress = 50.0f;
+  m_Progress = 50;
 
-  // wait for up to 5000ms callback
-  for (unsigned int i = 0; i < 5000; i += 100) {
+  // wait for up to (10*500)ms callback
+  for (unsigned int i = 0; i < 10; i++) {
     if (m_Configured) {
       break;
     }
-    // 5000 / 100 = 50
-    // 10 / 50 = 0.2
-    float progress = m_Progress.load() + 0.2f;
-    m_Progress = progress;
-    delay(100);
+    m_Progress = m_Progress.load() + 1;
+    vTaskDelay(pdMS_TO_TICKS(500));
   }
 
-  m_Progress = 60.0f;
+  m_Progress = 60;
   // notifications
   if (!this->subscribe(FUJIFILM_SVC_CONF_UUID, FUJIFILM_CHR_NOT1_UUID, true)) {
     return false;
   }
-  m_Progress = 70.0f;
+  m_Progress = 70;
 
   if (!this->subscribe(FUJIFILM_SVC_CONF_UUID, FUJIFILM_CHR_NOT2_UUID, true)) {
     return false;
   }
-  m_Progress = 80.0f;
+  m_Progress = 80;
 
   if (!this->subscribe(FUJIFILM_SVC_CONF_UUID, FUJIFILM_CHR_IND3_UUID, false)) {
     return false;
   }
-  m_Progress = 100.0f;
+  m_Progress = 100;
 
   ESP_LOGI(LOG_TAG, "Configured");
   ESP_LOGI(LOG_TAG, "Connected");
@@ -292,11 +285,13 @@ void Fujifilm::sendGeoData(const gps_t &gps, const timesync_t &timesync) {
                 }
     };
 
-    ESP_LOGI(LOG_TAG, "Sending geotag data (%u bytes) to 0x%04x", sizeof(geotag),
-             pChr->getHandle());
-    ESP_LOGI(LOG_TAG, "  lat: %f, %d", gps.latitude, geotag.latitude);
-    ESP_LOGI(LOG_TAG, "  lon: %f, %d", gps.longitude, geotag.longitude);
-    ESP_LOGI(LOG_TAG, "  alt: %f, %d", gps.altitude, geotag.altitude);
+    ESP_LOGI(LOG_TAG,
+             "Sending geotag data (%u bytes) to 0x%04x\r\n"
+             "  lat: %f, %d\r\n"
+             "  lon: %f, %d\r\n"
+             "  alt: %f, %d\r\n",
+             sizeof(geotag), pChr->getHandle(), gps.latitude, geotag.latitude, gps.longitude,
+             geotag.longitude, gps.altitude, geotag.altitude);
 
     pChr->writeValue((uint8_t *)&geotag, sizeof(geotag), true);
   }
@@ -315,8 +310,7 @@ void Fujifilm::print(void) {
   ESP_LOGI(LOG_TAG, "Type: %d", m_Address.getType());
 }
 
-void Fujifilm::disconnect(void) {
-  m_Progress = 0.0f;
+void Fujifilm::_disconnect(void) {
   m_Client->disconnect();
   m_Connected = false;
 }

@@ -5,3 +5,4 @@ PointerAlignment: Right
 BreakBeforeBinaryOperators: NonAssignment
 SpaceBeforeInheritanceColon: false
 AlignArrayOfStructures: Left
+SpaceBeforeCpp11BracedList: true

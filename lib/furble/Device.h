@@ -3,14 +3,12 @@
 
 #include <cstdint>
 
-#define DEVICE_ID_STR_MAX (16)
-#define UUID128_LEN (16)
-#define UUID128_AS_32_LEN (UUID128_LEN / sizeof(uint32_t))
-
 namespace Furble {
 
 class Device {
  public:
+  static constexpr size_t UUID128_LEN = 16;
+  static constexpr size_t UUID128_AS_32_LEN = (UUID128_LEN / sizeof(uint32_t));
   /**
    * UUID type.
    */
@@ -34,11 +32,14 @@ class Device {
   /**
    * Return pseudo-unique identifier string of this device.
    */
-  static const char *getStringID(void);
+  static const std::string getStringID(void);
 
  private:
-  static uuid128_t g_Uuid;
-  static char g_StringID[DEVICE_ID_STR_MAX];
+  static constexpr size_t DEVICE_ID_STR_MAX = 16;
+
+  static uuid128_t m_Uuid;
+  static char m_StringID[DEVICE_ID_STR_MAX];
+  static std::string m_ID;
 };
 }  // namespace Furble
 
