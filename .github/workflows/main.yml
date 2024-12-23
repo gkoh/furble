@@ -28,6 +28,7 @@ jobs:
       matrix:
         platform:
           - m5stick-c
+          - m5stick-c-plus
           - m5stack-core
           - m5stack-core2
 
