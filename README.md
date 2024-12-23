@@ -1,21 +1,26 @@
-# furble - FUjifilm Remote Bluetooth Low Energy
+# furble - ***FU***jifilm ***R***emote ***B***luetooth ***L***ow ***E***nergy
 
 ![PlatformIO CI](https://github.com/gkoh/furble/workflows/PlatformIO%20CI/badge.svg)
 
 A Bluetooth wireless remote shutter release originally targeted at Fujifilm mirrorless
 cameras.
 
-![furble - M5StickC-Plus2](https://github.com/user-attachments/assets/e0eebd87-3ac0-4a8b-871a-014eb8c71395)
-
-The remote uses the camera's native Bluetooth Low Energy interface so additional
+The remote uses the camera's native Bluetooth Low Energy interface thus additional
 adapters are not required.
 
-furble is developed as a PlatformIO project for the M5StickC, M5StickC Plus and M5StickC Plus2
-(ESP32 based devices). Additionally, it can be used on the M5Stack Core2.
+furble is developed as a PlatformIO project.
+
+## M5StickC Plus2 (Dark theme)
+
+![furble - Dark - M5StickC Plus2](https://github.com/user-attachments/assets/62a507cc-1c75-4d7a-a8de-b9e0bf78e0e1)
+
+## M5Core2 (Default theme)
+
+![furble - Default - M5Core2](https://github.com/user-attachments/assets/6c2d3293-201f-4330-a7c0-716c91807dca)
 
 ## Supported Cameras
 
-The following devices have actually been tested and confirmed to work:
+The following devices have been tested and confirmed to work:
 - Fujifilm
    - Fujifilm GFX100II ([@matthudsonau](https://github.com/matthudsonau))
    - Fujifilm GFX100S ([@adrianuseless](https://github.com/adrianuseless))
@@ -33,6 +38,15 @@ The following devices have actually been tested and confirmed to work:
 - Mobile Devices (beta)
    - Android
    - iOS
+
+## Supported Controllers
+
+Initially targeted at the M5StickC, the following controllers are supported:
+* M5StickC (EOL)
+* M5StickC Plus
+* M5StickC Plus2
+* M5Core Basic
+* M5Core2
 
 ## What Works
 
@@ -68,8 +82,10 @@ Follow the instructions on the wiki: [Easy Web Install](https://github.com/gkoh/
 PlatformIO does everything assuming things are installed and connected properly.
 In most cases it should be:
 - clone the repository
-- plug in the M5StickC or M5StickC Plus/Plus2
+- plug in the M5StickC
     - `platformio run -e m5stick-c -t upload`
+- OR plug in M5StickC Plus/Plus2
+    - `platformio run -e m5stick-c-plus -t upload`
 - OR plug in the M5Stack Core2
     - `platformio run -e m5stack-core2 -t upload`
 
@@ -89,10 +105,100 @@ camera advertises a known, matching signature, it should appear in the list.
 You can then connect to the target camera, which, if successful, will save the
 entry and show the remote menu.
 
-Upon subsequent use it should be enough to hit `Connect`, selecting the
-previously paired device and leads to the remote menu.
+`furble` will identify as `furble-xxxx` where `xxxx` is a consistent identifier enabling one to differentiate mutiple controllers.
 
-From the remote menu you may choose to disconnect or control the shutter.
+Upon subsequent use it should be enough to hit `Connect`, selecting the
+previously paired device and leading to the remote menu.
+
+From the remote menu you may choose to disconnect, control the shutter or activate the intervalometer.
+
+### Navigation
+
+#### Hardware Buttons
+
+All supported controllers have three buttons designated:
+- previous
+- select
+- next
+
+For M5StickC format controllers:
+- previous == power button
+- select == big M5 button below screen
+- next == right side button
+
+For M5 Core controllers:
+- previous == left button
+- select == middle button
+- next == right button
+
+Basic navigation:
+* previous == highlight up/previous/right entry
+* next == highlight down/next/left entry
+* select == action
+
+For slider and roller elements (eg. brightness control, intervalometer numbers):
+* highlight the desired element with previous/next
+* press select to 'edit' the element
+* press next/previous to up/down increase/decrease
+* press select to 'confirm' the change
+
+#### Touch Screen
+
+At time of writing, only the M5Core2 has been tested. All user interface widget are touch responsive:
+* in menus
+   * touch the desired entry
+   * drag up/down to scroll entries
+* in rollers (ie intervalometer configuration)
+   * drag up/down to adjust entry
+
+For M5Core2, the 'hardware' touch buttons are active and operate identically to the M5 Core.
+
+During shutter control:
+* press 'Shutter' button to release shutter
+* press and hold 'Shutter' button for continuous shooting
+* press and/or hold 'Focus' button to auto-focus
+* press and hold 'Shutter Lock' to lock shutter open
+   * press and hold 'Shutter Lock' again to release
+ 
+### Menu Map
+
+* Connect (if connections are saved)
+   * list of connections
+      * Shutter
+         * Shutter
+         * Focus
+         * Shutter Lock
+      * Interval
+         * Start
+            * Stop
+         * Count
+         * Delay
+         * Shutter
+      * Disconnect
+* Scan
+   * list of matching targets
+      * <goes to active single connection>
+* Delete (if connections are saved)
+   * list of connections
+* Settings
+   * Backlight
+      * Backlight brightness
+      * Inactivity timeout
+   * Features
+      * Faux-NY
+      * Infinite-Reconnect
+      * Multi-Connect
+   * GPS
+      * GPS
+      * GPS Data (if GPS enabled)
+   * Intervalometer
+      * Count
+      * Delay
+      * Shutter
+   * Theme
+   * Transmit Power
+   * About
+* Power Off
 
 ### Mobile Devices
 
@@ -102,9 +208,7 @@ Connection to mobile devices is a little iffy:
 - on the mobile device:
    - pair with `furble`
 - on `furble` the mobile device should appear as a connectable target if the pairing was successful
-- connect to the mobile device to save the pairing
-  - the devices will remain paired even if you do not connect and save
-  - forget `furble` on the mobile device to remove such a pair
+- forget `furble` on the mobile device to remove such a pair
 
 ### GPS Location Tagging
 
@@ -136,27 +240,34 @@ simultaneously controlled.
 
 To use:
 * Pair with one or more cameras
-* Enable `Settings->Multi-Connect`
-* In `Connect` select cameras
-   * Selected cameras will have a `*`
-* Select `Connect *`
+* Enable `Settings->Features->Multi-Connect`
+* In `Connect` select one or more cameras
+* Select `Multi-Connect`
    * Selected cameras will be connected in sequence
 * If all cameras are connected, the standard remote control is shown
 
-WARNING:
+[!WARNING]:
 * mobile device connections are extremely finnicky
 * multi-connect involving mobile devices is not well tested and can easily crash
+   * multi-connect involving mobile devices is not recommended
 
 ### Infinite-ReConnect
 
 This is useful for using furble as a passive, always on GPS data source.
 With this, the camera will attempt to reconnect indefinitely.
-You don't need to turn on this setting if you are actively using furble.
+You don't need to turn on this setting if you are actively using the remote.
 
 To use:
-* Enable `Settings->Infinite-ReConnect`
+* Enable `Settings->Features->Infinite-ReConnect`
 
 [!WARNING] This will not be kind to battery life
+
+### Themes
+
+A few basic themes are included, to change:
+* `Settings->Themes-><desired theme>`
+* `Settings->Themes->Restart` to fully set the theme
+   * better dynamic theme change support is improving in upstream LVGL
 
 ## Motivation
 
@@ -171,11 +282,13 @@ but for my camera.
 ### Possibly Supported Cameras
 
 #### Fujifilm
+
 Given reports from the community and access to additional cameras, it
 seems many (all?) Fujifilm cameras use the same Bluetooth protocol.
 Reports of further confirmed working Fujifilm cameras are welcome.
 
 #### Canon
+
 With access to a Canon EOS M6, I was able to implement support for it. Other
 Canon cameras might work, but I suspect the shutter control protocol will be
 different.
@@ -223,19 +336,19 @@ The M5StickC and M5StickC Plus have since been EOL and replaced with the [M5Stic
 The M5StickC is an ESP32 based mini-IoT development kit which covered all of the
 requirements (and more). At time of writing, M5Stack sell the M5StickC for
 US$9.95.
-The M5StickC Plus sells for US$19.95.
+The M5StickC Plus(2) sells for US$19.95.
 
 #### Software
 
 The project is built with [PlatformIO](https://platformio.org) and depends on
 the following libraries:
-- [M5ez](https://github.com/M5ez/M5ez)
-  - severely butchered version to work on the M5StickC
+- [LVGL](https://github.com/lvgl/lvgl)
 - [M5Unified](https://github.com/m5stack/M5Unified)
 - [NimBLE-Arduino](https://github.com/h2zero/NimBLE-Arduino)
 - [TinyGPSPlus](https://github.com/mikalhart/TinyGPSPlus)
 
 # Known Issues
+
 - depending on your perspective, battery life is anywhere from reasonable to abysmal
    - with an active BLE connection, the ESP32 consumes around 50mA
       - an M5StickC Plus2 would last around 4 hours
@@ -245,7 +358,8 @@ the following libraries:
       - this might last 30 hours
 
 # Things To Do
-- error handling is atrocious (it'll probably crash, then restart, which is OK,
+
+- error handling is ~atrocious~improving (it might crash, then restart, which is OK,
   the M5StickC boots quickly)
 - improve the device matching and connection abstractions
   - especially if more cameras get supported
