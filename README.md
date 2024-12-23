@@ -248,7 +248,7 @@ To use:
    * Selected cameras will be connected in sequence
 * If all cameras are connected, the standard remote control is shown
 
-> [!WARNING]
+> [!CAUTION]
 > * mobile device connections are extremely finnicky
 > * multi-connect involving mobile devices is not well tested and can easily crash
 >   * multi-connect involving mobile devices is not recommended
