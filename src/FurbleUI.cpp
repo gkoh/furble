@@ -1718,7 +1718,8 @@ void UI::task(void) {
     lv_task_handler();
     m_Mutex.unlock();
 
-    vTaskDelay(1 / portTICK_PERIOD_MS);
+    //vTaskDelay(1 / portTICK_PERIOD_MS);
+    vTaskDelay(5);
   }
 }
 }  // namespace Furble

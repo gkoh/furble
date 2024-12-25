@@ -1,3 +1,3 @@
 .pio
 .vscode
-src/furble.ino.cpp
+sdkconfig.*.old
