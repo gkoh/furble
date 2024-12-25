@@ -160,8 +160,8 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
         int32_t current = M5.Power.getBatteryCurrent();
         static int32_t mean = current;
 
-        // exponentially weighted moving average with alpha = 0.5
-        mean = mean + (current - mean) / 2;
+        // exponentially weighted moving average with alpha = 0.33
+        mean = mean + (current - mean) / 3;
 
         lv_label_set_text_fmt(status->batteryIcon, "%d", mean);
 #else
@@ -1718,8 +1718,7 @@ void UI::task(void) {
     lv_task_handler();
     m_Mutex.unlock();
 
-    //vTaskDelay(1 / portTICK_PERIOD_MS);
-    vTaskDelay(5);
+    vTaskDelay(pdMS_TO_TICKS(5));
   }
 }
 }  // namespace Furble

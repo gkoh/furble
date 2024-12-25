@@ -171,7 +171,7 @@ bool Fujifilm::_connect(void) {
   if (!pChr->canWrite())
     return false;
   print_token(m_Token);
-  if (!pChr->writeValue(m_Token.data(), sizeof(m_Token), true))
+  if (!pChr->writeValue(m_Token.data(), m_Token.size(), true))
     return false;
   ESP_LOGI(LOG_TAG, "Paired!");
   m_Progress = 30;
