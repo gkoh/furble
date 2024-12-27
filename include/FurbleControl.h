@@ -50,6 +50,8 @@ class Control {
    protected:
     Target(Camera *camera);
 
+    volatile bool m_Stopped = false;
+
    private:
     static constexpr UBaseType_t m_QueueLength = 8;
 

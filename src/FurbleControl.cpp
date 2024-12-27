@@ -75,6 +75,7 @@ void Control::Target::task(void) {
     }
   }
 task_exit:
+  m_Stopped = true;
   vTaskDelete(NULL);
 }
 
@@ -212,8 +213,16 @@ void Control::disconnect(void) {
 
   const std::lock_guard<std::mutex> lock(m_Mutex);
 
+  // send disconnect
   for (const auto &target : m_Targets) {
     target->sendCommand(CMD_DISCONNECT);
+  }
+
+  // wait for tasks to finish
+  for (const auto &target : m_Targets) {
+    do {
+      vTaskDelay(pdMS_TO_TICKS(1));
+    } while (!target.get()->m_Stopped);
   }
 
   m_Targets.clear();
