@@ -352,13 +352,13 @@ the following libraries:
 
 # Known Issues
 
-- depending on your perspective, battery life is anywhere from reasonable to abysmal
-   - with an active BLE connection, the ESP32 consumes around 50mA
-      - an M5StickC Plus2 would last around 4 hours
-      - an M5StickC Plus would last around 2.5 hours
-      - an old M5StickC would last less than 2 hours
-   - if battery life is crucial, and form factor is not, consider an M5Stack Core2 with the 1500mAh module
-      - this might last 30 hours
+- depending on your perspective, battery life is anywhere from reasonable to bad
+   - with an active BLE connection and power management, the ESP32 consumes around 30mA
+      - an M5StickC Plus2 would last around 6 hours
+      - an M5StickC Plus would last around 4 hours
+      - an old M5StickC would last around 3 hours
+   - if battery life is crucial, and form factor is not, consider an M5Stack Core with the 1500mAh module
+      - this might last 50 hours
 
 # Things To Do
 

@@ -242,7 +242,7 @@ void Control::addActive(Camera *camera) {
       },
       camera->getName().c_str(), 4096, target.get(), 3, NULL, 1);
   if (ret != pdPASS) {
-    ESP_LOGE(LOG_TAG, "Failed to create task for '%s'.", camera->getName());
+    ESP_LOGE(LOG_TAG, "Failed to create task for '%s'.", camera->getName().c_str());
   } else {
     m_Targets.push_back(std::move(target));
   }

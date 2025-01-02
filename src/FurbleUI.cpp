@@ -5,7 +5,7 @@
 #include <src/themes/lv_theme_private.h>
 
 #include <Device.h>
-#include <Furble.h>
+#include <Scan.h>
 
 #include "FurbleControl.h"
 #include "FurbleGPS.h"
@@ -160,8 +160,8 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
         int32_t current = M5.Power.getBatteryCurrent();
         static int32_t mean = current;
 
-        // exponentially weighted moving average with alpha = 0.5
-        mean = mean + (current - mean) / 2;
+        // exponentially weighted moving average with alpha = 0.33
+        mean = mean + (current - mean) / 3;
 
         lv_label_set_text_fmt(status->batteryIcon, "%d", mean);
 #else
@@ -763,6 +763,7 @@ void UI::addMainMenu(void) {
         auto *target = static_cast<lv_obj_t *>(lv_event_get_target(e));
         auto *page = lv_menu_get_cur_main_page(target);
         auto *back = lv_menu_get_main_header_back_button(m_MainMenu.main);
+        auto &scan = Scan::getInstance();
 
         if (page == m_MainMenu.page) {
           // Hide connect & delete if there are zero saved
@@ -776,7 +777,7 @@ void UI::addMainMenu(void) {
           }
 
           // Ensure no active scans
-          Scan::stop();
+          scan.stop();
 
           // Enable Back button
           if (lv_obj_has_state(back, LV_STATE_DISABLED)) {
@@ -793,8 +794,8 @@ void UI::addMainMenu(void) {
             updateItems(menu);
           }
 
-          Scan::clear();
-          Scan::start(
+          scan.clear();
+          scan.start(
               [](void *param) {
                 auto *menu = static_cast<menu_t *>(param);
                 // Can be called asychronously from NimBLE scan thread,
@@ -809,7 +810,7 @@ void UI::addMainMenu(void) {
         } else if (page == m_Menu.at(m_ConnectStr).page) {
         } else if (page == m_Menu.at(m_ConnectedStr).page) {
           // Ensure no active scans
-          Scan::stop();
+          scan.stop();
 
           // disable back button and shift focus
           lv_obj_add_state(back, LV_STATE_DISABLED);
@@ -1718,7 +1719,7 @@ void UI::task(void) {
     lv_task_handler();
     m_Mutex.unlock();
 
-    vTaskDelay(1 / portTICK_PERIOD_MS);
+    vTaskDelay(pdMS_TO_TICKS(5));
   }
 }
 }  // namespace Furble

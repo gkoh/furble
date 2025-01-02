@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+#include <NimBLEDevice.h>
+
 namespace Furble {
 
 class Device {
@@ -22,7 +24,7 @@ class Device {
   /**
    * Initialise the device.
    */
-  static void init(void);
+  static void init(esp_power_level_t power);
 
   /**
    * Return a device consistent 128-bit UUID.
