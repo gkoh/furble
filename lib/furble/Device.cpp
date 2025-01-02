@@ -1,4 +1,5 @@
 #include <Esp.h>
+#include <NimBLEDevice.h>
 
 #include "Device.h"
 #include "FurbleTypes.h"
@@ -20,7 +21,7 @@ static uint32_t xorshift(uint32_t x) {
   return x;
 }
 
-void Device::init(void) {
+void Device::init(esp_power_level_t power) {
   uint32_t chip_id = (uint32_t)ESP.getEfuseMac();
   for (size_t i = 0; i < UUID128_AS_32_LEN; i++) {
     chip_id = xorshift(chip_id);
@@ -31,6 +32,11 @@ void Device::init(void) {
   snprintf(m_StringID, DEVICE_ID_STR_MAX, "%s-%05x", FURBLE_STR, m_Uuid.uint32[0] & 0xFFFFF);
 
   m_ID = std::string(m_StringID);
+
+  NimBLEDevice::init(m_ID);
+  NimBLEDevice::setPower(power);
+  NimBLEDevice::setSecurityAuth(true, true, true);
+  // NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_PUBLIC);
 }
 
 void Device::getUUID128(uuid128_t *uuid) {

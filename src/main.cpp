@@ -6,7 +6,7 @@
 #include "nimconfig.h"
 
 #include "Device.h"
-#include "Furble.h"
+#include "Scan.h"
 
 #include "FurbleControl.h"
 #include "FurbleSettings.h"
@@ -37,8 +37,8 @@ void app_main() {
   M5.begin(cfg);
 
   Furble::Settings::init();
-  Furble::Device::init();
-  Furble::Scan::init(Furble::Settings::load<esp_power_level_t>(Furble::Settings::TX_POWER));
+  Furble::Device::init(Furble::Settings::load<esp_power_level_t>(Furble::Settings::TX_POWER));
+  ;
 
   auto &control = Furble::Control::getInstance();
   xRet = xTaskCreatePinnedToCore(control_task, "control", 8192, &control, 4, &xControlHandle, 1);
