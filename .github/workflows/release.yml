@@ -26,7 +26,6 @@ jobs:
       FIRMWARE_NAME: furble-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
       BOOTLOADER_NAME: furble-bootloader-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
       PARTITIONS_NAME: furble-partitions-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
-      BOOT_APP0_NAME: furble-boot-app0-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
 
     steps:
       - uses: actions/checkout@v4
@@ -49,7 +48,6 @@ jobs:
           mv .pio/build/${{ matrix.platform }}/firmware.bin $FIRMWARE_NAME
           mv .pio/build/${{ matrix.platform }}/bootloader.bin $BOOTLOADER_NAME
           mv .pio/build/${{ matrix.platform }}/partitions.bin $PARTITIONS_NAME
-          mv ~/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin $BOOT_APP0_NAME
 
       - name: Generate manifest (${{ matrix.platform }})
         working-directory: ./web-installer
@@ -67,7 +65,6 @@ jobs:
             ${{ env.FIRMWARE_NAME }}
             ${{ env.BOOTLOADER_NAME }}
             ${{ env.PARTITIONS_NAME }}
-            ${{ env.BOOT_APP0_NAME }}
             manifest_${{ matrix.platform }}.json
           if-no-files-found: error
 
