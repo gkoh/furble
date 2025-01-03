@@ -269,7 +269,7 @@ To use:
 
 A few basic themes are included, to change:
 * `Settings->Themes-><desired theme>`
-* `Settings->Themes->Restart` to fully set the theme
+   * device will immediately restart to take effect
    * better dynamic theme change support is improving in upstream LVGL
 
 ## Motivation

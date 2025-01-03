@@ -1603,13 +1603,10 @@ void UI::addThemeMenu(const menu_t &parent) {
           auto *theme = static_cast<std::string *>(lv_event_get_user_data(e));
           setTheme(*theme);
           Settings::save<std::string>(Settings::THEME, *theme);
+          esp_restart();
         },
         LV_EVENT_CLICKED, (void *)&theme);
   }
-
-  // add restart button
-  lv_obj_t *restart = addMenuItem(menu, NULL, "Restart");
-  lv_obj_add_event_cb(restart, [](lv_event_t *e) { esp_restart(); }, LV_EVENT_CLICKED, NULL);
 
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
