@@ -823,8 +823,9 @@ void UI::addMainMenu(void) {
           // Ensure no active scans
           scan.stop();
 
-          // disable back button and shift focus
+          // hide and disable back button
           lv_obj_add_state(back, LV_STATE_DISABLED);
+          lv_obj_add_flag(back, LV_OBJ_FLAG_HIDDEN);
         } else if (page == m_Menu.at(m_RemoteShutter).page) {
           if (M5.Touch.isEnabled()) {
             // if touch screen, enable back
