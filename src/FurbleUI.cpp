@@ -1617,10 +1617,11 @@ void UI::addThemeMenu(const menu_t &parent) {
 void UI::addTransmitPowerMenu(const menu_t &parent) {
   menu_t &menu = addMenu(m_TransmitPowerStr, NULL, true, parent);
   lv_obj_t *cont = lv_menu_cont_create(menu.page);
-  lv_obj_set_height(cont, LV_PCT(100));
+  lv_obj_set_size(cont, LV_PCT(100), LV_PCT(100));
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_t *slider = lv_slider_create(cont);
+  lv_obj_set_width(slider, LV_PCT(80));
   lv_slider_set_range(slider, 0, 2);
 
   uint8_t power = Settings::load<uint8_t>(Settings::TX_POWER);
