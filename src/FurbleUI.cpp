@@ -38,6 +38,11 @@ const uint32_t UI::m_KeyEnter;
 const uint32_t UI::m_KeyLeft;
 const uint32_t UI::m_KeyRight;
 
+lv_obj_t *UI::m_NavBar;
+lv_obj_t *UI::m_Left;
+lv_obj_t *UI::m_OK;
+lv_obj_t *UI::m_Right;
+
 bool UI::m_PMICHack;
 bool UI::m_PMICClicked;
 
@@ -858,6 +863,22 @@ void UI::addMainMenu(void) {
   lv_menu_set_page(m_MainMenu.main, m_MainMenu.page);
 }
 
+void UI::displayNavigationBar(bool show) {
+  if (!M5.Touch.isEnabled()) {
+    if (show) {
+      lv_obj_clear_flag(m_NavBar, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(m_Left, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(m_OK, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(m_Right, LV_OBJ_FLAG_HIDDEN);
+    } else {
+      lv_obj_add_flag(m_NavBar, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(m_Left, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(m_OK, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(m_Right, LV_OBJ_FLAG_HIDDEN);
+    }
+  }
+}
+
 void UI::configShutterControl(void) {
   if (!M5.Touch.isEnabled()) {
     lv_obj_set_style_bg_image_src(m_Right, LV_SYMBOL_EYE_OPEN, 0);
@@ -929,6 +950,7 @@ void UI::connectTimerHandler(lv_timer_t *timer) {
         // hide menu, unhide message box
         lv_obj_add_flag(m_MainMenu.main, LV_OBJ_FLAG_HIDDEN);
         lv_obj_clear_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN);
+        UI::displayNavigationBar(false);
         lv_group_focus_obj(m_ConnectCancel);
       }
 
@@ -956,6 +978,7 @@ void UI::connectTimerHandler(lv_timer_t *timer) {
         // everything connected, display menu, hide connection message box
         lv_obj_add_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN);
         lv_obj_clear_flag(m_MainMenu.main, LV_OBJ_FLAG_HIDDEN);
+        UI::displayNavigationBar(true);
         lv_group_focus_next(lv_group_get_default());
       }
       break;
