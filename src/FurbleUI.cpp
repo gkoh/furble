@@ -830,6 +830,9 @@ void UI::addMainMenu(void) {
           if (M5.Touch.isEnabled()) {
             // if touch screen, enable back
             lv_obj_remove_state(back, LV_STATE_DISABLED);
+          } else {
+            // hide the back button
+            lv_obj_add_flag(back, LV_OBJ_FLAG_HIDDEN);
           }
         } else if (page == m_Menu.at(m_IntervalometerStr).page) {
           // always display 'Back' in intervalometer
