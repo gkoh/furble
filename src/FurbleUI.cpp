@@ -1603,8 +1603,8 @@ void UI::addBacklightMenu(const menu_t &parent) {
 
   lv_obj_t *roller = lv_roller_create(cont);
   lv_obj_set_width(roller, LV_PCT(90));
-  lv_roller_set_options(roller, "Never\n30 secs\n60 secs", LV_ROLLER_MODE_INFINITE);
-  lv_roller_set_visible_row_count(roller, 1);
+  lv_roller_set_options(roller, "Never\n30 secs\n60 secs", LV_ROLLER_MODE_NORMAL);
+  lv_roller_set_visible_row_count(roller, 2);
   uint8_t inactivity = Settings::load<uint8_t>(Settings::INACTIVITY);
   lv_roller_set_selected(roller, inactivity, LV_ANIM_ON);
 
