@@ -476,14 +476,17 @@ void UI::handleShutter(lv_event_t *e) {
     case LV_EVENT_PRESSED:
       if (ui->m_FocusPressed) {
         ui->shutterLock(control);
-      } else {
+      } else if (!ui->isShutterLocked()) {
         control.sendCommand(Control::CMD_SHUTTER_PRESS);
       }
       break;
     case LV_EVENT_RELEASED:
-      control.sendCommand(Control::CMD_SHUTTER_RELEASE);
-      if (!ui->m_FocusPressed) {
-        ui->shutterUnlock(control);
+      if (ui->isShutterLocked()) {
+        if (!ui->m_FocusPressed) {
+          ui->shutterUnlock(control);
+        }
+      } else {
+        control.sendCommand(Control::CMD_SHUTTER_RELEASE);
       }
       break;
     default:
@@ -497,9 +500,12 @@ void UI::handleFocus(lv_event_t *e) {
   lv_event_code_t code = lv_event_get_code(e);
   switch (code) {
     case LV_EVENT_PRESSED:
-      ui->shutterUnlock(control);
       ui->m_FocusPressed = true;
-      control.sendCommand(Control::CMD_FOCUS_PRESS);
+      if (ui->isShutterLocked()) {
+        ui->shutterUnlock(control);
+      } else {
+        control.sendCommand(Control::CMD_FOCUS_PRESS);
+      }
       break;
     case LV_EVENT_RELEASED:
       ui->m_FocusPressed = false;
