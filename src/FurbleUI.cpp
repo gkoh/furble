@@ -416,33 +416,42 @@ void UI::setTheme(std::string name) {
   lv_color_t primary = lv_palette_main(LV_PALETTE_BLUE);
   lv_color_t secondary = lv_color_black();
   bool dark = false;
+  static lv_theme_t theme;
+  static lv_style_t style_bg;
+  static lv_style_t style_button;
+
+  lv_style_init(&style_bg);
+  lv_style_init(&style_button);
 
   if (name == "Dark") {
-    static lv_theme_t theme_dark;
-    static lv_style_t style_dark;
-    lv_theme_t *theme_default = lv_theme_default_get();
-    lv_style_init(&style_dark);
-    lv_style_set_bg_color(&style_dark, lv_color_black());
-
-    theme_dark = *theme_default;
-    lv_theme_set_parent(&theme_dark, theme_default);
-    lv_theme_set_apply_cb(&theme_dark, [](lv_theme_t *th, lv_obj_t *obj) {
-      if (!lv_obj_check_type(obj, &lv_button_class)
-          && !lv_obj_check_type(obj, &lv_msgbox_footer_button_class)) {
-        lv_obj_add_style(obj, &style_dark, 0);
-      }
-    });
     dark = true;
-    lv_display_set_theme(display, &theme_dark);
+    lv_style_set_bg_color(&style_bg, lv_color_black());
+    lv_style_set_outline_color(&style_button, LV_COLOR_MAKE(127, 255, 0));
   } else if (name == "Mono Furble") {
-    primary = lv_palette_main(LV_PALETTE_ORANGE);
     dark = true;
-    lv_theme_default_init(display, primary, secondary, dark, LV_FONT_DEFAULT);
+    primary = lv_palette_main(LV_PALETTE_ORANGE);
+    lv_style_set_bg_color(&style_bg, lv_color_black());
+    lv_style_set_outline_color(&style_button, lv_color_white());
   } else {
     // Default
     dark = false;
-    lv_theme_default_init(display, primary, secondary, dark, LV_FONT_DEFAULT);
+    lv_style_set_outline_color(&style_button, lv_palette_main(LV_PALETTE_ORANGE));
   }
+
+  lv_theme_t *theme_default =
+      lv_theme_default_init(display, primary, secondary, dark, LV_FONT_DEFAULT);
+  theme = *theme_default;
+  lv_theme_set_parent(&theme, theme_default);
+  lv_theme_set_apply_cb(&theme, [](lv_theme_t *th, lv_obj_t *obj) {
+    if (lv_obj_check_type(obj, &lv_button_class) || lv_obj_check_type(obj, &lv_roller_class)
+        || lv_obj_check_type(obj, &lv_slider_class) || lv_obj_check_type(obj, &lv_switch_class)) {
+      lv_obj_add_style(obj, &style_button, LV_STATE_FOCUS_KEY);
+    } else if (!lv_obj_check_type(obj, &lv_button_class)
+               && !lv_obj_check_type(obj, &lv_msgbox_footer_button_class)) {
+      lv_obj_add_style(obj, &style_bg, LV_STATE_DEFAULT);
+    }
+  });
+  lv_display_set_theme(display, &theme);
 }
 
 void UI::shutterLock(Control &control) {
@@ -1401,8 +1410,10 @@ void UI::addSpinnerPage(const menu_t &parent, const char *item, Intervalometer::
       LV_EVENT_VALUE_CHANGED, &spinner);
 
   spinner.m_RowSpinners = lv_obj_create(menu.page);
+  lv_obj_set_size(spinner.m_RowSpinners, LV_PCT(100), LV_SIZE_CONTENT);
   lv_obj_set_layout(spinner.m_RowSpinners, LV_LAYOUT_FLEX);
   lv_obj_set_flex_flow(spinner.m_RowSpinners, LV_FLEX_FLOW_ROW);
+
   switch (M5.getBoard()) {
     case m5::board_t::board_M5StickC:
     case m5::board_t::board_M5StickCPlus:
@@ -1416,8 +1427,6 @@ void UI::addSpinnerPage(const menu_t &parent, const char *item, Intervalometer::
                             LV_FLEX_ALIGN_CENTER);
       break;
   }
-
-  lv_obj_set_size(spinner.m_RowSpinners, LV_PCT(100), LV_SIZE_CONTENT);
 
   for (auto &r : spinner.m_Roller) {
     r = lv_roller_create(spinner.m_RowSpinners);
