@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <numeric>
 #include <tuple>
 
 #include <M5Unified.h>
@@ -37,6 +39,11 @@ constexpr const char *UI::m_IntervalometerRunStr;
 const uint32_t UI::m_KeyEnter;
 const uint32_t UI::m_KeyLeft;
 const uint32_t UI::m_KeyRight;
+
+lv_obj_t *UI::m_NavBar;
+lv_obj_t *UI::m_Left;
+lv_obj_t *UI::m_OK;
+lv_obj_t *UI::m_Right;
 
 bool UI::m_PMICHack;
 bool UI::m_PMICClicked;
@@ -409,33 +416,42 @@ void UI::setTheme(std::string name) {
   lv_color_t primary = lv_palette_main(LV_PALETTE_BLUE);
   lv_color_t secondary = lv_color_black();
   bool dark = false;
+  static lv_theme_t theme;
+  static lv_style_t style_bg;
+  static lv_style_t style_button;
+
+  lv_style_init(&style_bg);
+  lv_style_init(&style_button);
 
   if (name == "Dark") {
-    static lv_theme_t theme_dark;
-    static lv_style_t style_dark;
-    lv_theme_t *theme_default = lv_theme_default_get();
-    lv_style_init(&style_dark);
-    lv_style_set_bg_color(&style_dark, lv_color_black());
-
-    theme_dark = *theme_default;
-    lv_theme_set_parent(&theme_dark, theme_default);
-    lv_theme_set_apply_cb(&theme_dark, [](lv_theme_t *th, lv_obj_t *obj) {
-      if (!lv_obj_check_type(obj, &lv_button_class)
-          && !lv_obj_check_type(obj, &lv_msgbox_footer_button_class)) {
-        lv_obj_add_style(obj, &style_dark, 0);
-      }
-    });
     dark = true;
-    lv_display_set_theme(display, &theme_dark);
+    lv_style_set_bg_color(&style_bg, lv_color_black());
+    lv_style_set_outline_color(&style_button, LV_COLOR_MAKE(127, 255, 0));
   } else if (name == "Mono Furble") {
-    primary = lv_palette_main(LV_PALETTE_ORANGE);
     dark = true;
-    lv_theme_default_init(display, primary, secondary, dark, LV_FONT_DEFAULT);
+    primary = lv_palette_main(LV_PALETTE_ORANGE);
+    lv_style_set_bg_color(&style_bg, lv_color_black());
+    lv_style_set_outline_color(&style_button, lv_color_white());
   } else {
     // Default
     dark = false;
-    lv_theme_default_init(display, primary, secondary, dark, LV_FONT_DEFAULT);
+    lv_style_set_outline_color(&style_button, lv_palette_main(LV_PALETTE_ORANGE));
   }
+
+  lv_theme_t *theme_default =
+      lv_theme_default_init(display, primary, secondary, dark, LV_FONT_DEFAULT);
+  theme = *theme_default;
+  lv_theme_set_parent(&theme, theme_default);
+  lv_theme_set_apply_cb(&theme, [](lv_theme_t *th, lv_obj_t *obj) {
+    if (lv_obj_check_type(obj, &lv_button_class) || lv_obj_check_type(obj, &lv_roller_class)
+        || lv_obj_check_type(obj, &lv_slider_class) || lv_obj_check_type(obj, &lv_switch_class)) {
+      lv_obj_add_style(obj, &style_button, LV_STATE_FOCUS_KEY);
+    } else if (!lv_obj_check_type(obj, &lv_button_class)
+               && !lv_obj_check_type(obj, &lv_msgbox_footer_button_class)) {
+      lv_obj_add_style(obj, &style_bg, LV_STATE_DEFAULT);
+    }
+  });
+  lv_display_set_theme(display, &theme);
 }
 
 void UI::shutterLock(Control &control) {
@@ -476,14 +492,17 @@ void UI::handleShutter(lv_event_t *e) {
     case LV_EVENT_PRESSED:
       if (ui->m_FocusPressed) {
         ui->shutterLock(control);
-      } else {
+      } else if (!ui->isShutterLocked()) {
         control.sendCommand(Control::CMD_SHUTTER_PRESS);
       }
       break;
     case LV_EVENT_RELEASED:
-      control.sendCommand(Control::CMD_SHUTTER_RELEASE);
-      if (!ui->m_FocusPressed) {
-        ui->shutterUnlock(control);
+      if (ui->isShutterLocked()) {
+        if (!ui->m_FocusPressed) {
+          ui->shutterUnlock(control);
+        }
+      } else {
+        control.sendCommand(Control::CMD_SHUTTER_RELEASE);
       }
       break;
     default:
@@ -497,9 +516,12 @@ void UI::handleFocus(lv_event_t *e) {
   lv_event_code_t code = lv_event_get_code(e);
   switch (code) {
     case LV_EVENT_PRESSED:
-      ui->shutterUnlock(control);
       ui->m_FocusPressed = true;
-      control.sendCommand(Control::CMD_FOCUS_PRESS);
+      if (ui->isShutterLocked()) {
+        ui->shutterUnlock(control);
+      } else {
+        control.sendCommand(Control::CMD_FOCUS_PRESS);
+      }
       break;
     case LV_EVENT_RELEASED:
       ui->m_FocusPressed = false;
@@ -812,12 +834,16 @@ void UI::addMainMenu(void) {
           // Ensure no active scans
           scan.stop();
 
-          // disable back button and shift focus
+          // hide and disable back button
           lv_obj_add_state(back, LV_STATE_DISABLED);
+          lv_obj_add_flag(back, LV_OBJ_FLAG_HIDDEN);
         } else if (page == m_Menu.at(m_RemoteShutter).page) {
           if (M5.Touch.isEnabled()) {
             // if touch screen, enable back
             lv_obj_remove_state(back, LV_STATE_DISABLED);
+          } else {
+            // hide the back button
+            lv_obj_add_flag(back, LV_OBJ_FLAG_HIDDEN);
           }
         } else if (page == m_Menu.at(m_IntervalometerStr).page) {
           // always display 'Back' in intervalometer
@@ -850,6 +876,22 @@ void UI::addMainMenu(void) {
       LV_EVENT_CLICKED, this);
 
   lv_menu_set_page(m_MainMenu.main, m_MainMenu.page);
+}
+
+void UI::displayNavigationBar(bool show) {
+  if (!M5.Touch.isEnabled()) {
+    if (show) {
+      lv_obj_clear_flag(m_NavBar, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(m_Left, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(m_OK, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(m_Right, LV_OBJ_FLAG_HIDDEN);
+    } else {
+      lv_obj_add_flag(m_NavBar, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(m_Left, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(m_OK, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(m_Right, LV_OBJ_FLAG_HIDDEN);
+    }
+  }
 }
 
 void UI::configShutterControl(void) {
@@ -923,6 +965,7 @@ void UI::connectTimerHandler(lv_timer_t *timer) {
         // hide menu, unhide message box
         lv_obj_add_flag(m_MainMenu.main, LV_OBJ_FLAG_HIDDEN);
         lv_obj_clear_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN);
+        UI::displayNavigationBar(false);
         lv_group_focus_obj(m_ConnectCancel);
       }
 
@@ -950,6 +993,7 @@ void UI::connectTimerHandler(lv_timer_t *timer) {
         // everything connected, display menu, hide connection message box
         lv_obj_add_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN);
         lv_obj_clear_flag(m_MainMenu.main, LV_OBJ_FLAG_HIDDEN);
+        UI::displayNavigationBar(true);
         lv_group_focus_next(lv_group_get_default());
       }
       break;
@@ -1366,8 +1410,10 @@ void UI::addSpinnerPage(const menu_t &parent, const char *item, Intervalometer::
       LV_EVENT_VALUE_CHANGED, &spinner);
 
   spinner.m_RowSpinners = lv_obj_create(menu.page);
+  lv_obj_set_size(spinner.m_RowSpinners, LV_PCT(100), LV_SIZE_CONTENT);
   lv_obj_set_layout(spinner.m_RowSpinners, LV_LAYOUT_FLEX);
   lv_obj_set_flex_flow(spinner.m_RowSpinners, LV_FLEX_FLOW_ROW);
+
   switch (M5.getBoard()) {
     case m5::board_t::board_M5StickC:
     case m5::board_t::board_M5StickCPlus:
@@ -1381,8 +1427,6 @@ void UI::addSpinnerPage(const menu_t &parent, const char *item, Intervalometer::
                             LV_FLEX_ALIGN_CENTER);
       break;
   }
-
-  lv_obj_set_size(spinner.m_RowSpinners, LV_PCT(100), LV_SIZE_CONTENT);
 
   for (auto &r : spinner.m_Roller) {
     r = lv_roller_create(spinner.m_RowSpinners);
@@ -1530,7 +1574,7 @@ void UI::addBacklightMenu(const menu_t &parent) {
 
   // Add brightness control
   lv_obj_t *label = lv_label_create(cont);
-  lv_label_set_text(label, "Backlight brightness");
+  lv_label_set_text(label, "Brightness");
   lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
   lv_obj_set_width(label, LV_PCT(100));
 
@@ -1571,7 +1615,7 @@ void UI::addBacklightMenu(const menu_t &parent) {
   lv_obj_t *roller = lv_roller_create(cont);
   lv_obj_set_width(roller, LV_PCT(90));
   lv_roller_set_options(roller, "Never\n30 secs\n60 secs", LV_ROLLER_MODE_INFINITE);
-  lv_roller_set_visible_row_count(roller, 1);
+  lv_roller_set_visible_row_count(roller, 2);
   uint8_t inactivity = Settings::load<uint8_t>(Settings::INACTIVITY);
   lv_roller_set_selected(roller, inactivity, LV_ANIM_ON);
 
@@ -1594,22 +1638,42 @@ void UI::addThemeMenu(const menu_t &parent) {
 
   static std::array<std::string, 3> themes = {"Dark", "Default", "Mono Furble"};
 
-  for (const auto &theme : themes) {
-    lv_obj_t *entry = addMenuItem(menu, NULL, theme.c_str());
+  lv_obj_t *cont = lv_menu_cont_create(menu.page);
+  lv_obj_set_size(cont, LV_PCT(100), LV_PCT(100));
+  lv_obj_set_layout(cont, LV_LAYOUT_FLEX);
+  lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER,
+                        LV_FLEX_ALIGN_CENTER);
+  lv_obj_t *roller = lv_roller_create(cont);
+#if !defined(FURBLE_M5COREX)
+  lv_obj_set_width(roller, LV_PCT(90));
+#endif
 
-    lv_obj_add_event_cb(
-        entry,
-        [](lv_event_t *e) {
-          auto *theme = static_cast<std::string *>(lv_event_get_user_data(e));
-          setTheme(*theme);
-          Settings::save<std::string>(Settings::THEME, *theme);
-        },
-        LV_EVENT_CLICKED, (void *)&theme);
-  }
+  std::string options =
+      std::accumulate(std::next(themes.begin()), themes.end(), themes[0],
+                      [](const std::string &a, const std::string &b) { return a + "\n" + b; });
 
-  // add restart button
-  lv_obj_t *restart = addMenuItem(menu, NULL, "Restart");
-  lv_obj_add_event_cb(restart, [](lv_event_t *e) { esp_restart(); }, LV_EVENT_CLICKED, NULL);
+  lv_roller_set_options(roller, options.c_str(), LV_ROLLER_MODE_INFINITE);
+  lv_roller_set_visible_row_count(roller, 2);
+
+  std::string current = Settings::load<std::string>(Settings::THEME);
+  uint32_t index =
+      std::distance(themes.data(), std::find(std::begin(themes), std::end(themes), current));
+  lv_roller_set_selected(roller, index, LV_ANIM_OFF);
+
+  lv_obj_t *restart = lv_button_create(cont);
+  lv_obj_t *label = lv_label_create(restart);
+  lv_label_set_text(label, "Restart");
+
+  lv_obj_add_event_cb(
+      restart,
+      [](lv_event_t *e) {
+        auto *roller = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
+        auto index = lv_roller_get_selected(roller);
+        Settings::save<std::string>(Settings::THEME, themes[index]);
+        esp_restart();
+      },
+      LV_EVENT_CLICKED, roller);
 
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
@@ -1617,10 +1681,11 @@ void UI::addThemeMenu(const menu_t &parent) {
 void UI::addTransmitPowerMenu(const menu_t &parent) {
   menu_t &menu = addMenu(m_TransmitPowerStr, NULL, true, parent);
   lv_obj_t *cont = lv_menu_cont_create(menu.page);
-  lv_obj_set_height(cont, LV_PCT(100));
+  lv_obj_set_size(cont, LV_PCT(100), LV_PCT(100));
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_t *slider = lv_slider_create(cont);
+  lv_obj_set_width(slider, LV_PCT(80));
   lv_slider_set_range(slider, 0, 2);
 
   uint8_t power = Settings::load<uint8_t>(Settings::TX_POWER);

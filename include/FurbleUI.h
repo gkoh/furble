@@ -24,6 +24,11 @@ class UI {
   /** Check and/or handle inactivity. */
   void processInactivity(void);
 
+  /**
+   * Display/hide navigation bar.
+   */
+  static void displayNavigationBar(bool show);
+
   /** Configure shutter control. */
   void configShutterControl(void);
 
@@ -186,11 +191,11 @@ class UI {
   lv_obj_t *m_Root = nullptr;
   lv_obj_t *m_Header = nullptr;
   lv_obj_t *m_Content = nullptr;
-  lv_obj_t *m_NavBar = nullptr;
+  static lv_obj_t *m_NavBar;
 
-  lv_obj_t *m_Left = nullptr;
-  lv_obj_t *m_OK = nullptr;
-  lv_obj_t *m_Right = nullptr;
+  static lv_obj_t *m_Left;
+  static lv_obj_t *m_OK;
+  static lv_obj_t *m_Right;
 
   lv_obj_t *m_IntervalStart = nullptr;
   Intervalometer m_Intervalometer;
