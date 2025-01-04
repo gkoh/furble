@@ -159,7 +159,7 @@ During shutter control:
 * press and/or hold 'Focus' button to auto-focus
 * press and hold 'Shutter Lock' to lock shutter open
    * press and hold 'Shutter Lock' again to release
- 
+
 ### Menu Map
 
 * Connect (if connections are saved)
@@ -269,7 +269,7 @@ To use:
 
 A few basic themes are included, to change:
 * `Settings->Themes-><desired theme>`
-   * device will immediately restart to take effect
+   * hit 'Restart' to save and restart for the theme to take effect
    * better dynamic theme change support is improving in upstream LVGL
 
 ## Motivation
