@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <numeric>
 #include <tuple>
 
 #include <M5Unified.h>
@@ -1603,7 +1605,7 @@ void UI::addBacklightMenu(const menu_t &parent) {
 
   lv_obj_t *roller = lv_roller_create(cont);
   lv_obj_set_width(roller, LV_PCT(90));
-  lv_roller_set_options(roller, "Never\n30 secs\n60 secs", LV_ROLLER_MODE_NORMAL);
+  lv_roller_set_options(roller, "Never\n30 secs\n60 secs", LV_ROLLER_MODE_INFINITE);
   lv_roller_set_visible_row_count(roller, 2);
   uint8_t inactivity = Settings::load<uint8_t>(Settings::INACTIVITY);
   lv_roller_set_selected(roller, inactivity, LV_ANIM_ON);
@@ -1627,19 +1629,42 @@ void UI::addThemeMenu(const menu_t &parent) {
 
   static std::array<std::string, 3> themes = {"Dark", "Default", "Mono Furble"};
 
-  for (const auto &theme : themes) {
-    lv_obj_t *entry = addMenuItem(menu, NULL, theme.c_str());
+  lv_obj_t *cont = lv_menu_cont_create(menu.page);
+  lv_obj_set_size(cont, LV_PCT(100), LV_PCT(100));
+  lv_obj_set_layout(cont, LV_LAYOUT_FLEX);
+  lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER,
+                        LV_FLEX_ALIGN_CENTER);
+  lv_obj_t *roller = lv_roller_create(cont);
+#if !defined(FURBLE_M5COREX)
+  lv_obj_set_width(roller, LV_PCT(90));
+#endif
 
-    lv_obj_add_event_cb(
-        entry,
-        [](lv_event_t *e) {
-          auto *theme = static_cast<std::string *>(lv_event_get_user_data(e));
-          setTheme(*theme);
-          Settings::save<std::string>(Settings::THEME, *theme);
-          esp_restart();
-        },
-        LV_EVENT_CLICKED, (void *)&theme);
-  }
+  std::string options =
+      std::accumulate(std::next(themes.begin()), themes.end(), themes[0],
+                      [](const std::string &a, const std::string &b) { return a + "\n" + b; });
+
+  lv_roller_set_options(roller, options.c_str(), LV_ROLLER_MODE_INFINITE);
+  lv_roller_set_visible_row_count(roller, 2);
+
+  std::string current = Settings::load<std::string>(Settings::THEME);
+  uint32_t index =
+      std::distance(themes.data(), std::find(std::begin(themes), std::end(themes), current));
+  lv_roller_set_selected(roller, index, LV_ANIM_OFF);
+
+  lv_obj_t *restart = lv_button_create(cont);
+  lv_obj_t *label = lv_label_create(restart);
+  lv_label_set_text(label, "Restart");
+
+  lv_obj_add_event_cb(
+      restart,
+      [](lv_event_t *e) {
+        auto *roller = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
+        auto index = lv_roller_get_selected(roller);
+        Settings::save<std::string>(Settings::THEME, themes[index]);
+        esp_restart();
+      },
+      LV_EVENT_CLICKED, roller);
 
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
