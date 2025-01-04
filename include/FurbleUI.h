@@ -63,6 +63,7 @@ class UI {
     lv_obj_t *batteryIcon;
     lv_obj_t *reconnectIcon;
     lv_obj_t *gpsData;
+    bool screenLocked;
   } status_t;
 
   class Intervalometer {

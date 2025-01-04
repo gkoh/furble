@@ -155,6 +155,7 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
 #else
   m_Status.batteryIcon = addIcon(LV_SYMBOL_BATTERY_3);
 #endif
+  m_Status.screenLocked = false;
 
   m_GPS.setIcon(m_Status.gpsIcon);
 
@@ -192,6 +193,16 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
           lv_obj_clear_flag(status->gpsIcon, LV_OBJ_FLAG_HIDDEN);
         } else {
           lv_obj_add_flag(status->gpsIcon, LV_OBJ_FLAG_HIDDEN);
+        }
+
+        static lv_obj_t *lockMsgBox = NULL;
+        if (status->screenLocked && (lockMsgBox == NULL)) {
+          lockMsgBox = lv_msgbox_create(NULL);
+          lv_msgbox_add_title(lockMsgBox, "Screen Locked");
+          lv_msgbox_add_text(lockMsgBox, "Double-click PWR button to unlock.");
+        } else if (!status->screenLocked && (lockMsgBox != NULL)) {
+          lv_msgbox_close_async(lockMsgBox);
+          lockMsgBox = NULL;
         }
       },
       250, &m_Status);
@@ -1780,6 +1791,14 @@ void UI::task(void) {
       // fake PMIC button as actual button
       m_PMICClicked = true;
     }
+
+    // toggle screen lock on power button double click for touch screens
+    if (M5.Touch.isEnabled()) {
+      if (M5.BtnPWR.wasDoubleClicked()) {
+        m_Status.screenLocked = !m_Status.screenLocked;
+      }
+    }
+
     m_Mutex.lock();
     lv_task_handler();
     m_Mutex.unlock();

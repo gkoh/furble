@@ -160,6 +160,11 @@ During shutter control:
 * press and hold 'Shutter Lock' to lock shutter open
    * press and hold 'Shutter Lock' again to release
 
+To activate screen lock:
+* double click the PWR button
+   * a message box will open
+* double click the PWR button to unlock
+
 ### Menu Map
 
 * Connect (if connections are saved)
