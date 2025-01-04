@@ -1574,7 +1574,7 @@ void UI::addBacklightMenu(const menu_t &parent) {
 
   // Add brightness control
   lv_obj_t *label = lv_label_create(cont);
-  lv_label_set_text(label, "Backlight brightness");
+  lv_label_set_text(label, "Brightness");
   lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
   lv_obj_set_width(label, LV_PCT(100));
 
