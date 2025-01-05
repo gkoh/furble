@@ -790,11 +790,14 @@ void UI::addMainMenu(void) {
 
   m_PowerOff = addMenuItem(m_MainMenu, LV_SYMBOL_POWER, "Power Off");
   lv_obj_add_event_cb(
-      m_PowerOff, [](lv_event_t *e) {
+      m_PowerOff,
+      [](lv_event_t *e) {
 #if defined(FURBLE_M5STACK_CORE)
-      esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER);
+        esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER);
 #endif
-      M5.Power.powerOff(); }, LV_EVENT_CLICKED, NULL);
+        M5.Power.powerOff();
+      },
+      LV_EVENT_CLICKED, NULL);
 
   lv_obj_add_event_cb(
       m_MainMenu.main,
