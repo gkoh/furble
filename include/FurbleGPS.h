@@ -1,6 +1,8 @@
 #ifndef FURBLE_GPS_H
 #define FURBLE_GPS_H
 
+#include <HardwareSerial.h>
+
 #include <lvgl.h>
 
 #include <TinyGPS++.h>
@@ -28,7 +30,8 @@ class GPS {
  private:
   GPS() {};
 
-  static constexpr const uint32_t BAUD = 9600;
+  static constexpr const size_t BUFFER_SIZE = 64;
+
 #if FURBLE_GROVE_CORE
   static constexpr const int8_t RX = 22;
   static constexpr const int8_t TX = 21;
@@ -36,10 +39,12 @@ class GPS {
   static constexpr const int8_t RX = 33;
   static constexpr const int8_t TX = 32;
 #endif
-  static constexpr const uint16_t SERVICE_MS = 250;
+  static constexpr const uint16_t SERVICE_MS = 25;
   static constexpr const uint32_t MAX_AGE_MS = 60 * 1000;
 
   void serviceSerial(void);
+
+  HardwareSerial m_SerialPort = HardwareSerial(2);
 
   lv_obj_t *m_Icon = NULL;
   lv_timer_t *m_Timer = NULL;

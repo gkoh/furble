@@ -15,8 +15,6 @@ GPS &GPS::getInstance() {
 }
 
 void GPS::init(void) {
-  Serial2.begin(BAUD, SERIAL_8N1, RX, TX);
-
   getInstance().reloadSetting();
 }
 
@@ -27,6 +25,10 @@ void GPS::setIcon(lv_obj_t *icon) {
 /** Refresh the setting from NVS. */
 void GPS::reloadSetting(void) {
   m_Enabled = Settings::load<bool>(Settings::GPS);
+  if (m_Enabled) {
+    uint32_t baud = Settings::load<uint32_t>(Settings::GPS_BAUD);
+    m_SerialPort.begin(baud, SERIAL_8N1, RX, TX);
+  }
 }
 
 /** Is GPS enabled? */
@@ -69,12 +71,20 @@ void GPS::update(void) {
 
 /** Read and decode the GPS data from serial port. */
 void GPS::serviceSerial(void) {
+  static std::array<uint8_t, BUFFER_SIZE> buffer;
+
   if (!m_Enabled) {
     return;
   }
 
-  while (Serial2.available() > 0) {
-    m_GPS.encode(Serial2.read());
+  size_t available = m_SerialPort.available();
+  if (available > 0) {
+    size_t bytes = m_SerialPort.readBytes(buffer.data(), std::min(buffer.size(), available));
+    ESP_LOGI("gps", "bytes = %u", bytes);
+
+    for (size_t i = 0; i < bytes; i++) {
+      m_GPS.encode(buffer[i]);
+    }
   }
 
   if ((m_GPS.location.age() < MAX_AGE_MS) && m_GPS.location.isValid()

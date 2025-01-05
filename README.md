@@ -217,13 +217,17 @@ Connection to mobile devices is a little iffy:
 
 ### GPS Location Tagging
 
-> [!WARNING]
-> This unit is EOL, support for the replacement is pending (see #141).
-
 For Fujifilm cameras, location tagging is supported with the M5Stack GPS unit:
+- [GPS/BDS Unit v1.1 (AT6668)](https://shop.m5stack.com/products/gps-bds-unit-v1-1-at6668)
+
+The previous unit is now EOL:
 - [Mini GPS/BDS Unit](https://shop.m5stack.com/products/mini-gps-bds-unit)
 
 GPS support can be enabled in `furble` in `Settings->GPS`, the camera must also be configured to request location data.
+
+The default baud rate for the GPS unit is 9600.
+The new v1.1 unit runs at a higher baud rate and must be configured under
+`Settings->GPS->GPS baud 115200` for correct operation.
 
 ### Intervalometer
 

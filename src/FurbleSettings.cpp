@@ -7,12 +7,15 @@
 namespace Furble {
 Preferences Settings::m_Prefs;
 
+const uint32_t Settings::BAUD_9600;
+
 const std::unordered_map<Settings::type_t, Settings::setting_t> Settings::m_Setting = {
     {BRIGHTNESS,   {BRIGHTNESS, "Brightness", "brightness", "M5ez"}           },
     {INACTIVITY,   {INACTIVITY, "Inactivity", "inactivity", "M5ez"}           },
     {THEME,        {THEME, "Theme", "theme", "M5ez"}                          },
     {TX_POWER,     {TX_POWER, "TX Power", "tx_power", FURBLE_STR}             },
     {GPS,          {GPS, "GPS", "gps", FURBLE_STR}                            },
+    {GPS_BAUD,     {GPS_BAUD, "GPS Baud", "gps_baud", FURBLE_STR}             },
     {INTERVAL,     {INTERVAL, "Interval", "interval", FURBLE_STR}             },
     {MULTICONNECT, {MULTICONNECT, "Multi-Connect", "multiconnect", FURBLE_STR}},
     {RECONNECT,    {RECONNECT, "Infinite-ReConnect", "reconnect", FURBLE_STR} },
@@ -38,6 +41,16 @@ uint8_t Settings::load<uint8_t>(type_t type) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, true);
   uint8_t value = m_Prefs.getUChar(setting.key);
+  m_Prefs.end();
+
+  return value;
+}
+
+template <>
+uint32_t Settings::load<uint32_t>(type_t type) {
+  const auto &setting = get(type);
+  m_Prefs.begin(setting.nvs_namespace, true);
+  uint32_t value = m_Prefs.getUInt(setting.key);
   m_Prefs.end();
 
   return value;
@@ -107,6 +120,14 @@ void Settings::save<uint8_t>(const type_t type, const uint8_t &value) {
 }
 
 template <>
+void Settings::save<uint32_t>(const type_t type, const uint32_t &value) {
+  const auto &setting = get(type);
+  m_Prefs.begin(setting.nvs_namespace, false);
+  m_Prefs.putUInt(setting.key, value);
+  m_Prefs.end();
+}
+
+template <>
 void Settings::save<interval_t>(const type_t type, const interval_t &value) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, false);
@@ -154,6 +175,9 @@ void Settings::init(void) {
         case RECONNECT:
         case FAUXNY:
           save<bool>(setting.type, false);
+          break;
+        case GPS_BAUD:
+          save<uint32_t>(setting.type, BAUD_9600);
           break;
       }
     }

@@ -669,8 +669,10 @@ void UI::addSettingItem(lv_obj_t *page, const char *symbol, Settings::type_t set
           auto *status = static_cast<status_t *>(lv_event_get_user_data(e));
           status->gps->reloadSetting();
           if (status->gps->isEnabled()) {
+            lv_obj_clear_flag(status->gpsBaud, LV_OBJ_FLAG_HIDDEN);
             lv_obj_clear_flag(status->gpsData, LV_OBJ_FLAG_HIDDEN);
           } else {
+            lv_obj_add_flag(status->gpsBaud, LV_OBJ_FLAG_HIDDEN);
             lv_obj_add_flag(status->gpsData, LV_OBJ_FLAG_HIDDEN);
           }
         },
@@ -1294,9 +1296,38 @@ void UI::addGPSMenu(const menu_t &parent) {
   addSettingItem(menu.page, NULL, Settings::GPS);
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 
+  // add GPS baud control
+  m_Status.gpsBaud = lv_menu_cont_create(menu.page);
+  lv_obj_set_flex_flow(m_Status.gpsBaud, LV_FLEX_FLOW_ROW_WRAP);
+  lv_obj_t *label = lv_label_create(m_Status.gpsBaud);
+  lv_label_set_text(label, "GPS baud 115200");
+  lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
+  lv_obj_set_flex_grow(label, 1);
+
+  lv_obj_t *baud_sw = lv_switch_create(m_Status.gpsBaud);
+  uint32_t baud = Settings::load<uint32_t>(Settings::GPS_BAUD);
+  lv_obj_add_state(baud_sw, baud == Settings::BAUD_115200 ? LV_STATE_CHECKED : 0);
+  lv_obj_add_event_cb(
+      baud_sw,
+      [](lv_event_t *e) {
+        auto *status = static_cast<status_t *>(lv_event_get_user_data(e));
+        lv_obj_t *baud_sw = static_cast<lv_obj_t *>(lv_event_get_target(e));
+        uint32_t baud;
+
+        if (lv_obj_has_state(baud_sw, LV_STATE_CHECKED)) {
+          baud = Settings::BAUD_115200;
+        } else {
+          baud = Settings::BAUD_9600;
+        }
+        Settings::save<uint32_t>(Settings::GPS_BAUD, baud);
+        status->gps->reloadSetting();
+      },
+      LV_EVENT_VALUE_CHANGED, &m_Status);
+
   menu_t &gpsData = addMenu(m_GPSDataStr, NULL, true, menu);
   m_Status.gpsData = gpsData.button;
   if (!m_Status.gps->isEnabled()) {
+    lv_obj_add_flag(m_Status.gpsBaud, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(m_Status.gpsData, LV_OBJ_FLAG_HIDDEN);
   }
 
@@ -1308,6 +1339,9 @@ void UI::addGPSMenu(const menu_t &parent) {
         lv_label_set_text_fmt(valid, "%s (%u)", gps.location.isValid() ? "Valid" : "Invalid",
                               gps.satellites.value());
 
+        static lv_obj_t *age = lv_label_create(gpsData->page);
+        lv_label_set_text_fmt(age, "%us ago", gps.time.age() / 1000);
+
         static lv_obj_t *lat = lv_label_create(gpsData->page);
         lv_label_set_text_fmt(lat, "%.2f°", gps.location.lat());
 
@@ -1317,12 +1351,19 @@ void UI::addGPSMenu(const menu_t &parent) {
         static lv_obj_t *alt = lv_label_create(gpsData->page);
         lv_label_set_text_fmt(alt, "%.2f m", gps.altitude.meters());
 
+#if defined(FURBLE_M5COREX)
+        static lv_obj_t *datetime = lv_label_create(gpsData->page);
+        lv_label_set_text_fmt(datetime, "%4u-%02u-%02u %02u:%02u:%02u", gps.date.year(),
+                              gps.date.month(), gps.date.day(), gps.time.hour(), gps.time.minute(),
+                              gps.time.second());
+#else
         static lv_obj_t *date = lv_label_create(gpsData->page);
         lv_label_set_text_fmt(date, "%4u-%02u-%02u", gps.date.year(), gps.date.month(),
                               gps.date.day());
         static lv_obj_t *time = lv_label_create(gpsData->page);
         lv_label_set_text_fmt(time, "%02u:%02u:%02u", gps.time.hour(), gps.time.minute(),
                               gps.time.second());
+#endif
       },
       1000, &gpsData);
   lv_timer_pause(timer);
