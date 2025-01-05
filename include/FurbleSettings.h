@@ -19,6 +19,7 @@ class Settings {
     THEME,
     TX_POWER,
     GPS,
+    GPS_BAUD,
     INTERVAL,
     MULTICONNECT,
     RECONNECT,
@@ -31,6 +32,9 @@ class Settings {
     const char *key;
     const char *nvs_namespace;
   } setting_t;
+
+  static const uint32_t BAUD_9600 = 9600;
+  static const uint32_t BAUD_115200 = 115200;
 
   static void init(void);
 
