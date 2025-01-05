@@ -70,7 +70,7 @@
 #elif defined(FURBLE_M5STICKC_PLUS)
 #define LV_DPI_DEF (128)
 #elif defined(FURBLE_M5COREX)
-#define LV_DPI_DEF (96)
+#define LV_DPI_DEF (128)
 #else
 #error "furble: Unknown platform"
 #endif
@@ -400,8 +400,8 @@
 #define LV_FONT_MONTSERRAT_16 1
 #define LV_FONT_MONTSERRAT_18 0
 #define LV_FONT_MONTSERRAT_20 0
-#define LV_FONT_MONTSERRAT_22 0
-#define LV_FONT_MONTSERRAT_24 1
+#define LV_FONT_MONTSERRAT_22 1
+#define LV_FONT_MONTSERRAT_24 0
 #define LV_FONT_MONTSERRAT_26 0
 #define LV_FONT_MONTSERRAT_28 0
 #define LV_FONT_MONTSERRAT_30 0
@@ -435,7 +435,7 @@
 #elif defined(FURBLE_M5STICKC_PLUS)
 #define LV_FONT_DEFAULT &lv_font_montserrat_16
 #elif defined(FURBLE_M5COREX)
-#define LV_FONT_DEFAULT &lv_font_montserrat_24
+#define LV_FONT_DEFAULT &lv_font_montserrat_22
 #endif
 
 /*Enable handling large font and/or fonts with a lot of characters.
