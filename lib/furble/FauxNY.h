@@ -28,7 +28,7 @@ class FauxNY: public Camera {
   void _disconnect(void) override;
 
  private:
-  typedef struct _eos_t {
+  typedef struct _fauxNY_t {
     char name[MAX_NAME]; /** Human readable device name. */
     uint64_t address;    /** Device MAC address. */
     uint8_t type;        /** Address type. */
