@@ -1555,7 +1555,11 @@ void UI::addIntervalometerMenu(const menu_t &parent) {
   menu_t &menu = addMenu(m_IntervalometerStr, NULL, true, parent);
   menu_t &menuIntervalRun = addMenu(m_IntervalometerRunStr, NULL, false, menu);
 
-  m_IntervalStart = addMenuItem(menu, NULL, "Start");
+  m_IntervalStart = lv_button_create(menu.page);
+  lv_obj_t *label = lv_label_create(m_IntervalStart);
+  lv_label_set_text(label, "Start");
+  lv_obj_center(label);
+
   addSpinnerPage(menu, m_IntervalCountStr, m_Intervalometer.m_Count);
   addSpinnerPage(menu, m_IntervalDelayStr, m_Intervalometer.m_Delay);
   addSpinnerPage(menu, m_IntervalShutterStr, m_Intervalometer.m_Shutter);
