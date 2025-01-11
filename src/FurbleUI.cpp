@@ -474,6 +474,8 @@ void UI::shutterLock(Control &control) {
     if (M5.Touch.isEnabled()) {
       lv_obj_add_state(m_OK, LV_STATE_DISABLED);
       lv_obj_add_state(m_Right, LV_STATE_DISABLED);
+    } else {
+      lv_obj_clear_flag(m_ShutterLockLabel, LV_OBJ_FLAG_HIDDEN);
     }
   }
 }
@@ -487,6 +489,8 @@ void UI::shutterUnlock(Control &control) {
     if (M5.Touch.isEnabled()) {
       lv_obj_remove_state(m_OK, LV_STATE_DISABLED);
       lv_obj_remove_state(m_Right, LV_STATE_DISABLED);
+    } else {
+      lv_obj_add_flag(m_ShutterLockLabel, LV_OBJ_FLAG_HIDDEN);
     }
   }
 }
@@ -1170,12 +1174,14 @@ UI::menu_t &UI::addConnectedMenu(void) {
     // add remote shutter text for buttons
     lv_obj_t *txt = lv_label_create(menuShutter.page);
     lv_label_set_text(txt, LV_SYMBOL_IMAGE ": Shutter\n" LV_SYMBOL_EYE_OPEN
-                                           ": Focus\n" LV_SYMBOL_EYE_OPEN " + " LV_SYMBOL_IMAGE
-                                           ":\n Shutter Lock\n\n"
-
-                      LV_SYMBOL_LEFT ": Back");
+                                           ": Focus\n" LV_SYMBOL_EYE_OPEN "+" LV_SYMBOL_IMAGE
+                                           ": Shutter Lock\n\n" LV_SYMBOL_LEFT ": Back");
     lv_obj_set_size(txt, LV_PCT(100), LV_SIZE_CONTENT);
     lv_obj_center(txt);
+
+    m_ShutterLockLabel = lv_label_create(menuShutter.page);
+    lv_label_set_text(m_ShutterLockLabel, "LOCKED");
+    lv_obj_add_flag(m_ShutterLockLabel, LV_OBJ_FLAG_HIDDEN);
   }
 
   lv_obj_add_event_cb(
