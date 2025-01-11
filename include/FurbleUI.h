@@ -204,6 +204,7 @@ class UI {
 
   status_t m_Status;
   bool m_ShutterLock = false;
+  lv_obj_t *m_ShutterLockLabel = nullptr;
   uint32_t m_InactivityTimeout;
 
   static menu_t m_MainMenu;
