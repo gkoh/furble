@@ -80,7 +80,6 @@ void GPS::serviceSerial(void) {
   size_t available = m_SerialPort.available();
   if (available > 0) {
     size_t bytes = m_SerialPort.readBytes(buffer.data(), std::min(buffer.size(), available));
-    ESP_LOGI("gps", "bytes = %u", bytes);
 
     for (size_t i = 0; i < bytes; i++) {
       m_GPS.encode(buffer[i]);
