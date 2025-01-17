@@ -256,11 +256,11 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
         m_Right = lv_button_create(m_Screen);
 
         lv_obj_add_flag(m_Left, LV_OBJ_FLAG_FLOATING);
-        lv_obj_align(m_Left, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+        lv_obj_align(m_Left, LV_ALIGN_BOTTOM_LEFT, 0, -1);
 
         lv_obj_set_style_bg_image_src(m_Right, LV_SYMBOL_RIGHT, 0);
         lv_obj_add_flag(m_Right, LV_OBJ_FLAG_FLOATING);
-        lv_obj_align(m_Right, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+        lv_obj_align(m_Right, LV_ALIGN_RIGHT_MID, 0, 0);
         break;
 
       default:
@@ -270,6 +270,13 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
         lv_obj_set_style_bg_image_src(m_Right, LV_SYMBOL_RIGHT, 0);
         break;
     }
+
+    // lighten the buttons 50%, to distinguish from other widget selection
+    lv_color_t lighter = lv_color_lighten(lv_obj_get_style_bg_color(m_Left, LV_PART_MAIN), 255/2);
+
+    lv_obj_set_style_bg_color(m_Left, lighter, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(m_OK, lighter, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(m_Right, lighter, LV_PART_MAIN);
 
     // prepare shutter handling
     prepareShutterControl();
