@@ -272,7 +272,7 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
     }
 
     // lighten the buttons 50%, to distinguish from other widget selection
-    lv_color_t lighter = lv_color_lighten(lv_obj_get_style_bg_color(m_Left, LV_PART_MAIN), 255/2);
+    lv_color_t lighter = lv_color_lighten(lv_obj_get_style_bg_color(m_Left, LV_PART_MAIN), 255 / 2);
 
     lv_obj_set_style_bg_color(m_Left, lighter, LV_PART_MAIN);
     lv_obj_set_style_bg_color(m_OK, lighter, LV_PART_MAIN);
