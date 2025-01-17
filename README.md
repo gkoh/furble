@@ -29,6 +29,7 @@ The following devices have been tested and confirmed to work:
    - Fujifilm X-S10 ([@dimitrij2k](https://github.com/dimitrij2k))
    - Fujifilm X-S20 ([@kelvincabaldo07](https://github.com/kelvincabaldo07))
    - Fujifilm X-T200 ([@Cronkan](https://github.com/Cronkan))
+   - Fujifilm X-T3 ([@ubuntuproductions](https://github.com/ubuntuproductions))
    - Fujifilm X-T30
    - Fujifilm X-T5 ([@stulevine](https://github.com/stulevine))
    - Fujifilm X100V
