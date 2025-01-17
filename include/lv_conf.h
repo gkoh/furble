@@ -67,9 +67,9 @@
  *(Not so important, you can adjust it to modify default sizes and spaces)*/
 #if defined(FURBLE_M5STICKC)
 #define LV_DPI_DEF (64)
-#elif defined(FURBLE_M5STICKC_PLUS)
-#define LV_DPI_DEF (128)
-#elif defined(FURBLE_M5COREX)
+#elif defined(FURBLE_M5STACK_CORE)
+#define LV_DPI_DEF (96)
+#elif defined(FURBLE_M5STICKC_PLUS) || defined(FURBLE_M5COREX)
 #define LV_DPI_DEF (128)
 #else
 #error "furble: Unknown platform"
