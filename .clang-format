@@ -6,3 +6,6 @@ BreakBeforeBinaryOperators: NonAssignment
 SpaceBeforeInheritanceColon: false
 AlignArrayOfStructures: Left
 SpaceBeforeCpp11BracedList: true
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true

@@ -35,6 +35,9 @@ class UI {
   /** Configure menu control. */
   void configMenuControl(void);
 
+  /** Configure slider control. */
+  void configSliderControl(void);
+
   /** Display shutter intervalometer menu .*/
   void showShutterIntervalometer(bool show);
 

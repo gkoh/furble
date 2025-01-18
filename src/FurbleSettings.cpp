@@ -171,7 +171,8 @@ void Settings::init(void) {
         case TX_POWER:
           save<uint8_t>(setting.type, 0);
           break;
-        case INTERVAL: {
+        case INTERVAL:
+        {
           interval_t interval = {
               INTERVAL_DEFAULT_COUNT,
               INTERVAL_DEFAULT_DELAY,

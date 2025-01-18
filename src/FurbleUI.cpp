@@ -258,7 +258,6 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
         lv_obj_add_flag(m_Left, LV_OBJ_FLAG_FLOATING);
         lv_obj_align(m_Left, LV_ALIGN_BOTTOM_LEFT, 0, -1);
 
-        lv_obj_set_style_bg_image_src(m_Right, LV_SYMBOL_RIGHT, 0);
         lv_obj_add_flag(m_Right, LV_OBJ_FLAG_FLOATING);
         lv_obj_align(m_Right, LV_ALIGN_RIGHT_MID, 0, 0);
         break;
@@ -267,7 +266,6 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
         m_Left = lv_button_create(m_NavBar);
         m_OK = lv_button_create(m_NavBar);
         m_Right = lv_button_create(m_NavBar);
-        lv_obj_set_style_bg_image_src(m_Right, LV_SYMBOL_RIGHT, 0);
         break;
     }
 
@@ -286,12 +284,12 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
     lv_group_remove_obj(m_OK);
     lv_group_remove_obj(m_Right);
 
-    lv_obj_set_style_bg_image_src(m_Left, LV_SYMBOL_LEFT, 0);
     lv_obj_set_size(m_Left, height, height);
-    lv_obj_set_style_bg_image_src(m_OK, LV_SYMBOL_OK, 0);
     lv_obj_set_size(m_OK, height, height);
     lv_obj_set_size(m_Right, height, height);
   }
+
+  configMenuControl();
 
   // create connection timer
   m_ConnectTimer = lv_timer_create(connectTimerHandler, 125, NULL);
@@ -961,13 +959,21 @@ void UI::configShutterControl(void) {
 
 void UI::configMenuControl(void) {
   if (!M5.Touch.isEnabled()) {
-    lv_obj_set_style_bg_image_src(m_Left, LV_SYMBOL_LEFT, 0);
+    lv_obj_set_style_bg_image_src(m_Left, LV_SYMBOL_UP, 0);
     lv_obj_set_style_bg_image_src(m_OK, LV_SYMBOL_OK, 0);
-    lv_obj_set_style_bg_image_src(m_Right, LV_SYMBOL_RIGHT, 0);
+    lv_obj_set_style_bg_image_src(m_Right, LV_SYMBOL_DOWN, 0);
 
     lv_indev_set_type(m_ButtonL, LV_INDEV_TYPE_ENCODER);
     lv_indev_set_type(m_ButtonO, LV_INDEV_TYPE_ENCODER);
     lv_indev_set_type(m_ButtonR, LV_INDEV_TYPE_ENCODER);
+  }
+}
+
+void UI::configSliderControl(void) {
+  if (!M5.Touch.isEnabled()) {
+    lv_obj_set_style_bg_image_src(m_Left, LV_SYMBOL_LEFT, 0);
+    lv_obj_set_style_bg_image_src(m_OK, LV_SYMBOL_OK, 0);
+    lv_obj_set_style_bg_image_src(m_Right, LV_SYMBOL_RIGHT, 0);
   }
 }
 
@@ -1667,11 +1673,29 @@ void UI::addBacklightMenu(const menu_t &parent) {
   lv_obj_add_event_cb(
       slider,
       [](lv_event_t *e) {
+        auto *ui = static_cast<UI *>(lv_event_get_user_data(e));
         auto *slider = static_cast<lv_obj_t *>(lv_event_get_target(e));
-        auto brightness = lv_slider_get_value(slider) * m_BrightnessSteps;
-        M5.Display.setBrightness(brightness);
+        lv_event_code_t code = lv_event_get_code(e);
+
+        switch (code) {
+          case LV_EVENT_VALUE_CHANGED:
+          {
+            auto brightness = lv_slider_get_value(slider) * m_BrightnessSteps;
+            M5.Display.setBrightness(brightness);
+            break;
+          }
+          case LV_EVENT_FOCUSED:
+            if (lv_obj_has_state(slider, LV_STATE_EDITED)) {
+              ui->configSliderControl();
+            } else {
+              ui->configMenuControl();
+            }
+            break;
+          default:
+            break;
+        }
       },
-      LV_EVENT_VALUE_CHANGED, NULL);
+      LV_EVENT_ALL, this);
 
   lv_obj_add_event_cb(
       slider,
@@ -1770,13 +1794,31 @@ void UI::addTransmitPowerMenu(const menu_t &parent) {
   lv_obj_add_event_cb(
       slider,
       [](lv_event_t *e) {
+        auto *ui = static_cast<UI *>(lv_event_get_user_data(e));
         auto *slider = static_cast<lv_obj_t *>(lv_event_get_target(e));
-        auto power = lv_slider_get_value(slider);
-        auto &control = Control::getInstance();
-        Settings::save<uint8_t>(Settings::TX_POWER, power);
-        control.setPower(Settings::load<esp_power_level_t>(Settings::TX_POWER));
+        lv_event_code_t code = lv_event_get_code(e);
+
+        switch (code) {
+          case LV_EVENT_RELEASED:
+          {
+            auto power = lv_slider_get_value(slider);
+            auto &control = Control::getInstance();
+            Settings::save<uint8_t>(Settings::TX_POWER, power);
+            control.setPower(Settings::load<esp_power_level_t>(Settings::TX_POWER));
+            break;
+          }
+          case LV_EVENT_FOCUSED:
+            if (lv_obj_has_state(slider, LV_STATE_EDITED)) {
+              ui->configSliderControl();
+            } else {
+              ui->configMenuControl();
+            }
+            break;
+          default:
+            break;
+        }
       },
-      LV_EVENT_RELEASED, NULL);
+      LV_EVENT_ALL, this);
 
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
