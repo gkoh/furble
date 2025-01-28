@@ -2,7 +2,7 @@
 #include <Preferences.h>
 
 #include "CanonEOSM6.h"
-#include "CanonEOSRP.h"
+#include "CanonEOSR.h"
 #include "FauxNY.h"
 #include "Fujifilm.h"
 #include "MobileDevice.h"
@@ -155,8 +155,8 @@ void CameraList::load(void) {
       case Camera::Type::CANON_EOS_M6:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new CanonEOSM6(dbuffer, dbytes)));
         break;
-      case Camera::Type::CANON_EOS_RP:
-        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new CanonEOSRP(dbuffer, dbytes)));
+      case Camera::Type::CANON_EOS_R:
+        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new CanonEOSR(dbuffer, dbytes)));
         break;
       case Camera::Type::MOBILE_DEVICE:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new MobileDevice(dbuffer, dbytes)));
@@ -200,8 +200,8 @@ bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
   } else if (CanonEOSM6::matches(pDevice)) {
     m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::CanonEOSM6(pDevice)));
     return true;
-  } else if (CanonEOSRP::matches(pDevice)) {
-    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::CanonEOSRP(pDevice)));
+  } else if (CanonEOSR::matches(pDevice)) {
+    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::CanonEOSR(pDevice)));
     return true;
   }
 
