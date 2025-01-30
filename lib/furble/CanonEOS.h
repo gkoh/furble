@@ -31,6 +31,12 @@ class CanonEOS: public Camera {
  protected:
   void _disconnect(void) override final;
 
+  bool writePrefix(const NimBLEUUID &serviceUUID,
+                   const NimBLEUUID &characteristicUUID,
+                   const uint8_t prefix,
+                   const void *data,
+                   uint16_t length);
+
  private:
 };
 

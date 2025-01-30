@@ -32,6 +32,17 @@ void CanonEOS::_disconnect(void) {
   m_Connected = false;
 }
 
+bool CanonEOS::writePrefix(const NimBLEUUID &serviceUUID,
+                           const NimBLEUUID &characteristicUUID,
+                           const uint8_t prefix,
+                           const void *data,
+                           uint16_t length) {
+  uint8_t buffer[length + 1] = {0};
+  buffer[0] = prefix;
+  memcpy(&buffer[1], data, length);
+  return m_Client->setValue(serviceUUID, characteristicUUID, {&buffer[0], (uint16_t)(length + 1)});
+}
+
 size_t CanonEOS::getSerialisedBytes(void) const {
   return sizeof(eos_t);
 }

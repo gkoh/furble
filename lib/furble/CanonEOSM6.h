@@ -56,12 +56,6 @@ class CanonEOSM6: public CanonEOS {
   bool _connect(void) override final;
 
   void pairCallback(NimBLERemoteCharacteristic *, uint8_t *, size_t, bool);
-
-  bool write_prefix(const NimBLEUUID &serviceUUID,
-                    const NimBLEUUID &characteristicUUID,
-                    const uint8_t prefix,
-                    const uint8_t *data,
-                    uint16_t length);
 };
 
 }  // namespace Furble

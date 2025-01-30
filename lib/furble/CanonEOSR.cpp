@@ -40,7 +40,7 @@ bool CanonEOSR::_connect(void) {
   // send device name
   ESP_LOGI(LOG_TAG, "Identifying");
   const auto name = Device::getStringID();
-  if (!m_Client->setValue(PRI_SVC_UUID, ID_CHR_UUID, name, true)) {
+  if (!writePrefix(PRI_SVC_UUID, ID_CHR_UUID, 0x03, name.c_str(), name.length())) {
     return false;
   }
   ESP_LOGI(LOG_TAG, "Identified!");

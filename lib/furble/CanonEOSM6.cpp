@@ -37,17 +37,6 @@ void CanonEOSM6::pairCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
   }
 }
 
-bool CanonEOSM6::write_prefix(const NimBLEUUID &serviceUUID,
-                              const NimBLEUUID &characteristicUUID,
-                              const uint8_t prefix,
-                              const uint8_t *data,
-                              uint16_t length) {
-  uint8_t buffer[length + 1] = {0};
-  buffer[0] = prefix;
-  memcpy(&buffer[1], data, length);
-  return m_Client->setValue(serviceUUID, characteristicUUID, {&buffer[0], (uint16_t)(length + 1)});
-}
-
 /**
  * Connect to a Canon EOSM6.
  *
@@ -91,19 +80,19 @@ bool CanonEOSM6::_connect(void) {
 
   ESP_LOGI(LOG_TAG, "Identifying 1!");
   const auto name = Device::getStringID();
-  if (!write_prefix(SVC_IDEN_UUID, CHR_NAME_UUID, 0x01, (uint8_t *)name.c_str(), name.length()))
+  if (!writePrefix(SVC_IDEN_UUID, CHR_NAME_UUID, 0x01, name.c_str(), name.length()))
     return false;
 
   m_Progress = 30;
 
   ESP_LOGI(LOG_TAG, "Identifying 2!");
-  if (!write_prefix(SVC_IDEN_UUID, CHR_IDEN_UUID, 0x03, m_Uuid.uint8, Device::UUID128_LEN))
+  if (!writePrefix(SVC_IDEN_UUID, CHR_IDEN_UUID, 0x03, m_Uuid.uint8, Device::UUID128_LEN))
     return false;
 
   m_Progress = 40;
 
   ESP_LOGI(LOG_TAG, "Identifying 3!");
-  if (!write_prefix(SVC_IDEN_UUID, CHR_IDEN_UUID, 0x04, (uint8_t *)name.c_str(), name.length()))
+  if (!writePrefix(SVC_IDEN_UUID, CHR_IDEN_UUID, 0x04, name.c_str(), name.length()))
     return false;
 
   m_Progress = 50;
@@ -111,7 +100,7 @@ bool CanonEOSM6::_connect(void) {
   ESP_LOGI(LOG_TAG, "Identifying 4!");
 
   std::array<uint8_t, 1> x = {0x02};
-  if (!write_prefix(SVC_IDEN_UUID, CHR_IDEN_UUID, 0x05, x.data(), x.size())) {
+  if (!writePrefix(SVC_IDEN_UUID, CHR_IDEN_UUID, 0x05, x.data(), x.size())) {
     return false;
   }
 
