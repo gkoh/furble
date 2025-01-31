@@ -19,13 +19,13 @@ class Fujifilm: public Camera {
    */
   static bool matches(const NimBLEAdvertisedDevice *pDevice);
 
-  void shutterPress(void) override;
-  void shutterRelease(void) override;
-  void focusPress(void) override;
-  void focusRelease(void) override;
-  void updateGeoData(const gps_t &gps, const timesync_t &timesync) override;
-  size_t getSerialisedBytes(void) const override;
-  bool serialise(void *buffer, size_t bytes) const override;
+  void shutterPress(void) override final;
+  void shutterRelease(void) override final;
+  void focusPress(void) override final;
+  void focusRelease(void) override final;
+  void updateGeoData(const gps_t &gps, const timesync_t &timesync) override final;
+  size_t getSerialisedBytes(void) const override final;
+  bool serialise(void *buffer, size_t bytes) const override final;
 
  protected:
   bool _connect(void) override;

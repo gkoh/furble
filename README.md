@@ -36,6 +36,7 @@ The following devices have been tested and confirmed to work:
 - Canon
    - Canon EOS M6 ([@tardisx](https://github.com/tardisx))
    - Canon EOS RP ([@wolcano](https://github.com/wolcano))
+   - Canon EOS R6 Mark II ([@hijae](https://github.com/hijae))
 - Mobile Devices (beta)
    - Android
    - iOS
@@ -64,11 +65,11 @@ Currently supported features in `furble`:
 
 ### Table of Features
 
-| &nbsp; | Fujifilm X & GFX | Canon EOS M6 | Canon EOS RP | Android & iOS |
+| &nbsp; | Fujifilm X & GFX | Canon EOS M6 | Canon EOS R | Android & iOS |
 | --- | :---: | :---: | :---: | :---: |
 | Scanning & Pairing | ✔️ | ✔️ | ✔️ | ✔️ |
 | Shutter Release | ✔️ | ✔️ | ✔️ | ✔️ |
-| Focus | ✔️ (see [#99](https://github.com/gkoh/furble/discussions/99)) | :x: | :x: (see [#29](https://github.com/gkoh/furble/issues/29)) | :x: |
+| Focus | ✔️ (see [#99](https://github.com/gkoh/furble/discussions/99)) | :x: | ✔️ | :x: |
 | GPS location tagging | ✔️ | :x: (WiFi only) | :x: | :x: |
 
 ## Installation
@@ -305,7 +306,8 @@ Reports of further confirmed working Fujifilm cameras are welcome.
 With access to a Canon EOS M6, I was able to implement support for it. Other
 Canon cameras might work, but I suspect the shutter control protocol will be
 different.
-@wolcano kindly implemented support for the Canon EOS RP.
+@wolcano kindly implemented initial support for the Canon EOS RP.
+@hijae kindly helped with better Canon EOS R support.
 
 #### Protocol Reverse Engineering
 
