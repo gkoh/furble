@@ -11,7 +11,8 @@
 
 namespace Furble {
 
-MobileDevice::MobileDevice(const void *data, size_t len) : Camera(Type::MOBILE_DEVICE) {
+MobileDevice::MobileDevice(const void *data, size_t len)
+    : Camera(Type::MOBILE_DEVICE, PairType::SAVED) {
   if (len != sizeof(mobile_device_t))
     abort();
 
@@ -22,7 +23,7 @@ MobileDevice::MobileDevice(const void *data, size_t len) : Camera(Type::MOBILE_D
 }
 
 MobileDevice::MobileDevice(const NimBLEAddress &address, const std::string &name)
-    : Camera(Type::MOBILE_DEVICE) {
+    : Camera(Type::MOBILE_DEVICE, PairType::NEW) {
   m_Name = name;
   m_Address = address;
   m_HIDServer = HIDServer::getInstance();

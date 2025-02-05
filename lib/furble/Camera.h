@@ -28,6 +28,12 @@ class Camera {
     CANON_EOS_R = 3,
     MOBILE_DEVICE = 4,
     FAUXNY = 5,
+    NIKON = 6,
+  };
+
+  enum class PairType : uint8_t {
+    NEW = 1,
+    SAVED = 2,
   };
 
   /**
@@ -116,7 +122,7 @@ class Camera {
   uint8_t getConnectProgress(void) const;
 
  protected:
-  Camera(Type type);
+  Camera(Type type, PairType pairType);
   std::atomic<uint8_t> m_Progress;
 
   /**
@@ -134,6 +140,7 @@ class Camera {
    */
   virtual void _disconnect(void) = 0;
 
+  const PairType m_PairType;
   NimBLEAddress m_Address = NimBLEAddress {};
   NimBLEClient *m_Client;
   std::string m_Name;

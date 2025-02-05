@@ -4,7 +4,7 @@
 
 namespace Furble {
 
-FauxNY::FauxNY(const void *data, size_t len) : Camera(Type::FAUXNY) {
+FauxNY::FauxNY(const void *data, size_t len) : Camera(Type::FAUXNY, PairType::SAVED) {
   if (len != sizeof(fauxNY_t)) {
     abort();
   }
@@ -15,7 +15,7 @@ FauxNY::FauxNY(const void *data, size_t len) : Camera(Type::FAUXNY) {
   m_Address = NimBLEAddress(m_ID, 0);
 }
 
-FauxNY::FauxNY(void) : Camera(Type::FAUXNY) {
+FauxNY::FauxNY(void) : Camera(Type::FAUXNY, PairType::NEW) {
   m_ID = esp_random();
   m_Name = std::string("FauxNY-") + std::to_string(m_ID % 42);
   m_Address = NimBLEAddress(m_ID, 0);

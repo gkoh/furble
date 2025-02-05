@@ -35,6 +35,11 @@ class Scan: public HIDServerCallbacks, public NimBLEScanCallbacks {
   void start(std::function<void(void *)> scanCallback, void *scanResultPrivateData);
 
   /**
+   * Start scanning with a custom callback system.
+   */
+  void start(NimBLEScanCallbacks *pScanCallbacks, uint32_t duration);
+
+  /**
    * Stop the scan.
    */
   void stop(void);

@@ -4,7 +4,7 @@
 
 namespace Furble {
 
-Camera::Camera(Type type) : m_Type(type) {
+Camera::Camera(Type type, PairType pairType) : m_PairType(pairType), m_Type(type) {
   m_Client = NimBLEDevice::createClient();
 }
 
@@ -26,6 +26,7 @@ bool Camera::connect(esp_power_level_t power) {
     }
     m_Connected = true;
   } else {
+    this->_disconnect();
     m_Connected = false;
   }
 
