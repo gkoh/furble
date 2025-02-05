@@ -49,6 +49,8 @@ void GPS::startService(void) {
 
 /** Send GPS data updates to the control task. */
 void GPS::update(void) {
+  static uint8_t count = 0;
+
   if (!m_Enabled || !m_HasFix) {
     return;
   }
@@ -65,13 +67,18 @@ void GPS::update(void) {
         m_GPS.time.hour(), m_GPS.time.minute(), m_GPS.time.second(),
     };
 
-    Control::getInstance().updateGPS(dgps, timesync);
+    // only update every 1s
+    if (count++ > (1000 / SERVICE_MS)) {
+      count = 0;
+      Control::getInstance().updateGPS(dgps, timesync);
+    }
   }
 }
 
 /** Read and decode the GPS data from serial port. */
 void GPS::serviceSerial(void) {
   static std::array<uint8_t, BUFFER_SIZE> buffer;
+  static uint8_t lostFix = 0;
 
   if (!m_Enabled) {
     return;
@@ -90,7 +97,13 @@ void GPS::serviceSerial(void) {
       && (m_GPS.date.age() < MAX_AGE_MS) && m_GPS.date.isValid() && (m_GPS.time.age() < MAX_AGE_MS)
       && m_GPS.time.age()) {
     m_HasFix = true;
+    lostFix = 0;
   } else {
+    lostFix++;
+  }
+
+  if (lostFix > 10) {
+    // only lose fix after 10 straight losses
     m_HasFix = false;
   }
 

@@ -39,7 +39,7 @@ class GPS {
   static constexpr const int8_t RX = 33;
   static constexpr const int8_t TX = 32;
 #endif
-  static constexpr const uint16_t SERVICE_MS = 25;
+  static constexpr const uint16_t SERVICE_MS = 250;
   static constexpr const uint32_t MAX_AGE_MS = 60 * 1000;
 
   void serviceSerial(void);
