@@ -38,7 +38,6 @@ void app_main() {
 
   Furble::Settings::init();
   Furble::Device::init(Furble::Settings::load<esp_power_level_t>(Furble::Settings::TX_POWER));
-  ;
 
   auto &control = Furble::Control::getInstance();
   xRet = xTaskCreatePinnedToCore(control_task, "control", 8192, &control, 4, &xControlHandle, 1);

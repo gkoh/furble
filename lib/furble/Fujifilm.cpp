@@ -22,9 +22,7 @@ void Fujifilm::notify(BLERemoteCharacteristic *pChr, uint8_t *pData, size_t leng
   ESP_LOGI(LOG_TAG, "Got %s callback: %u bytes from %s", isNotify ? "notification" : "indication",
            length, pChr->getUUID().toString().c_str());
   if (length > 0) {
-    for (int i = 0; i < length; i++) {
-      ESP_LOGI(LOG_TAG, "  [%d] 0x%02x", i, pData[i]);
-    }
+    ESP_LOGI(LOG_TAG, " %s", NimBLEUtils::dataToHexString(pData, length).c_str());
   }
 
   if (pChr->getUUID() == CHR_NOT1_UUID) {
@@ -59,7 +57,7 @@ bool Fujifilm::subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool noti
       true);
 }
 
-Fujifilm::Fujifilm(const void *data, size_t len) : Camera(Type::FUJIFILM) {
+Fujifilm::Fujifilm(const void *data, size_t len) : Camera(Type::FUJIFILM, PairType::SAVED) {
   if (len != sizeof(fujifilm_t))
     abort();
 
@@ -69,7 +67,7 @@ Fujifilm::Fujifilm(const void *data, size_t len) : Camera(Type::FUJIFILM) {
   memcpy(m_Token.data(), fujifilm->token, TOKEN_LEN);
 }
 
-Fujifilm::Fujifilm(const NimBLEAdvertisedDevice *pDevice) : Camera(Type::FUJIFILM) {
+Fujifilm::Fujifilm(const NimBLEAdvertisedDevice *pDevice) : Camera(Type::FUJIFILM, PairType::NEW) {
   const char *data = pDevice->getManufacturerData().data();
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
@@ -254,12 +252,6 @@ void Fujifilm::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
     sendGeoData(gps, timesync);
     m_GeoRequested = false;
   }
-}
-
-void Fujifilm::print(void) {
-  ESP_LOGI(LOG_TAG, "Name: %s", m_Name.c_str());
-  ESP_LOGI(LOG_TAG, "Address: %s", m_Address.toString().c_str());
-  ESP_LOGI(LOG_TAG, "Type: %d", m_Address.getType());
 }
 
 void Fujifilm::_disconnect(void) {

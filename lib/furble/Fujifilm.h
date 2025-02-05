@@ -107,7 +107,6 @@ class Fujifilm: public Camera {
   static constexpr std::array<uint8_t, 2> SHUTTER_FOCUS = {0x03, 0x00};
 
   void print_token(const std::array<uint8_t, TOKEN_LEN> &token);
-  void print(void);
   void notify(NimBLERemoteCharacteristic *, uint8_t *, size_t, bool);
   bool subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool notifications);
   void sendGeoData(const gps_t &gps, const timesync_t &timesync);

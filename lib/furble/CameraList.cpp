@@ -6,6 +6,7 @@
 #include "FauxNY.h"
 #include "Fujifilm.h"
 #include "MobileDevice.h"
+#include "Nikon.h"
 
 #include "CameraList.h"
 
@@ -164,6 +165,9 @@ void CameraList::load(void) {
       case Camera::Type::FAUXNY:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new FauxNY(dbuffer, dbytes)));
         break;
+      case Camera::Type::NIKON:
+        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Nikon(dbuffer, dbytes)));
+        break;
     }
   }
   m_Prefs.end();
@@ -202,6 +206,9 @@ bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
     return true;
   } else if (CanonEOSR::matches(pDevice)) {
     m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::CanonEOSR(pDevice)));
+    return true;
+  } else if (Nikon::matches(pDevice)) {
+    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::Nikon(pDevice)));
     return true;
   }
 

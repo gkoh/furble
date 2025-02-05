@@ -37,6 +37,8 @@ The following devices have been tested and confirmed to work:
    - Canon EOS M6 ([@tardisx](https://github.com/tardisx))
    - Canon EOS RP ([@wolcano](https://github.com/wolcano))
    - Canon EOS R6 Mark II ([@hijae](https://github.com/hijae))
+- Nikon
+   - Nikon COOLPIX B600
 - Mobile Devices (beta)
    - Android
    - iOS
@@ -65,12 +67,12 @@ Currently supported features in `furble`:
 
 ### Table of Features
 
-| &nbsp; | Fujifilm X & GFX | Canon EOS M6 | Canon EOS R | Android & iOS |
-| --- | :---: | :---: | :---: | :---: |
-| Scanning & Pairing | ✔️ | ✔️ | ✔️ | ✔️ |
-| Shutter Release | ✔️ | ✔️ | ✔️ | ✔️ |
-| Focus | ✔️ (see [#99](https://github.com/gkoh/furble/discussions/99)) | :x: | ✔️ | :x: |
-| GPS location tagging | ✔️ | :x: (WiFi only) | :x: | :x: |
+| &nbsp; | Fujifilm X & GFX | Canon EOS M6 | Canon EOS R | Nikon COOLPIX | Android & iOS |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| Scanning & Pairing | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Shutter Release | ✔️ | ✔️ | ✔️ | ✔️ | ✔️|
+| Focus | ✔️ (see [#99](https://github.com/gkoh/furble/discussions/99)) | :x: | ✔️ | :x: | :x: |
+| GPS location tagging | ✔️ | :x: (WiFi only) | :x: | :x: | :x: |
 
 ## Installation
 
@@ -309,6 +311,15 @@ different.
 @wolcano kindly implemented initial support for the Canon EOS RP.
 @hijae kindly helped with better Canon EOS R support.
 
+#### Nikon
+
+Nikon cameras that support the remote wireless controller (ML-L7) should work,
+use the "Connection to remote" menu option.
+This has been tested on a Nikon COOLPIX B600. Unfortunately, the remote wireless
+mode has no support for GPS or focus functions, thus only shutter release works.
+Note that other Nikon cameras will appear in the scan, but will not pair
+(further support is under investigation).
+
 #### Protocol Reverse Engineering
 
 Android supports snooping bluetooth traffic so it was trivial to grab a HCI log
@@ -382,7 +393,6 @@ the following libraries:
    - Complete support for newer Canon EOS (eg. RP)
    - Get access to and support the following:
      - Sony
-     - Nikon
      - Others?
 
 # Links

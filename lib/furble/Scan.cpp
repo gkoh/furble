@@ -17,7 +17,6 @@ Scan &Scan::getInstance(void) {
     instance.m_HIDServer = HIDServer::getInstance();
 
     instance.m_Scan = NimBLEDevice::getScan();
-    instance.m_Scan->setScanCallbacks(&instance);
     instance.m_Scan->setActiveScan(true);
     instance.m_Scan->setInterval(6553);
     instance.m_Scan->setWindow(6553);
@@ -51,9 +50,16 @@ void Scan::onComplete(const NimBLEAddress &address, const std::string &name) {
 void Scan::start(std::function<void(void *)> scanCallback, void *scanPrivateData) {
   m_HIDServer->start(nullptr, this);
 
+  m_Scan->setScanCallbacks(this);
+
   m_ScanResultCallback = scanCallback;
   m_ScanResultPrivateData = scanPrivateData;
   m_Scan->start(0, false);
+}
+
+void Scan::start(NimBLEScanCallbacks *pScanCallbacks, uint32_t duration) {
+  m_Scan->setScanCallbacks(pScanCallbacks);
+  m_Scan->start(duration, false);
 }
 
 void Scan::stop(void) {
