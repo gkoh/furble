@@ -44,6 +44,7 @@ class Camera {
     double latitude;
     double longitude;
     double altitude;
+    unsigned int satellites;
   } gps_t;
 
   /**
@@ -56,6 +57,7 @@ class Camera {
     unsigned int hour;
     unsigned int minute;
     unsigned int second;
+    unsigned int centisecond;
   } timesync_t;
 
   ~Camera();
