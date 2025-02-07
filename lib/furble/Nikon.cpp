@@ -9,7 +9,7 @@
 #include "Device.h"
 #include "Nikon.h"
 
-#define NIKON_DEBUG (0)
+#define NIKON_DEBUG (1)
 
 namespace Furble {
 
@@ -142,7 +142,25 @@ bool Nikon::_connect(void) {
     return false;
   }
 
-  pChr = pSvc->getCharacteristic(IND2_CHR_UUID);
+  pChr = pSvc->getCharacteristic(STAGE_CHR_UUID);
+  if (pChr == nullptr) {
+    return false;
+  }
+  if (!pChr->subscribe(
+          false,
+          [this, &stage, &failed](NimBLERemoteCharacteristic *pBLERemoteCharacteristic,
+                                  uint8_t *pData, size_t length, bool isNotify) {
+#if NIKON_DEBUG
+            ESP_LOGI(LOG_TAG, "data(stage) = %s",
+                     NimBLEUtils::dataToHexString(pData, length).c_str());
+#endif
+          },
+          true)) {
+    return false;
+  }
+
+#if 0
+  pChr = pSvc->getCharacteristic(REMOTE_IND2_CHR_UUID);
   if (pChr == nullptr) {
     return false;
   }
@@ -166,11 +184,31 @@ bool Nikon::_connect(void) {
           true)) {
     return false;
   }
+#endif
 
+#if 1
+  // perform four stage handshake
+  for (int i = 0; i < 100; i++) {
+    pair_msg_t msg = { 0x01, 0x00, 0xa5a5a5a5a5a5a5a5 };
+    if (!m_Client->setValue(
+            SERVICE_UUID, STAGE_CHR_UUID,
+            {(const uint8_t *)&msg, (uint16_t)sizeof(msg)}, true)) {
+      return false;
+    }
+#if NIKON_DEBUG
+    ESP_LOGI(LOG_TAG, "sent = %s",
+             NimBLEUtils::dataToHexString((const uint8_t *)&msg,
+                                          sizeof(msg))
+                 .c_str());
+#endif
+
+    vTaskDelay(pdMS_TO_TICKS(200));
+  }
+#else
   // perform four stage handshake
   for (; stage < 4 && !failed; stage += 2) {
     if (!m_Client->setValue(
-            SERVICE_UUID, IND2_CHR_UUID,
+            SERVICE_UUID, STAGE_CHR_UUID,
             {(const uint8_t *)&m_RemotePair[stage], (uint16_t)sizeof(m_RemotePair[stage])}, true)) {
       return false;
     }
@@ -188,6 +226,7 @@ bool Nikon::_connect(void) {
     }
     m_Progress += 5;
   }
+#endif
 
   if (!success) {
     return false;
