@@ -27,6 +27,8 @@ namespace Furble {
 
 std::mutex UI::m_Mutex;
 
+UI::ConnectContext_t UI::m_ConnectContext;
+
 constexpr const char *UI::m_ConnectStr;
 constexpr const char *UI::m_ConnectedStr;
 constexpr const char *UI::m_DeleteStr;
@@ -41,9 +43,6 @@ const uint32_t UI::m_KeyLeft;
 const uint32_t UI::m_KeyRight;
 
 lv_obj_t *UI::m_NavBar;
-lv_obj_t *UI::m_Left;
-lv_obj_t *UI::m_OK;
-lv_obj_t *UI::m_Right;
 
 bool UI::m_PMICHack;
 bool UI::m_PMICClicked;
@@ -289,10 +288,11 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
     lv_obj_set_size(m_Right, height, height);
   }
 
-  configMenuControl();
+  configureControl(ControlMode::MENU);
 
   // create connection timer
-  m_ConnectTimer = lv_timer_create(connectTimerHandler, 125, NULL);
+  m_ConnectContext = {this, NULL};
+  m_ConnectTimer = lv_timer_create(connectTimerHandler, 125, &m_ConnectContext);
   lv_timer_pause(m_ConnectTimer);
 
   // create intervalometer timer
@@ -589,7 +589,7 @@ void UI::prepareShutterControl(void) {
         auto *ui = static_cast<UI *>(lv_event_get_user_data(e));
         lv_obj_t *back = lv_menu_get_main_header_back_button(m_MainMenu.main);
         lv_obj_send_event(back, LV_EVENT_CLICKED, m_MainMenu.main);
-        ui->configMenuControl();
+        ui->configureControl(ControlMode::MENU);
       },
       LV_EVENT_CLICKED, this);
 
@@ -856,7 +856,7 @@ void UI::addMainMenu(void) {
               },
               &menu);
 
-          lv_timer_set_user_data(m_ConnectTimer, (void *)(m_ScanStr));
+          m_ConnectContext.menuName = m_ScanStr;
         } else if (page == m_Menu.at(m_SettingsStr).page) {
         } else if (page == m_Menu.at(m_ConnectStr).page) {
         } else if (page == m_Menu.at(m_ConnectedStr).page) {
@@ -920,6 +920,32 @@ void UI::displayNavigationBar(bool show) {
       lv_obj_add_flag(m_OK, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(m_Right, LV_OBJ_FLAG_HIDDEN);
     }
+  }
+}
+
+void UI::configureControl(ControlMode mode, bool set) {
+  switch (mode) {
+    case ControlMode::MENU:
+      if (set) {
+        m_ControlMode = ControlMode::MENU;
+      }
+      configMenuControl();
+      break;
+    case ControlMode::SHUTTER:
+      if (set) {
+        m_ControlMode = ControlMode::SHUTTER;
+      }
+      configShutterControl();
+      break;
+    case ControlMode::SLIDER:
+      if (set) {
+        m_ControlMode = ControlMode::SLIDER;
+      }
+      configSliderControl();
+      break;
+    case ControlMode::REVERT:
+      configureControl(m_ControlMode);
+      break;
   }
 }
 
@@ -987,6 +1013,7 @@ void UI::showShutterIntervalometer(bool show) {
 }
 
 void UI::connectTimerHandler(lv_timer_t *timer) {
+  auto *ctx = static_cast<ConnectContext_t *>(lv_timer_get_user_data(timer));
   auto &control = Control::getInstance();
   Camera *camera = nullptr;
   auto state = control.getState();
@@ -1002,7 +1029,9 @@ void UI::connectTimerHandler(lv_timer_t *timer) {
         // hide menu, unhide message box
         lv_obj_add_flag(m_MainMenu.main, LV_OBJ_FLAG_HIDDEN);
         lv_obj_clear_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN);
-        UI::displayNavigationBar(false);
+        ctx->ui->displayNavigationBar(false);
+        ctx->ui->configureControl(ControlMode::MENU, false);
+
         lv_group_focus_obj(m_ConnectCancel);
       }
 
@@ -1020,17 +1049,18 @@ void UI::connectTimerHandler(lv_timer_t *timer) {
     case Control::STATE_ACTIVE:
       if (!lv_obj_has_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN)) {
         // if from scan, save the connection
-        const char *from = static_cast<const char *>(lv_timer_get_user_data(timer));
-        if (from == m_ScanStr) {
+        if (ctx->menuName == m_ScanStr) {
           for (const auto &target : control.getTargets()) {
             CameraList::save(target->getCamera());
           }
+          ctx->menuName = NULL;
         }
 
         // everything connected, display menu, hide connection message box
         lv_obj_add_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN);
         lv_obj_clear_flag(m_MainMenu.main, LV_OBJ_FLAG_HIDDEN);
-        UI::displayNavigationBar(true);
+        ctx->ui->displayNavigationBar(true);
+        ctx->ui->configureControl(ControlMode::REVERT);
         lv_group_focus_next(lv_group_get_default());
       }
       break;
@@ -1201,7 +1231,7 @@ UI::menu_t &UI::addConnectedMenu(void) {
       menuShutter.button,
       [](lv_event_t *e) {
         auto *ui = static_cast<UI *>(lv_event_get_user_data(e));
-        ui->configShutterControl();
+        ui->configureControl(ControlMode::SHUTTER);
       },
       LV_EVENT_CLICKED, this);
 
@@ -1259,7 +1289,7 @@ void UI::addConnectMenu(void) {
           lv_obj_add_event_cb(multibutton, doConnect, LV_EVENT_CLICKED, e);
         }
 
-        lv_timer_set_user_data(m_ConnectTimer, NULL);
+        m_ConnectContext.menuName = NULL;
       },
       LV_EVENT_CLICKED, NULL);
 
@@ -1686,9 +1716,9 @@ void UI::addBacklightMenu(const menu_t &parent) {
           }
           case LV_EVENT_FOCUSED:
             if (lv_obj_has_state(slider, LV_STATE_EDITED)) {
-              ui->configSliderControl();
+              ui->configureControl(ControlMode::SLIDER);
             } else {
-              ui->configMenuControl();
+              ui->configureControl(ControlMode::MENU);
             }
             break;
           default:
@@ -1809,9 +1839,9 @@ void UI::addTransmitPowerMenu(const menu_t &parent) {
           }
           case LV_EVENT_FOCUSED:
             if (lv_obj_has_state(slider, LV_STATE_EDITED)) {
-              ui->configSliderControl();
+              ui->configureControl(ControlMode::SLIDER);
             } else {
-              ui->configMenuControl();
+              ui->configureControl(ControlMode::MENU);
             }
             break;
           default:

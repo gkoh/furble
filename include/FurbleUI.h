@@ -14,6 +14,13 @@
 namespace Furble {
 class UI {
  public:
+  /**
+   * UI input control modes.
+   *
+   * Modifies button/navigation operation.
+   */
+  enum class ControlMode { MENU, SHUTTER, SLIDER, REVERT };
+
   UI(const interval_t &interval);
 
   void task(void);
@@ -27,16 +34,10 @@ class UI {
   /**
    * Display/hide navigation bar.
    */
-  static void displayNavigationBar(bool show);
+  void displayNavigationBar(bool show);
 
-  /** Configure shutter control. */
-  void configShutterControl(void);
-
-  /** Configure menu control. */
-  void configMenuControl(void);
-
-  /** Configure slider control. */
-  void configSliderControl(void);
+  /** Configure input control mode. */
+  void configureControl(ControlMode mode, bool set = true);
 
   /** Display shutter intervalometer menu .*/
   void showShutterIntervalometer(bool show);
@@ -117,7 +118,14 @@ class UI {
 
   typedef enum { MODE_SCAN, MODE_DELETE, MODE_CONNECT, MODE_MULTICONNECT } CameraListMode_t;
 
+  typedef struct {
+    UI *ui;
+    const char *menuName;
+  } ConnectContext_t;
+
   static std::mutex m_Mutex;
+
+  static ConnectContext_t m_ConnectContext;
 
   static const uint32_t m_KeyLeft = LV_KEY_LEFT;
   static const uint32_t m_KeyEnter = LV_KEY_ENTER;
@@ -198,9 +206,10 @@ class UI {
   lv_obj_t *m_Content = nullptr;
   static lv_obj_t *m_NavBar;
 
-  static lv_obj_t *m_Left;
-  static lv_obj_t *m_OK;
-  static lv_obj_t *m_Right;
+  lv_obj_t *m_Left;
+  lv_obj_t *m_OK;
+  lv_obj_t *m_Right;
+  ControlMode m_ControlMode = ControlMode::MENU;
 
   lv_obj_t *m_IntervalStart = nullptr;
   Intervalometer m_Intervalometer;
@@ -331,6 +340,15 @@ class UI {
 
   /** Handle shutter lock event. */
   static void handleShutterLock(lv_event_t *e);
+
+  /** Configure shutter control. */
+  void configShutterControl(void);
+
+  /** Configure menu control. */
+  void configMenuControl(void);
+
+  /** Configure slider control. */
+  void configSliderControl(void);
 };
 }  // namespace Furble
 
