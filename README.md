@@ -22,8 +22,9 @@ furble is developed as a PlatformIO project.
 
 The following devices have been tested and confirmed to work:
 - Fujifilm
-   - Fujifilm GFX100II ([@matthudsonau](https://github.com/matthudsonau))
+   - Fujifilm GFX100 II ([@matthudsonau](https://github.com/matthudsonau))
    - Fujifilm GFX100S ([@adrianuseless](https://github.com/adrianuseless))
+   - Fujifilm GFX50S II ([@TomaszLojewski](https://github.com/TomaszLojewski))
    - Fujifiml X-H1
    - Fujifilm X-H2S ([@val123456](https://github.com/val123456))
    - Fujifilm X-S10 ([@dimitrij2k](https://github.com/dimitrij2k))
@@ -31,6 +32,7 @@ The following devices have been tested and confirmed to work:
    - Fujifilm X-T200 ([@Cronkan](https://github.com/Cronkan))
    - Fujifilm X-T3 ([@ubuntuproductions](https://github.com/ubuntuproductions))
    - Fujifilm X-T30
+   - Fujifilm X-T4 ([@TomaszLojewski](https://github.com/TomaszLojewski))
    - Fujifilm X-T5 ([@stulevine](https://github.com/stulevine))
    - Fujifilm X100V
 - Canon
