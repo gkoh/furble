@@ -12,7 +12,7 @@ namespace Furble {
  */
 class Nikon: public Camera, public NimBLEScanCallbacks {
  public:
-  Nikon(const void *data, size_t len);
+Nikon(const void *data, size_t len);
   Nikon(const NimBLEAdvertisedDevice *pDevice);
   ~Nikon();
 
@@ -29,6 +29,9 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   size_t getSerialisedBytes(void) const override;
   bool serialise(void *buffer, size_t bytes) const override;
 
+  bool processStage(const uint8_t *data, const size_t length);
+  uint8_t getStage(void);
+
  protected:
   bool _connect(void) override final;
   void _disconnect(void) override final;
@@ -42,14 +45,7 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
     uint32_t nonce;
   } id_t;
 
-  /** Connect saved advertised manufacturer data. */
-  typedef struct __attribute__((packed)) _nikon_adv_t {
-    uint16_t companyID;
-    uint32_t device;
-    uint8_t zero;
-  } nikon_adv_t;
-
-  /** Pairing message. */
+   /** Pairing message. */
   typedef struct __attribute__((packed)) _pair_msg_t {
     uint8_t stage;
     uint64_t timestamp;
@@ -58,6 +54,13 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
       id_t id;
     };
   } pair_msg_t;
+
+  /** Connect saved advertised manufacturer data. */
+  typedef struct __attribute__((packed)) _nikon_adv_t {
+    uint16_t companyID;
+    uint32_t device;
+    uint8_t zero;
+  } nikon_adv_t;
 
   /** Time synchronisation. */
   typedef struct __attribute__((packed)) _nikon_time_t {
@@ -69,14 +72,19 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
     uint8_t second;
   } nikon_time_t;
 
+  // 10 bytes
   typedef struct __attribute__((packed)) _timesync_msg_t {
     nikon_time_t time;
-    uint8_t pad[3];
+    uint8_t dst_offset;
+    uint8_t tz_offset_hours;
+    uint8_t tz_offset_minutes;
   } timesync_msg_t;
 
+  // 41 bytes
   /** Location synchronisation. */
   typedef struct __attribute__((packed)) _nikon_geo_t {
-    uint16_t header;             // 0x7f00
+    uint16_t header;             // 0x7f00 = isLat | isLon | isSat | isAlt |
+                                 // isPos | isGps | isMap
     uint8_t latitude_direction;  // {N|S}
     uint8_t latitude_degrees;
     uint8_t latitude_minutes;
@@ -87,10 +95,11 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
     uint8_t longitude_minutes;
     uint8_t longitude_seconds;
     uint8_t longitude_fraction;
-    uint8_t unknown0[2];
+    uint16_t extras; // always 0x0050? no. of satellites
     uint16_t altitude;
     nikon_time_t time;
-    uint8_t unknown1[2];
+    uint8_t subseconds;
+    uint8_t valid;  // 0x01 == valid
     uint8_t standard[6];  // WGS-84
     uint8_t pad[10];
   } nikon_geo_t;
@@ -108,6 +117,12 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   // Re-pair scan time
   static constexpr uint32_t SCAN_TIME_MS = 60000;
 
+  // blowfish secret key
+  static const std::array<uint8_t, 8> BLOWFISH_KEY;
+
+  // handshake salts
+  static const std::array<std::array<uint32_t, 2>, 8> BLOWFISH_SALT;
+
   // Service UUID from advertisement data
   static const NimBLEUUID SERVICE_UUID;
 
@@ -116,7 +131,7 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   const NimBLEUUID NOT2_CHR_UUID {0x000200a, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
 
   // Stage UUIDs
-  const NimBLEUUID STAGE_CHR_UUID {0x00002000, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID PAIR_CHR_UUID {0x00002000, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
 
   // Identifier UUIDs
   const NimBLEUUID ID_CHR_UUID {0x00002002, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
@@ -131,7 +146,7 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   const NimBLEUUID REMOTE_SHUTTER_CHR_UUID {0x00002083, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
   const NimBLEUUID REMOTE_IND1_CHR_UUID {0x00002084, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
   const NimBLEUUID REMOTE_R2_CHR_UUID {0x00002086, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
-  const NimBLEUUID REMOTE_IND2_CHR_UUID {0x00002087, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID REMOTE_PAIR_CHR_UUID {0x00002087, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
 
   // Notification responses
   static const std::array<uint8_t, 2> SUCCESS;
@@ -151,6 +166,8 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   static const uint8_t CMD_RELEASE = 0x00;
 
   id_t m_ID;
+  NimBLERemoteCharacteristic *m_PairChr = nullptr;
+  pair_msg_t m_PairMsg = {0x00, 0x00, 0x00};
   pair_msg_t m_RemotePair[4] = {
       {0x01, 0x00, 0x00},
       {0x02, 0x00, 0x00},
@@ -169,6 +186,11 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
                     uint8_t &minutes,
                     uint8_t &seconds,
                     uint8_t &fraction);
+
+  /**
+   * Hash the inputs with the blowfish key schedule.
+   */
+  void bf_hash(uint32_t *src, uint32_t *dest, uint16_t length);
 
   /**
    * Called during scanning for connection to saved device.

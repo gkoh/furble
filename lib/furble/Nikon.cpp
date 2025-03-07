@@ -8,11 +8,26 @@
 
 #include "Device.h"
 #include "Nikon.h"
+#include "blowfish.h"
 
 #define NIKON_DEBUG (1)
 
 namespace Furble {
 
+const std::array<uint8_t, 8> Nikon::BLOWFISH_KEY = {0xff, 0xff, 0xaa, 0x55, 0x11, 0x22, 0x33, 0x00};
+const std::array<std::array<uint32_t, 2>, 8> Nikon::BLOWFISH_SALT = {
+    {
+     {0x704066e4u, 0x0433d552u},
+     {0xed4b8facu, 0x15f7e47bu},
+     {0x24471f11u, 0x8b5ea1fcu},
+     {0x05960c31u, 0x2b8c7f41u},
+     {0xfda588c1u, 0xeba8b1f3u},
+     {0x99166056u, 0x1bd3d550u},
+     {0xcd32687fu, 0xa9e28a30u},
+     {0x2a8fe834u, 0xdec7ebf4u},
+
+     }
+};
 const NimBLEUUID Nikon::SERVICE_UUID {0x0000de00, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
 const std::array<uint8_t, 2> Nikon::SUCCESS = {0x01, 0x00};
 const std::array<uint8_t, 2> Nikon::GEO = {0x00, 0x01};
@@ -27,6 +42,7 @@ Nikon::Nikon(const void *data, size_t len) : Camera(Type::NIKON, PairType::SAVED
   memcpy(&m_ID, &nikon->id, sizeof(m_ID));
   m_RemotePair[0].id = m_ID;
   m_Queue = xQueueCreate(3, sizeof(bool));
+  bf_init(static_cast<const uint8_t *>(BLOWFISH_KEY.data()), BLOWFISH_KEY.size());  // @todo
 }
 
 Nikon::Nikon(const NimBLEAdvertisedDevice *pDevice) : Camera(Type::NIKON, PairType::NEW) {
@@ -142,80 +158,64 @@ bool Nikon::_connect(void) {
     return false;
   }
 
-  pChr = pSvc->getCharacteristic(STAGE_CHR_UUID);
-  if (pChr == nullptr) {
-    return false;
+  // try as remote connection first
+  m_PairChr = pSvc->getCharacteristic(REMOTE_PAIR_CHR_UUID);
+  if (m_PairChr == nullptr) {
+    // then try as smart device
+    m_PairChr = pSvc->getCharacteristic(PAIR_CHR_UUID);
+    if (m_PairChr == nullptr) {
+      return false;
+    }
+    ESP_LOGI(LOG_TAG, "Connecting as smart device");
+  } else {
+    ESP_LOGI(LOG_TAG, "Connecting as remote");
   }
-  if (!pChr->subscribe(
+
+  if (!m_PairChr->subscribe(
           false,
-          [this, &stage, &failed](NimBLERemoteCharacteristic *pBLERemoteCharacteristic,
+          [this](NimBLERemoteCharacteristic *pBLERemoteCharacteristic,
                                   uint8_t *pData, size_t length, bool isNotify) {
 #if NIKON_DEBUG
             ESP_LOGI(LOG_TAG, "data(stage) = %s",
                      NimBLEUtils::dataToHexString(pData, length).c_str());
 #endif
-          },
-          true)) {
-    return false;
-  }
-
-#if 0
-  pChr = pSvc->getCharacteristic(REMOTE_IND2_CHR_UUID);
-  if (pChr == nullptr) {
-    return false;
-  }
-  if (!pChr->subscribe(
-          false,
-          [this, &stage, &failed](NimBLERemoteCharacteristic *pBLERemoteCharacteristic,
-                                  uint8_t *pData, size_t length, bool isNotify) {
-            bool rc = false;
-#if NIKON_DEBUG
-            ESP_LOGI(LOG_TAG, "data(ind2) = %s",
-                     NimBLEUtils::dataToHexString(pData, length).c_str());
-#endif
-            if (memcmp(pData, &m_RemotePair[stage + 1], length) == 0) {
-              rc = true;
-            } else {
-              ESP_LOGI(LOG_TAG, "Stage %u response mismatch", stage);
-              rc = false;
+            bool rc = this->processStage(pData, length);
+            if (!rc) {
+              ESP_LOGI(LOG_TAG, "Stage %u response mismatch", this->getStage());
             }
             xQueueSend(m_Queue, &rc, 0);
           },
           true)) {
     return false;
   }
-#endif
 
-#if 1
+#if 0
   // perform four stage handshake
   for (int i = 0; i < 100; i++) {
-    pair_msg_t msg = { 0x01, 0x00, 0xa5a5a5a5a5a5a5a5 };
-    if (!m_Client->setValue(
-            SERVICE_UUID, STAGE_CHR_UUID,
-            {(const uint8_t *)&msg, (uint16_t)sizeof(msg)}, true)) {
+    pair_msg_t msg = {0x01, 0x00, 0xa5a5a5a5a5a5a5a5};
+    if (!m_Client->setValue(SERVICE_UUID, STAGE_CHR_UUID,
+                            {(const uint8_t *)&msg, (uint16_t)sizeof(msg)}, true)) {
       return false;
     }
 #if NIKON_DEBUG
     ESP_LOGI(LOG_TAG, "sent = %s",
-             NimBLEUtils::dataToHexString((const uint8_t *)&msg,
-                                          sizeof(msg))
-                 .c_str());
+             NimBLEUtils::dataToHexString((const uint8_t *)&msg, sizeof(msg)).c_str());
 #endif
 
     vTaskDelay(pdMS_TO_TICKS(200));
   }
 #else
   // perform four stage handshake
+  m_PairMsg = {0x00, 0x00, 0x00};
+  processStage(reinterpret_cast<uint8_t *>(&m_PairMsg), sizeof(m_PairMsg));
   for (; stage < 4 && !failed; stage += 2) {
-    if (!m_Client->setValue(
-            SERVICE_UUID, STAGE_CHR_UUID,
-            {(const uint8_t *)&m_RemotePair[stage], (uint16_t)sizeof(m_RemotePair[stage])}, true)) {
+    if (!m_PairChr->writeValue((const uint8_t *)&m_PairMsg, sizeof(m_PairMsg), true)) {
       return false;
     }
 #if NIKON_DEBUG
     ESP_LOGI(LOG_TAG, "sent = %s",
-             NimBLEUtils::dataToHexString((const uint8_t *)&m_RemotePair[stage],
-                                          sizeof(m_RemotePair[stage]))
+             NimBLEUtils::dataToHexString((const uint8_t *)&m_PairMsg,
+                                          sizeof(m_PairMsg))
                  .c_str());
 #endif
 
@@ -251,6 +251,45 @@ bool Nikon::_connect(void) {
   m_Progress = 100;
 
   return success;
+}
+
+bool Nikon::processStage(const uint8_t *data, const size_t length) {
+  if (length != sizeof(pair_msg_t)) {
+    return false;
+  }
+
+  pair_msg_t msg;
+  memcpy(&msg, data, length);
+
+  switch (msg.stage) {
+    case 0:
+      m_PairMsg = {0x01, 0x00, 0x00};
+      return true;
+    case 2:
+      {
+        pair_msg_t expected = {0x02, 0x00, 0x00};
+        if (memcmp(&msg, &expected, sizeof(msg)) == 0) {
+          m_PairMsg = { 0x03, 0x00, 0x00 };
+          return true;
+        }
+      }
+      break;
+    case 4:
+      {
+        pair_msg_t expected = {0x04, 0x00, 0x00};
+        if (memcmp(&msg, &expected, sizeof(msg)) == 0) {
+          m_PairMsg = { 0x05, 0x00, 0x00 };
+          return true;
+        }
+      }
+      break;
+  }
+
+  return false;
+}
+
+uint8_t Nikon::getStage(void) {
+  return m_PairMsg.stage;
 }
 
 void Nikon::shutterPress(void) {
@@ -293,10 +332,11 @@ void Nikon::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
       .longitude_minutes = 0,
       .longitude_seconds = 0,
       .longitude_fraction = 0,
-      .unknown0 = {0x00, 0x50},
+      .extras = (uint16_t)gps.satellites,
       .altitude = (uint16_t)gps.altitude,
       .time = ntime,
-      .unknown1 = {0x1e, 0x01},
+      .subseconds = (uint8_t)timesync.centisecond,
+      .valid = 0x01,
       .standard = {'W', 'G', 'S', '-', '8', '4'},
       .pad = {0x00},
   };
@@ -338,6 +378,24 @@ void Nikon::degreesToDMS(double value,
   fractional *= 10;
   fractional = std::modf(fractional, &integral);
   fraction = (uint8_t)integral;
+}
+
+void Nikon::bf_hash(uint32_t *src, uint32_t *dest, uint16_t length) {
+  uint32_t right = 0x05060708;
+  uint32_t left = 0x01020304;
+  uint32_t inL = 0;
+  uint32_t inR = 0;
+
+  for (uint16_t i = 0; i < length; i+= 2) {
+    inL = src[i] ^ left;
+    inR = src[i+1] ^ right;
+    bf_nikon_scramble(&inL, &inR);
+    left = inL;
+    right = inR;
+  }
+
+  dest[0] = inL;
+  dest[1] = inR;
 }
 
 size_t Nikon::getSerialisedBytes(void) const {

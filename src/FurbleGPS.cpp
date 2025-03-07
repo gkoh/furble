@@ -61,10 +61,11 @@ void GPS::update(void) {
         m_GPS.location.lat(),
         m_GPS.location.lng(),
         m_GPS.altitude.meters(),
+        m_GPS.satellites.value(),
     };
     Camera::timesync_t timesync = {
         m_GPS.date.year(), m_GPS.date.month(),  m_GPS.date.day(),
-        m_GPS.time.hour(), m_GPS.time.minute(), m_GPS.time.second(),
+        m_GPS.time.hour(), m_GPS.time.minute(), m_GPS.time.second(), m_GPS.time.centisecond(),
     };
 
     // only update every 1s
