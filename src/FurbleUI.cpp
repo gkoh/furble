@@ -1586,7 +1586,8 @@ void UI::addSpinnerPage(const menu_t &parent, const char *item, Intervalometer::
         lv_obj_set_style_pad_right(r, 2, LV_STATE_DEFAULT);
       }
 
-      if (spinner.m_SpinValue.m_Unit != SpinValue::UNIT_NIL) {
+      if ((spinner.m_SpinValue.m_Unit != SpinValue::UNIT_NIL)
+          && (spinner.m_SpinValue.m_Unit != SpinValue::UNIT_INF)) {
         lv_obj_set_style_pad_left(spinner.m_RollerUnit, 2, LV_STATE_DEFAULT);
         lv_obj_set_style_pad_right(spinner.m_RollerUnit, 2, LV_STATE_DEFAULT);
       }
