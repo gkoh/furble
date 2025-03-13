@@ -3,6 +3,7 @@
 
 #include <NimBLERemoteCharacteristic.h>
 
+#include "Blowfish.h"
 #include "Camera.h"
 #include "Scan.h"
 
@@ -12,7 +13,7 @@ namespace Furble {
  */
 class Nikon: public Camera, public NimBLEScanCallbacks {
  public:
-Nikon(const void *data, size_t len);
+  Nikon(const void *data, size_t len);
   Nikon(const NimBLEAdvertisedDevice *pDevice);
   ~Nikon();
 
@@ -37,6 +38,67 @@ Nikon(const void *data, size_t len);
   void _disconnect(void) override final;
 
  private:
+  class Pairing {
+   public:
+    static const size_t MSG_SIZE = 17;
+
+    virtual bool process(const std::array<uint8_t, MSG_SIZE> data) = 0;
+    virtual bool process(const uint8_t *data, const size_t length) = 0;
+    uint8_t getStage(void);
+    const std::array<uint8_t, MSG_SIZE> *getMessage(void) const;
+
+   protected:
+    enum class Type {
+      REMOTE,
+      SMART_DEVICE,
+    };
+    Pairing(const Pairing::Type type);
+
+    /** Identifier. */
+    typedef struct __attribute__((packed)) _id_t {
+      uint32_t device;  // sent in manufacturer data in reconnect
+      uint32_t nonce;
+    } id_t;
+
+    /** Pairing message. */
+    typedef struct __attribute__((packed)) _msg_t {
+      uint8_t stage;
+      uint64_t timestamp;
+      union {
+        uint64_t key;
+        id_t id;
+      };
+    } msg_t;
+
+    msg_t m_Msg;
+
+   private:
+    const Pairing::Type m_Type;
+  };
+
+  class RemotePairing: public Pairing {
+   public:
+    RemotePairing(void);
+    bool process(const std::array<uint8_t, MSG_SIZE> data) final;
+    bool process(const uint8_t *data, const size_t length) final;
+  };
+
+  class SmartPairing: public Pairing, Blowfish {
+   public:
+    SmartPairing(void);
+    bool process(const std::array<uint8_t, MSG_SIZE> data) final;
+    bool process(const uint8_t *data, const size_t length) final;
+    void search(void);
+    std::array<uint32_t, 2> hash(const uint32_t *src, size_t len);
+
+   private:
+    void scramble(uint32_t *pL, uint32_t *pR);
+
+    static const std::vector<uint8_t> KEY;
+    static const std::array<std::array<uint32_t, 2>, 8> SALT;
+    uint8_t m_Salt = 0;
+  };
+
   static constexpr uint16_t COMPANY_ID = 0x0399;
 
   /** Identifier. */
@@ -45,7 +107,7 @@ Nikon(const void *data, size_t len);
     uint32_t nonce;
   } id_t;
 
-   /** Pairing message. */
+  /** Pairing message. */
   typedef struct __attribute__((packed)) _pair_msg_t {
     uint8_t stage;
     uint64_t timestamp;
@@ -95,11 +157,11 @@ Nikon(const void *data, size_t len);
     uint8_t longitude_minutes;
     uint8_t longitude_seconds;
     uint8_t longitude_fraction;
-    uint16_t extras; // always 0x0050? no. of satellites
+    uint16_t extras;  // always 0x0050? no. of satellites
     uint16_t altitude;
     nikon_time_t time;
     uint8_t subseconds;
-    uint8_t valid;  // 0x01 == valid
+    uint8_t valid;        // 0x01 == valid
     uint8_t standard[6];  // WGS-84
     uint8_t pad[10];
   } nikon_geo_t;
@@ -116,12 +178,6 @@ Nikon(const void *data, size_t len);
 
   // Re-pair scan time
   static constexpr uint32_t SCAN_TIME_MS = 60000;
-
-  // blowfish secret key
-  static const std::array<uint8_t, 8> BLOWFISH_KEY;
-
-  // handshake salts
-  static const std::array<std::array<uint32_t, 2>, 8> BLOWFISH_SALT;
 
   // Service UUID from advertisement data
   static const NimBLEUUID SERVICE_UUID;
@@ -167,6 +223,7 @@ Nikon(const void *data, size_t len);
 
   id_t m_ID;
   NimBLERemoteCharacteristic *m_PairChr = nullptr;
+  Pairing *m_Pairing;
   pair_msg_t m_PairMsg = {0x00, 0x00, 0x00};
   pair_msg_t m_RemotePair[4] = {
       {0x01, 0x00, 0x00},
