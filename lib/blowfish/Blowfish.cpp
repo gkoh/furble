@@ -46,7 +46,7 @@ Blowfish::Blowfish(const std::vector<uint8_t> key) {
   }
 }
 
-uint32_t Blowfish::f(uint32_t x) {
+uint32_t Blowfish::f(uint32_t x) const {
   uint8_t a;
   uint8_t b;
   uint8_t c;
@@ -68,7 +68,7 @@ uint32_t Blowfish::f(uint32_t x) {
   return y;
 }
 
-void Blowfish::encipher(uint32_t *xl, uint32_t *xr) {
+void Blowfish::encipher(uint32_t *xl, uint32_t *xr) const {
   uint32_t Xl;
   uint32_t Xr;
   uint32_t temp;

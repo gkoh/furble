@@ -30,9 +30,6 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   size_t getSerialisedBytes(void) const override;
   bool serialise(void *buffer, size_t bytes) const override;
 
-  bool processStage(const uint8_t *data, const size_t length);
-  uint8_t getStage(void);
-
  protected:
   bool _connect(void) override final;
   void _disconnect(void) override final;
@@ -40,19 +37,10 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
  private:
   class Pairing {
    public:
-    static const size_t MSG_SIZE = 17;
-
-    virtual bool process(const std::array<uint8_t, MSG_SIZE> data) = 0;
-    virtual bool process(const uint8_t *data, const size_t length) = 0;
-    uint8_t getStage(void);
-    const std::array<uint8_t, MSG_SIZE> *getMessage(void) const;
-
-   protected:
     enum class Type {
       REMOTE,
       SMART_DEVICE,
     };
-    Pairing(const Pairing::Type type);
 
     /** Identifier. */
     typedef struct __attribute__((packed)) _id_t {
@@ -63,14 +51,28 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
     /** Pairing message. */
     typedef struct __attribute__((packed)) _msg_t {
       uint8_t stage;
-      uint64_t timestamp;
       union {
-        uint64_t key;
-        id_t id;
+        struct __attribute__((packed)) {
+          uint32_t timestampH;
+          uint32_t timestampL;
+        };
+        uint64_t timestamp;
+      };
+      union {
+        Pairing::id_t id;
+        char serial[8];
       };
     } msg_t;
 
-    msg_t m_Msg;
+    virtual const msg_t *processMessage(const msg_t &msg) = 0;
+    const msg_t *getMessage(void) const;
+    Type getType(void) const;
+
+   protected:
+    Pairing(const Pairing::Type type, const uint64_t timestamp, const Pairing::id_t id);
+
+    msg_t *m_Msg = nullptr;
+    std::array<msg_t, 5> m_Stage;
 
    private:
     const Pairing::Type m_Type;
@@ -78,44 +80,29 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
 
   class RemotePairing: public Pairing {
    public:
-    RemotePairing(void);
-    bool process(const std::array<uint8_t, MSG_SIZE> data) final;
-    bool process(const uint8_t *data, const size_t length) final;
+    RemotePairing(const Pairing::id_t &id);
+
+    const msg_t *processMessage(const msg_t &msg) final;
   };
 
   class SmartPairing: public Pairing, Blowfish {
    public:
-    SmartPairing(void);
-    bool process(const std::array<uint8_t, MSG_SIZE> data) final;
-    bool process(const uint8_t *data, const size_t length) final;
-    void search(void);
-    std::array<uint32_t, 2> hash(const uint32_t *src, size_t len);
+    SmartPairing(const uint64_t timestamp, const Pairing::id_t id);
+
+    const msg_t *processMessage(const msg_t &msg) final;
+
+    std::array<uint32_t, 2> hash(const uint32_t *src, size_t len) const;
 
    private:
-    void scramble(uint32_t *pL, uint32_t *pR);
+    void scramble(uint32_t *pL, uint32_t *pR) const;
+    int8_t findSaltIndex(const msg_t &msg);
 
     static const std::vector<uint8_t> KEY;
     static const std::array<std::array<uint32_t, 2>, 8> SALT;
-    uint8_t m_Salt = 0;
+    int8_t m_Salt = -1;
   };
 
   static constexpr uint16_t COMPANY_ID = 0x0399;
-
-  /** Identifier. */
-  typedef struct __attribute__((packed)) _id_t {
-    uint32_t device;  // sent in manufacturer data in reconnect
-    uint32_t nonce;
-  } id_t;
-
-  /** Pairing message. */
-  typedef struct __attribute__((packed)) _pair_msg_t {
-    uint8_t stage;
-    uint64_t timestamp;
-    union {
-      uint64_t key;
-      id_t id;
-    };
-  } pair_msg_t;
 
   /** Connect saved advertised manufacturer data. */
   typedef struct __attribute__((packed)) _nikon_adv_t {
@@ -173,7 +160,7 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
     char name[MAX_NAME]; /** Human readable device name. */
     uint64_t address;    /** Device MAC address. */
     uint8_t type;        /** Address type. */
-    id_t id;             /** Unique identifiers. */
+    Pairing::id_t id;    /** Unique identifiers. */
   } nikon_t;
 
   // Re-pair scan time
@@ -183,8 +170,8 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   static const NimBLEUUID SERVICE_UUID;
 
   // Subscription UUIDs
-  const NimBLEUUID NOT1_CHR_UUID {0x0002008, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
-  const NimBLEUUID NOT2_CHR_UUID {0x000200a, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID NOT1_CHR_UUID {0x00002008, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID NOT2_CHR_UUID {0x0000200a, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
 
   // Stage UUIDs
   const NimBLEUUID PAIR_CHR_UUID {0x00002000, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
@@ -195,6 +182,9 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   // Time and Location UUIDs
   const NimBLEUUID TIME_CHR_UUID {0x00002006, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
   const NimBLEUUID GEO_CHR_UUID {0x00002007, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+
+  // Unknown UUIDs
+  const NimBLEUUID UNK0_CHR_UUID {0x00002009, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
 
   // Remote UUIDs
   const NimBLEUUID REMOTE_R1_CHR_UUID {0x00002080, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
@@ -221,16 +211,10 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   static const uint8_t CMD_PRESS = 0x02;
   static const uint8_t CMD_RELEASE = 0x00;
 
-  id_t m_ID;
+  uint64_t m_Timestamp;
+  Pairing::id_t m_ID;
   NimBLERemoteCharacteristic *m_PairChr = nullptr;
-  Pairing *m_Pairing;
-  pair_msg_t m_PairMsg = {0x00, 0x00, 0x00};
-  pair_msg_t m_RemotePair[4] = {
-      {0x01, 0x00, 0x00},
-      {0x02, 0x00, 0x00},
-      {0x03, 0x00, 0x00},
-      {0x04, 0x00, 0x00},
-  };
+  Pairing *m_Pairing = nullptr;
 
   QueueHandle_t m_Queue;
   TaskHandle_t m_Task;
@@ -243,11 +227,6 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
                     uint8_t &minutes,
                     uint8_t &seconds,
                     uint8_t &fraction);
-
-  /**
-   * Hash the inputs with the blowfish key schedule.
-   */
-  void bf_hash(uint32_t *src, uint32_t *dest, uint16_t length);
 
   /**
    * Called during scanning for connection to saved device.
