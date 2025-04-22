@@ -16,7 +16,7 @@ class Blowfish {
 
  protected:
   /** Blowfish F function. */
-  uint32_t f(uint32_t x);
+  uint32_t f(uint32_t x) const;
 
   static const size_t N = 16;
   std::array<uint32_t, N + 2> m_P = {

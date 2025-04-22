@@ -46,7 +46,7 @@ Blowfish::Blowfish(const std::vector<uint8_t> key) {
   }
 }
 
-uint32_t Blowfish::f(uint32_t x) {
+uint32_t Blowfish::f(uint32_t x) const {
   uint8_t a;
   uint8_t b;
   uint8_t c;

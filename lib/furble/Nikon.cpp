@@ -33,19 +33,43 @@ const NimBLEUUID Nikon::SERVICE_UUID {0x0000de00, 0x3dd4, 0x4255, 0x8d626dc7b9bd
 const std::array<uint8_t, 2> Nikon::SUCCESS = {0x01, 0x00};
 const std::array<uint8_t, 2> Nikon::GEO = {0x00, 0x01};
 
-Nikon::Pairing::Pairing(const Pairing::Type type) : m_Type(type) {
-  m_Msg = {0x00, 0x00, 0x00};
+Nikon::Pairing::Pairing(const Pairing::Type type, const uint64_t timestamp, const id_t id) : m_Type(type) {
+  //m_Msg = {0x00, 0x00, 0x00};
+  //m_Stage[0] = { 0x01, timestamp, id };
+  m_Stage[0].stage = 0x01;
+  m_Stage[0].timestamp = timestamp;
+  m_Stage[0].id = id;
+  m_Stage[1].stage = 0x02;
+  m_Stage[2].stage = 0x03;
+  m_Stage[3].stage = 0x04;
+  m_Stage[4].stage = 0x05;
+
+  m_Msg = &m_Stage[0];
 };
 
 uint8_t Nikon::Pairing::getStage(void) {
-  return m_Msg.stage;
+  //return m_Msg.stage;
+  return 0;
 }
 
-const std::array<uint8_t, Nikon::Pairing::MSG_SIZE> *Nikon::Pairing::getMessage(void) const {
-  return reinterpret_cast<const std::array<uint8_t, MSG_SIZE> *>(&m_Msg);
+Nikon::Pairing::msg_t *Nikon::Pairing::getMessage(void) const {
+  return m_Msg;
 }
 
-Nikon::RemotePairing::RemotePairing(void) : Pairing(Type::REMOTE) {};
+//const std::array<uint8_t, Nikon::Pairing::MSG_SIZE> *Nikon::Pairing::getMessage(void) const {
+  //return reinterpret_cast<const std::array<uint8_t, MSG_SIZE> *>(&m_Msg);
+//}
+
+Nikon::RemotePairing::RemotePairing(void) : Pairing(Type::REMOTE, 0, {0x00, 0x00}) {
+  m_Stage[1].timestamp = 0x00;
+  m_Stage[1].id = {0x00, 0x00};
+  m_Stage[2].timestamp = 0x00;
+  m_Stage[2].id = {0x00, 0x00};
+  m_Stage[3].timestamp = 0x00;
+  m_Stage[3].id = {0x00,0x00};
+  m_Stage[4].timestamp = 0x00;
+  m_Stage[4].id = {0x00,0x00};
+};
 
 bool Nikon::RemotePairing::process(const uint8_t *data, const size_t length) {
   if (length != sizeof(msg_t)) {
@@ -57,21 +81,21 @@ bool Nikon::RemotePairing::process(const uint8_t *data, const size_t length) {
 
   switch (msg.stage) {
     case 0:
-      m_Msg = {0x01, 0x00, 0x00};
+      //m_Msg = {0x01, 0x00, 0x00};
       return true;
     case 2:
     {
-      msg_t expected = {0x02, 0x00, 0x00};
+      const msg_t &expected = m_Stage[1];
       if (memcmp(&msg, &expected, sizeof(msg)) == 0) {
-        m_Msg = {0x03, 0x00, 0x00};
+       // m_Msg = {0x03, 0x00, 0x00};
         return true;
       }
     } break;
     case 4:
     {
-      msg_t expected = {0x04, 0x00, 0x00};
+      const msg_t &expected = m_Stage[3];
       if (memcmp(&msg, &expected, sizeof(msg)) == 0) {
-        m_Msg = {0x05, 0x00, 0x00};
+        //m_Msg = {0x05, 0x00, 0x00};
         return true;
       }
     } break;
@@ -84,11 +108,41 @@ bool Nikon::RemotePairing::process(const std::array<uint8_t, MSG_SIZE> data) {
   return process(data.data(), data.size());
 }
 
-Nikon::SmartPairing::SmartPairing(void) : Pairing(Type::SMART_DEVICE), Blowfish(KEY) {
+bool Nikon::RemotePairing::process(const msg_t &msg) {
+  return process(reinterpret_cast<const uint8_t *>(&msg), MSG_SIZE);
+}
+
+const Nikon::Pairing::msg_t* Nikon::RemotePairing::processMessage(const msg_t &msg) {
+  switch (msg.stage) {
+    case 0:
+      m_Msg = &m_Stage[0];
+      return m_Msg;
+    case 2:
+    {
+      const msg_t *expected = &m_Stage[1];
+      if (memcmp(&msg, expected, sizeof(msg)) == 0) {
+        m_Msg = &m_Stage[2];
+        return m_Msg;
+      }
+    } break;
+    case 4:
+    {
+      const msg_t *expected = &m_Stage[3];
+      if (memcmp(&msg, expected, sizeof(msg)) == 0) {
+        m_Msg = &m_Stage[4];
+        return m_Msg;
+      }
+    } break;
+  }
+
+  return nullptr;
+}
+
+Nikon::SmartPairing::SmartPairing(const uint64_t timestamp, const id_t id) : Pairing(Type::SMART_DEVICE, timestamp, id), Blowfish(KEY) {
   m_Salt = esp_random() & 0xff;
 };
 
-void Nikon::SmartPairing::scramble(uint32_t *pL, uint32_t *pR) {
+void Nikon::SmartPairing::scramble(uint32_t *pL, uint32_t *pR) const {
   uint32_t xL = *pL;
   uint32_t xR = *pR;
   uint32_t tmp = 0;
@@ -103,7 +157,7 @@ void Nikon::SmartPairing::scramble(uint32_t *pL, uint32_t *pR) {
   *pR = xL ^ m_P[N];
 }
 
-std::array<uint32_t, 2> Nikon::SmartPairing::hash(const uint32_t *src, size_t len) {
+std::array<uint32_t, 2> Nikon::SmartPairing::hash(const uint32_t *src, size_t len) const {
   uint32_t right = 0x05060708;
   uint32_t left = 0x01020304;
   uint32_t inL = 0;
@@ -120,13 +174,19 @@ std::array<uint32_t, 2> Nikon::SmartPairing::hash(const uint32_t *src, size_t le
   return std::array<uint32_t, 2> {inL, inR};
 }
 
-void Nikon::SmartPairing::search(void) {
+void Nikon::SmartPairing::search(const msg_t &msg) {
   for (size_t i = 0; i < SALT.size(); i++) {
-    std::array<uint32_t, 6> s2 = {SALT[i][0], SALT[i][1], 0x5347ca56,
-                                  0x6d999e4f, 0x00000000, 0x00000000};
+    std::array<uint32_t, 6> s2 = {SALT[i][0], SALT[i][1], __builtin_bswap32(msg.timestampH), __builtin_bswap32(msg.timestampL), __builtin_bswap32(m_Stage[0].timestampH), __builtin_bswap32(m_Stage[0].timestampL)};
     std::array<uint32_t, 2> s3;
     s3 = hash(s2.data(), s2.size());
-    ESP_LOGI(LOG_TAG, "s3: %x %x", s3[0], s3[1]);
+    //ESP_LOGI(LOG_TAG, "s2: %x %x %x %x", __builtin_bswap32(msg.timestampH), __builtin_bswap32(msg.timestampL), __builtin_bswap32(m_Stage[0].timestampH), __builtin_bswap32(m_Stage[0].timestampL));
+    //ESP_LOGI(LOG_TAG, "s3: %x %x", s3[0], s3[1]);
+    //ESP_LOGI(LOG_TAG, "msg: %x %x", msg.id.device, msg.id.nonce);
+    if ((s3[0] == __builtin_bswap32(msg.id.device) && (s3[1] == __builtin_bswap32(msg.id.nonce)))) {
+      m_Salt = i;
+      ESP_LOGI(LOG_TAG, "secret = %x %x", SALT[i][0], SALT[i][1]);
+      break;
+    }
   }
 }
 
@@ -138,6 +198,37 @@ bool Nikon::SmartPairing::process(const uint8_t *data, const size_t length) {
   return false;
 }
 
+bool Nikon::SmartPairing::process(const msg_t &msg) {
+  return false;
+}
+
+const Nikon::Pairing::msg_t* Nikon::SmartPairing::processMessage(const msg_t &msg) {
+  switch (msg.stage) {
+    case 0:
+      m_Msg = &m_Stage[0];
+      return m_Msg;
+    case 2:
+    {
+      search(msg);
+      const msg_t *expected = &m_Stage[1];
+      if (memcmp(&msg, expected, sizeof(msg)) == 0) {
+        m_Msg = &m_Stage[2];
+        return m_Msg;
+      }
+    } break;
+    case 4:
+    {
+      const msg_t *expected = &m_Stage[3];
+      if (memcmp(&msg, expected, sizeof(msg)) == 0) {
+        m_Msg = &m_Stage[4];
+        return m_Msg;
+      }
+    } break;
+  }
+
+  return nullptr;
+}
+
 Nikon::Nikon(const void *data, size_t len) : Camera(Type::NIKON, PairType::SAVED) {
   if (len != sizeof(nikon_t))
     abort();
@@ -145,17 +236,19 @@ Nikon::Nikon(const void *data, size_t len) : Camera(Type::NIKON, PairType::SAVED
   const nikon_t *nikon = static_cast<const nikon_t *>(data);
   m_Name = std::string(nikon->name);
   m_Address = NimBLEAddress(nikon->address, nikon->type);
+  m_Timestamp = esp_timer_get_time();
   memcpy(&m_ID, &nikon->id, sizeof(m_ID));
-  m_RemotePair[0].id = m_ID;
-  m_Queue = xQueueCreate(3, sizeof(bool));
+  //m_RemotePair[0].id = m_ID;
+  m_Queue = xQueueCreate(3, sizeof(Pairing::msg_t *));
 }
 
 Nikon::Nikon(const NimBLEAdvertisedDevice *pDevice) : Camera(Type::NIKON, PairType::NEW) {
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
+  m_Timestamp = esp_timer_get_time();
   esp_fill_random(&m_ID, sizeof(m_ID));
-  m_RemotePair[0].id = m_ID;
-  m_Queue = xQueueCreate(3, sizeof(bool));
+  //m_RemotePair[0].id = m_ID;
+  m_Queue = xQueueCreate(3, sizeof(Pairing::msg_t *));
 }
 
 Nikon::~Nikon(void) {
@@ -199,8 +292,8 @@ bool Nikon::_connect(void) {
   m_Task = xTaskGetCurrentTaskHandle();
 
   // @todo
-  SmartPairing sp;
-  sp.search();
+  //SmartPairing sp(m_Timestamp, m_ID);
+  //sp.search();
 
   if (m_PairType == PairType::SAVED) {
     ESP_LOGI(LOG_TAG, "Scanning");
@@ -275,9 +368,10 @@ bool Nikon::_connect(void) {
     if (m_PairChr == nullptr) {
       return false;
     }
-    m_Pairing = new RemotePairing();
+    m_Pairing = new SmartPairing(m_Timestamp, m_ID);
     ESP_LOGI(LOG_TAG, "Connecting as smart device");
   } else {
+    m_Pairing = new RemotePairing();
     ESP_LOGI(LOG_TAG, "Connecting as remote");
   }
 
@@ -289,9 +383,12 @@ bool Nikon::_connect(void) {
             ESP_LOGI(LOG_TAG, "data(stage) = %s",
                      NimBLEUtils::dataToHexString(pData, length).c_str());
 #endif
-            bool rc = this->processStage(pData, length);
+            Nikon::Pairing::msg_t msg;
+            memcpy(&msg, pData, sizeof(msg));
+            auto pMsg = this->m_Pairing->processMessage(msg);
+            bool rc = (pMsg != nullptr);
             if (!rc) {
-              ESP_LOGI(LOG_TAG, "Stage %u response mismatch", this->getStage());
+              ESP_LOGI(LOG_TAG, "Stage %u response mismatch", this->m_Pairing->getStage());
             }
             xQueueSend(m_Queue, &rc, 0);
           },
@@ -318,14 +415,16 @@ bool Nikon::_connect(void) {
   // perform four stage handshake
   // m_PairMsg = {0x00, 0x00, 0x00};
   // m_Pairing->process(m_PairMsg);
-  processStage(reinterpret_cast<uint8_t *>(&m_PairMsg), sizeof(m_PairMsg));
+  //m_Pairing->processMessage({0x00, 0x00, {0x00, 0x00}});
+  //processStage(reinterpret_cast<uint8_t *>(&m_PairMsg), sizeof(m_PairMsg));
   for (; stage < 4 && !failed; stage += 2) {
-    if (!m_PairChr->writeValue((const uint8_t *)&m_PairMsg, sizeof(m_PairMsg), true)) {
+    auto *msg = m_Pairing->getMessage();
+    if (!m_PairChr->writeValue((const uint8_t *)msg, sizeof(*msg), true)) {
       return false;
     }
 #if NIKON_DEBUG
     ESP_LOGI(LOG_TAG, "sent = %s",
-             NimBLEUtils::dataToHexString((const uint8_t *)&m_PairMsg, sizeof(m_PairMsg)).c_str());
+             NimBLEUtils::dataToHexString((const uint8_t *)msg, sizeof(*msg)).c_str());
 #endif
 
     // wait 10s for a notification
@@ -362,6 +461,7 @@ bool Nikon::_connect(void) {
   return success;
 }
 
+#if 0
 bool Nikon::processStage(const uint8_t *data, const size_t length) {
   if (length != sizeof(pair_msg_t)) {
     return false;
@@ -394,10 +494,11 @@ bool Nikon::processStage(const uint8_t *data, const size_t length) {
 
   return false;
 }
+#endif
 
-uint8_t Nikon::getStage(void) {
-  return m_PairMsg.stage;
-}
+//uint8_t Nikon::getStage(void) {
+  //return m_PairMsg.stage;
+//}
 
 void Nikon::shutterPress(void) {
   std::array<uint8_t, 2> cmd = {MODE_SHUTTER, CMD_PRESS};
