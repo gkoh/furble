@@ -12,11 +12,11 @@ class Blowfish {
   Blowfish(const std::vector<uint8_t>);
 
   /** Blowfish encrypt. */
-  void encipher(uint32_t *xl, uint32_t *xr);
+  void encipher(uint32_t *xl, uint32_t *xr) const;
 
  protected:
   /** Blowfish F function. */
-  uint32_t f(uint32_t x);
+  uint32_t f(uint32_t x) const;
 
   static const size_t N = 16;
   std::array<uint32_t, N + 2> m_P = {
