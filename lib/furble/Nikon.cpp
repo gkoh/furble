@@ -50,7 +50,11 @@ const Nikon::Pairing::msg_t *Nikon::Pairing::getMessage(void) const {
   return m_Msg;
 }
 
-Nikon::RemotePairing::RemotePairing(void) : Pairing(Type::REMOTE, 0, {0x00, 0x00}) {
+Nikon::Pairing::Type Nikon::Pairing::getType(void) const {
+  return m_Type;
+}
+
+Nikon::RemotePairing::RemotePairing(const Pairing::id_t &id) : Pairing(Type::REMOTE, 0, id) {
   m_Stage[1].timestamp = 0x00;
   m_Stage[1].id = {0x00, 0x00};
   m_Stage[2].timestamp = 0x00;
@@ -232,9 +236,6 @@ void Nikon::onResult(const NimBLEAdvertisedDevice *pDevice) {
   }
 }
 
-/**
- * Connect to a Nikon.
- */
 bool Nikon::_connect(void) {
   bool success = false;
   m_Progress = 0;
@@ -267,12 +268,14 @@ bool Nikon::_connect(void) {
   ESP_LOGI(LOG_TAG, "Connected");
   m_Progress += 10;
 
-  ESP_LOGI(LOG_TAG, "Securing");
-  if (!m_Client->secureConnection()) {
-    return false;
-  }
-  ESP_LOGI(LOG_TAG, "Secured!");
-  m_Progress += 10;
+#if 0
+    ESP_LOGI(LOG_TAG, "Securing");
+    if (!m_Client->secureConnection()) {
+      return false;
+    }
+    ESP_LOGI(LOG_TAG, "Secured!");
+    m_Progress += 10;
+#endif
 
   auto *pSvc = m_Client->getService(SERVICE_UUID);
   if (pSvc == nullptr) {
@@ -316,7 +319,7 @@ bool Nikon::_connect(void) {
     m_Pairing = new SmartPairing(m_Timestamp, m_ID);
     ESP_LOGI(LOG_TAG, "Connecting as smart device");
   } else {
-    m_Pairing = new RemotePairing();
+    m_Pairing = new RemotePairing(m_ID);
     ESP_LOGI(LOG_TAG, "Connecting as remote");
   }
 
@@ -364,12 +367,6 @@ bool Nikon::_connect(void) {
     return false;
   }
 
-  const auto name = Device::getStringID();
-  ESP_LOGI(LOG_TAG, "Identifying as %s", name.c_str());
-  if (!m_Client->setValue(SERVICE_UUID, ID_CHR_UUID, name, true)) {
-    return false;
-  }
-
   m_Progress += 10;
 
   // wait for final OK
@@ -379,6 +376,12 @@ bool Nikon::_connect(void) {
   }
 
   ESP_LOGI(LOG_TAG, "%s", success ? "Done!" : "Failed to receive final OK.");
+
+  const auto name = Device::getStringID();
+  ESP_LOGI(LOG_TAG, "Identifying as %s", name.c_str());
+  if (!m_Client->setValue(SERVICE_UUID, ID_CHR_UUID, name, true)) {
+    return false;
+  }
 
   m_Progress = 100;
 

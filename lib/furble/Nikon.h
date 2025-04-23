@@ -37,6 +37,11 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
  private:
   class Pairing {
    public:
+    enum class Type {
+      REMOTE,
+      SMART_DEVICE,
+    };
+
     /** Identifier. */
     typedef struct __attribute__((packed)) _id_t {
       uint32_t device;  // sent in manufacturer data in reconnect
@@ -59,16 +64,11 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
       };
     } msg_t;
 
-    static const size_t MSG_SIZE = 17;
-
     virtual const msg_t *processMessage(const msg_t &msg) = 0;
     const msg_t *getMessage(void) const;
+    Type getType(void) const;
 
    protected:
-    enum class Type {
-      REMOTE,
-      SMART_DEVICE,
-    };
     Pairing(const Pairing::Type type, const uint64_t timestamp, const Pairing::id_t id);
 
     msg_t *m_Msg = nullptr;
@@ -80,7 +80,7 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
 
   class RemotePairing: public Pairing {
    public:
-    RemotePairing(void);
+    RemotePairing(const Pairing::id_t &id);
 
     const msg_t *processMessage(const msg_t &msg) final;
   };
@@ -103,16 +103,6 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   };
 
   static constexpr uint16_t COMPANY_ID = 0x0399;
-
-  /** Pairing message. */
-  typedef struct __attribute__((packed)) _pair_msg_t {
-    uint8_t stage;
-    uint64_t timestamp;
-    union {
-      uint64_t key;
-      Pairing::id_t id;
-    };
-  } pair_msg_t;
 
   /** Connect saved advertised manufacturer data. */
   typedef struct __attribute__((packed)) _nikon_adv_t {
@@ -193,6 +183,9 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   const NimBLEUUID TIME_CHR_UUID {0x00002006, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
   const NimBLEUUID GEO_CHR_UUID {0x00002007, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
 
+  // Unknown UUIDs
+  const NimBLEUUID UNK0_CHR_UUID {0x00002009, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+
   // Remote UUIDs
   const NimBLEUUID REMOTE_R1_CHR_UUID {0x00002080, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
   const NimBLEUUID REMOTE_W1_CHR_UUID {0x00002082, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
@@ -221,16 +214,7 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   uint64_t m_Timestamp;
   Pairing::id_t m_ID;
   NimBLERemoteCharacteristic *m_PairChr = nullptr;
-  Pairing *m_Pairing;
-#if 0
-  pair_msg_t m_PairMsg = {0x00, 0x00, 0x00};
-  pair_msg_t m_RemotePair[4] = {
-      {0x01, 0x00, 0x00},
-      {0x02, 0x00, 0x00},
-      {0x03, 0x00, 0x00},
-      {0x04, 0x00, 0x00},
-  };
-#endif
+  Pairing *m_Pairing = nullptr;
 
   QueueHandle_t m_Queue;
   TaskHandle_t m_Task;
@@ -243,11 +227,6 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
                     uint8_t &minutes,
                     uint8_t &seconds,
                     uint8_t &fraction);
-
-  /**
-   * Hash the inputs with the blowfish key schedule.
-   */
-  void bf_hash(uint32_t *src, uint32_t *dest, uint16_t length);
 
   /**
    * Called during scanning for connection to saved device.
