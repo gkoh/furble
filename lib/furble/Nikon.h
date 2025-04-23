@@ -30,9 +30,6 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   size_t getSerialisedBytes(void) const override;
   bool serialise(void *buffer, size_t bytes) const override;
 
-  //bool processStage(const uint8_t *data, const size_t length);
-  //uint8_t getStage(void);
-
  protected:
   bool _connect(void) override final;
   void _disconnect(void) override final;
@@ -56,17 +53,16 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
         };
         uint64_t timestamp;
       };
-      Pairing::id_t id;
+      union {
+        Pairing::id_t id;
+        char serial[8];
+      };
     } msg_t;
 
     static const size_t MSG_SIZE = 17;
 
-    virtual bool process(const msg_t &msg) = 0;
-    virtual bool process(const std::array<uint8_t, MSG_SIZE> data) = 0;
-    virtual bool process(const uint8_t *data, const size_t length) = 0;
-    virtual const msg_t* processMessage(const msg_t &msg) = 0;
-    uint8_t getStage(void);
-    msg_t *getMessage(void) const;
+    virtual const msg_t *processMessage(const msg_t &msg) = 0;
+    const msg_t *getMessage(void) const;
 
    protected:
     enum class Type {
@@ -76,7 +72,7 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
     Pairing(const Pairing::Type type, const uint64_t timestamp, const Pairing::id_t id);
 
     msg_t *m_Msg = nullptr;
-    std::array<msg_t, 5>m_Stage;
+    std::array<msg_t, 5> m_Stage;
 
    private:
     const Pairing::Type m_Type;
@@ -86,30 +82,24 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
    public:
     RemotePairing(void);
 
-    bool process(const msg_t &msg) final;
-    bool process(const std::array<uint8_t, MSG_SIZE> data) final;
-    bool process(const uint8_t *data, const size_t length) final;
-    const msg_t* processMessage(const msg_t &msg) final;
+    const msg_t *processMessage(const msg_t &msg) final;
   };
 
   class SmartPairing: public Pairing, Blowfish {
    public:
     SmartPairing(const uint64_t timestamp, const Pairing::id_t id);
 
-    bool process(const msg_t &msg) final;
-    bool process(const std::array<uint8_t, MSG_SIZE> data) final;
-    bool process(const uint8_t *data, const size_t length) final;
-    const msg_t* processMessage(const msg_t &msg) final;
+    const msg_t *processMessage(const msg_t &msg) final;
 
-    void search(const msg_t &msg);
     std::array<uint32_t, 2> hash(const uint32_t *src, size_t len) const;
 
    private:
     void scramble(uint32_t *pL, uint32_t *pR) const;
+    int8_t findSaltIndex(const msg_t &msg);
 
     static const std::vector<uint8_t> KEY;
     static const std::array<std::array<uint32_t, 2>, 8> SALT;
-    uint8_t m_Salt = 0;
+    int8_t m_Salt = -1;
   };
 
   static constexpr uint16_t COMPANY_ID = 0x0399;
@@ -180,7 +170,7 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
     char name[MAX_NAME]; /** Human readable device name. */
     uint64_t address;    /** Device MAC address. */
     uint8_t type;        /** Address type. */
-    Pairing::id_t id;             /** Unique identifiers. */
+    Pairing::id_t id;    /** Unique identifiers. */
   } nikon_t;
 
   // Re-pair scan time

@@ -68,7 +68,7 @@ uint32_t Blowfish::f(uint32_t x) const {
   return y;
 }
 
-void Blowfish::encipher(uint32_t *xl, uint32_t *xr) {
+void Blowfish::encipher(uint32_t *xl, uint32_t *xr) const {
   uint32_t Xl;
   uint32_t Xr;
   uint32_t temp;
