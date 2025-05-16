@@ -25,6 +25,7 @@ The following devices have been tested and confirmed to work:
    - Fujifilm GFX100 II ([@matthudsonau](https://github.com/matthudsonau))
    - Fujifilm GFX100S ([@adrianuseless](https://github.com/adrianuseless))
    - Fujifilm GFX50S II ([@TomaszLojewski](https://github.com/TomaszLojewski))
+   - Fujifilm X-E4 ([@Rediwed](https://github.com/Rediwed))
    - Fujifiml X-H1
    - Fujifilm X-H2S ([@val123456](https://github.com/val123456))
    - Fujifilm X-S10 ([@dimitrij2k](https://github.com/dimitrij2k))
