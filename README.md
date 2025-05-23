@@ -3,7 +3,11 @@
 ![PlatformIO CI](https://github.com/gkoh/furble/workflows/PlatformIO%20CI/badge.svg)
 
 A Bluetooth wireless remote shutter release originally targeted at Fujifilm mirrorless
-cameras.
+cameras. furble now supports:
+- Fujifilm
+- Canon
+- Nikon
+- Sony
 
 The remote uses the camera's native Bluetooth Low Energy interface thus additional
 adapters are not required.
@@ -42,6 +46,8 @@ The following devices have been tested and confirmed to work:
    - Canon EOS R6 Mark II ([@hijae](https://github.com/hijae))
 - Nikon
    - Nikon COOLPIX B600
+- Sony
+   - Sony ZV-1F
 - Mobile Devices (beta)
    - Android
    - iOS
@@ -70,12 +76,12 @@ Currently supported features in `furble`:
 
 ### Table of Features
 
-| &nbsp; | Fujifilm X & GFX | Canon EOS M6 | Canon EOS R | Nikon COOLPIX | Android & iOS |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| Scanning & Pairing | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
-| Shutter Release | ✔️ | ✔️ | ✔️ | ✔️ | ✔️|
-| Focus | ✔️ (see [#99](https://github.com/gkoh/furble/discussions/99)) | :x: | ✔️ | :x: | :x: |
-| GPS location tagging | ✔️ | :x: (WiFi only) | :x: | :x: | :x: |
+| &nbsp; | Fujifilm X & GFX | Canon EOS M6 | Canon EOS R | Nikon COOLPIX | Sony | Android & iOS |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Scanning & Pairing | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Shutter Release | ✔️ | ✔️ | ✔️ | ✔️ | ✔️| ✔️ |
+| Focus | ✔️ (see [#99](https://github.com/gkoh/furble/discussions/99)) | :x: | ✔️ | :x: | ✔️ | :x: |
+| GPS location tagging | ✔️ | :x: (WiFi only) | :x: | :x: | ✔️ | :x: |
 
 ## Installation
 
@@ -323,6 +329,21 @@ mode has no support for GPS or focus functions, thus only shutter release works.
 Note that other Nikon cameras will appear in the scan, but will not pair
 (further support is under investigation).
 
+#### Sony
+
+Sony cameras appear to use a reasonably uniform and robust bluetooth control
+protocol. Most modern Sony cameras should be supported. Testing was performed
+on Sony ZV-1F.
+
+To pair with a Sony camera (some models may have different menu options, the
+following matches the ZV-1F):
+- set 'Bluetooth Rmt Ctrl' to 'On'
+- set 'Bluetooth Function' 'On'
+- under Bluetooth, start 'Pairing'
+- start 'Scan' with `furble'
+   - due to an oddity with the Bluetooth library, if `furble` 'Scan' is started
+     first, the Sony camera may not appear
+
 #### Protocol Reverse Engineering
 
 Android supports snooping bluetooth traffic so it was trivial to grab a HCI log
@@ -393,16 +414,21 @@ the following libraries:
 - improve the device matching and connection abstractions
   - especially if more cameras get supported
 - Support more camera makes and models
-   - Complete support for newer Canon EOS (eg. RP)
+   - Complete GPS support for newer Canon EOS (eg. RP)
    - Get access to and support the following:
-     - Sony
+     - Nikon Z
      - Others?
 
 # Links
 
-Inspiration for this project came from the following project/posts:
-- https://github.com/hkr/fuji-cam-wifi-tool
-- https://iandouglasscott.com/2017/09/04/reverse-engineering-the-canon-t7i-s-bluetooth-work-in-progress/
-
-Related projects:
-- https://github.com/ArthurFDLR/BR-M5
+Inspiration, references and related information for this project came from the following projects/posts:
+- Canon
+   - https://iandouglasscott.com/2017/09/04/reverse-engineering-the-canon-t7i-s-bluetooth-work-in-progress/
+   - https://github.com/ArthurFDLR/BR-M5
+   - https://github.com/RReverser/eos-remote-web
+- Fujifilm
+  - https://github.com/hkr/fuji-cam-wifi-tool
+- Sony
+   - https://gethypoxic.com/blogs/technical/sony-camera-ble-control-protocol-di-remote-control
+   - https://gregleeds.com/reverse-engineering-sony-camera-bluetooth
+   - https://github.com/Staacks/alpharemote

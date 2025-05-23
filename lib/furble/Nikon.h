@@ -30,8 +30,8 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   bool serialise(void *buffer, size_t bytes) const override;
 
  protected:
-  bool _connect(void) override;
-  void _disconnect(void) override;
+  bool _connect(void) override final;
+  void _disconnect(void) override final;
 
  private:
   static constexpr uint16_t COMPANY_ID = 0x0399;
