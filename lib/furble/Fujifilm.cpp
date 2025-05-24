@@ -82,8 +82,8 @@ Fujifilm::Fujifilm(const NimBLEAdvertisedDevice *pDevice) : Camera(Type::FUJIFIL
  */
 bool Fujifilm::matches(const NimBLEAdvertisedDevice *pDevice) {
   if (pDevice->haveManufacturerData() && pDevice->getManufacturerData().length() == ADV_TOKEN_LEN) {
-    const char *data = pDevice->getManufacturerData().data();
-    if (data[0] == ID_0 && data[1] == ID_1 && data[2] == TYPE_TOKEN) {
+    const fujifilm_adv_t adv = pDevice->getManufacturerData<fujifilm_adv_t>();
+    if (adv.company_id == ID && adv.type_token == TYPE_TOKEN) {
       return true;
     }
   }

@@ -24,7 +24,7 @@ CanonEOS::CanonEOS(Type type, const NimBLEAdvertisedDevice *pDevice) : Camera(ty
   m_Address = pDevice->getAddress();
   ESP_LOGI(LOG_TAG, "Name = %s", m_Name.c_str());
   ESP_LOGI(LOG_TAG, "Address = %s", m_Address.toString().c_str());
-  Device::getUUID128(&m_Uuid);
+  m_Uuid = Device::getUUID128();
 }
 
 void CanonEOS::_disconnect(void) {

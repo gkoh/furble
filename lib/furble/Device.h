@@ -29,7 +29,7 @@ class Device {
   /**
    * Return a device consistent 128-bit UUID.
    */
-  static void getUUID128(uuid128_t *uuid);
+  static uuid128_t getUUID128(void);
 
   /**
    * Return pseudo-unique identifier string of this device.

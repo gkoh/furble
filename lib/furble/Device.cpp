@@ -33,14 +33,17 @@ void Device::init(esp_power_level_t power) {
 
   m_ID = std::string(m_StringID);
 
+  // Combine address and data for scan duplicate detection
+  NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DATA_DEVICE);
+
   NimBLEDevice::init(m_ID);
   NimBLEDevice::setPower(power);
-  NimBLEDevice::setSecurityAuth(true, true, true);
+  NimBLEDevice::setSecurityAuth(true, false, true);
   // NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_PUBLIC);
 }
 
-void Device::getUUID128(uuid128_t *uuid) {
-  *uuid = m_Uuid;
+Device::uuid128_t Device::getUUID128(void) {
+  return m_Uuid;
 }
 
 const std::string Device::getStringID(void) {

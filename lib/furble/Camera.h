@@ -29,6 +29,7 @@ class Camera {
     MOBILE_DEVICE = 4,
     FAUXNY = 5,
     NIKON = 6,
+    SONY = 7,
   };
 
   enum class PairType : uint8_t {
