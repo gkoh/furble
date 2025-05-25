@@ -28,15 +28,22 @@ class Fujifilm: public Camera {
   bool serialise(void *buffer, size_t bytes) const override final;
 
  protected:
-  bool _connect(void) override;
-  void _disconnect(void) override;
+  bool _connect(void) override final;
+  void _disconnect(void) override final;
 
  private:
   static constexpr size_t TOKEN_LEN = 4;
   static constexpr size_t ADV_TOKEN_LEN = 7;
-  static constexpr uint8_t ID_0 = 0xd8;
-  static constexpr uint8_t ID_1 = 0x04;
+  static constexpr uint16_t ID = 0x04d8;
   static constexpr uint8_t TYPE_TOKEN = 0x02;
+
+  /**
+   * Advertisement manufacturer data.
+   */
+  typedef struct __attribute__((packed)) {
+    uint16_t company_id;
+    uint8_t type_token;
+  } fujifilm_adv_t;
 
   /**
    * Time synchronisation.
