@@ -76,12 +76,16 @@ Currently supported features in `furble`:
 
 ### Table of Features
 
-| &nbsp; | Fujifilm X & GFX | Canon EOS M6 | Canon EOS R | Nikon COOLPIX | Sony | Android & iOS |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Scanning & Pairing | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
-| Shutter Release | ✔️ | ✔️ | ✔️ | ✔️ | ✔️| ✔️ |
-| Focus | ✔️ (see [#99](https://github.com/gkoh/furble/discussions/99)) | :x: | ✔️ | :x: | ✔️ | :x: |
-| GPS location tagging | ✔️ | :x: (WiFi only) | :x: | :x: | ✔️ | :x: |
+| Camera | Scanning & Pairing | Shutter Release | Focus | GPS     |
+| :---:  | :---:              | :---:           | :---: | :---:   |
+| Fujifilm X & GFX | ✔️        | ✔️               | ✔️[^1] | ✔️       |
+| Canon EOS M6     | ✔️        | ✔️               | :x:   | :x:[^2] |
+| Canon EOS R      | ✔️        | ✔️               | ✔️     | :x:     |
+| Nikon COOLPIX    | ✔️        | ✔️               | :x:   | :x:     |
+| Sony ZV          | ✔️        | ✔️               | ✔️     | ✔️       |
+
+[^1]: see [#99](https://github.com/gkoh/furble/discussions/99)
+[^2]: WiFi only
 
 ## Installation
 
@@ -157,7 +161,7 @@ For slider and roller elements (eg. brightness control, intervalometer numbers):
 
 #### Touch Screen
 
-At time of writing, only the M5Core2 has been tested. All user interface widget are touch responsive:
+At time of writing, only the M5Core2 has been tested. All user interface widgets are touch responsive:
 * in menus
    * touch the desired entry
    * drag up/down to scroll entries
@@ -230,7 +234,7 @@ Connection to mobile devices is a little iffy:
 
 ### GPS Location Tagging
 
-For Fujifilm cameras, location tagging is supported with the M5Stack GPS unit:
+For Fujifilm & Sony cameras, location tagging is supported with the M5Stack GPS unit:
 - [GPS/BDS Unit v1.1 (AT6668)](https://shop.m5stack.com/products/gps-bds-unit-v1-1-at6668)
 
 The previous unit is now EOL:
