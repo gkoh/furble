@@ -31,11 +31,10 @@ bool Sony::matches(const NimBLEAdvertisedDevice *pDevice) {
   if (pDevice->haveManufacturerData()
       && (pDevice->getManufacturerData().size() >= sizeof(sony_adv_t))) {
     const sony_adv_t adv = pDevice->getManufacturerData<sony_adv_t>();
-    if (adv.company_id == ADV_SONY_ID && adv.type == ADV_SONY_CAMERA
-        && (adv.mode22
-            & (ADV_MODE22_PAIRING_SUPPORTED | ADV_MODE22_PAIRING_ENABLED
-               | ADV_MODE22_REMOTE_ENABLED))) {
-      return true;
+    if (adv.company_id == ADV_SONY_ID && adv.type == ADV_SONY_CAMERA) {
+      uint8_t mode =
+          (ADV_MODE22_PAIRING_SUPPORTED | ADV_MODE22_PAIRING_ENABLED | ADV_MODE22_REMOTE_ENABLED);
+      return (adv.mode22 & mode) == mode;
     }
   }
 
