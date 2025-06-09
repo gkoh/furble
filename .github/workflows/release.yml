@@ -96,7 +96,7 @@ jobs:
     needs: release
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       deployments: write
     name: Deploy to Cloudflare Pages
 
@@ -117,8 +117,17 @@ jobs:
           mv furble-*.bin deploy/firmware
 
       - name: Publish
+        id: publish
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy deploy --project-name=furble-web-installer --branch=${{ !github.event.release.prerelease && 'main' || 'HEAD' }}
+
+      - name: Update release notes
+        uses: softprops/action-gh-release@v2
+        with:
+          append_body: true
+          body: |
+
+            **Deployment URL**: ${{ steps.publish.outputs.deployment-url }}
