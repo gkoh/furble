@@ -80,7 +80,7 @@ Currently supported features in `furble`:
 | :---:  | :---:              | :---:           | :---: | :---:   |
 | Fujifilm X & GFX | ✔️        | ✔️               | ✔️[^1] | ✔️       |
 | Canon EOS M6     | ✔️        | ✔️               | :x:   | :x:[^2] |
-| Canon EOS R      | ✔️        | ✔️               | ✔️     | :x:     |
+| Canon EOS R      | ✔️        | ✔️               | ✔️     | ✔️       |
 | Nikon COOLPIX    | ✔️        | ✔️               | :x:   | :x:     |
 | Sony ZV          | ✔️        | ✔️               | ✔️     | ✔️       |
 
@@ -418,7 +418,6 @@ the following libraries:
 - improve the device matching and connection abstractions
   - especially if more cameras get supported
 - Support more camera makes and models
-   - Complete GPS support for newer Canon EOS (eg. RP)
    - Get access to and support the following:
      - Nikon Z
      - Others?
