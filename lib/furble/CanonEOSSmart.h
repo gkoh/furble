@@ -1,19 +1,22 @@
-#ifndef CANONEOSR_H
-#define CANONEOSR_H
+#ifndef CANONEOSSMART_H
+#define CANONEOSSMART_H
 
 #include "CanonEOS.h"
 
 namespace Furble {
 /**
- * Canon EOS R.
+ * Canon EOS Smart Device.
+ *
+ * eg. M6
  */
-class CanonEOSR: public CanonEOS {
+class CanonEOSSmart: public CanonEOS {
  public:
-  CanonEOSR(const void *data, size_t len) : CanonEOS(Type::CANON_EOS_R, data, len) {};
-  CanonEOSR(const NimBLEAdvertisedDevice *pDevice) : CanonEOS(Type::CANON_EOS_R, pDevice) {};
+  CanonEOSSmart(const void *data, size_t len) : CanonEOS(Type::CANON_EOS_SMART, data, len) {};
+  CanonEOSSmart(const NimBLEAdvertisedDevice *pDevice)
+      : CanonEOS(Type::CANON_EOS_SMART, pDevice) {};
 
   /**
-   * Determine if the advertised BLE device is a Canon EOS R.
+   * Determine if the advertised BLE device is a Canon EOS pairing with a smart device.
    */
   static bool matches(const NimBLEAdvertisedDevice *pDevice);
 
@@ -36,14 +39,19 @@ class CanonEOSR: public CanonEOS {
     uint32_t timestamp;           // seconds since epoch
   } canon_geo_t;
 
-  // Primary service
   static const NimBLEUUID PRI_SVC_UUID;
+  /** 0xf108 */
+  const NimBLEUUID CHR_NAME_UUID {0x00010006, 0x0000, 0x1000, 0x0000d8492fffa821};
+  /** 0xf104 */
+  const NimBLEUUID CHR_IDEN_UUID {0x0001000a, 0x0000, 0x1000, 0x0000d8492fffa821};
 
-  // Name/ID characteristic
-  const NimBLEUUID ID_CHR_UUID {0x00050002, 0x0000, 0x1000, 0x0000d8492fffa821};
+  const NimBLEUUID SVC_MODE_UUID {0x00030000, 0x0000, 0x1000, 0x0000d8492fffa821};
+  /** 0xf307 */
+  const NimBLEUUID CHR_MODE_UUID {0x00030010, 0x0000, 0x1000, 0x0000d8492fffa821};
 
-  // Control characteristic (focus, shutter)
-  const NimBLEUUID CTRL_CHR_UUID {0x00050003, 0x0000, 0x1000, 0x0000d8492fffa821};
+  const NimBLEUUID SVC_SHUTTER_UUID {0x00030000, 0x0000, 0x1000, 0x0000d8492fffa821};
+  /** 0xf311 */
+  const NimBLEUUID CHR_SHUTTER_UUID {0x00030030, 0x0000, 0x1000, 0x0000d8492fffa821};
 
   // Location service
   const NimBLEUUID GEO_SVC_UUID {0x00040000, 0x0000, 0x1000, 0x0000d8492fffa821};
@@ -54,19 +62,23 @@ class CanonEOSR: public CanonEOS {
   // Location indication
   const NimBLEUUID GEO_IND_UUID {0x00040003, 0x0000, 0x1000, 0x0000d8492fffa821};
 
-  static constexpr uint8_t SHUTTER = 0x80;
-  static constexpr uint8_t FOCUS = 0x40;
-  static constexpr uint8_t CTRL = 0x0c;
+  static constexpr uint8_t PAIR_ACCEPT = 0x02;
+  static constexpr uint8_t PAIR_REJECT = 0x03;
+  static constexpr uint8_t MODE_PLAYBACK = 0x01;
+  static constexpr uint8_t MODE_SHOOT = 0x02;
+  static constexpr uint8_t MODE_WAKE = 0x03;
 
   static constexpr uint8_t GEO_REQUEST = 0x03;
   const std::array<uint8_t, 1> GEO_ENABLE = {0x01};
   static constexpr uint8_t GEO_SUCCESS = 0x02;
 
-  NimBLERemoteCharacteristic *m_Control = nullptr;
+  volatile uint8_t m_PairResult = 0x00;
   NimBLERemoteCharacteristic *m_Geo = nullptr;
   bool m_GeoEnabled = false;
 
   bool _connect(void) override final;
+
+  void pairCallback(NimBLERemoteCharacteristic *, uint8_t *, size_t, bool);
 };
 
 }  // namespace Furble
