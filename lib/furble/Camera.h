@@ -24,8 +24,8 @@ class Camera {
    */
   enum class Type : uint32_t {
     FUJIFILM = 1,
-    CANON_EOS_M6 = 2,
-    CANON_EOS_R = 3,
+    CANON_EOS_SMART = 2,
+    CANON_EOS_REMOTE = 3,
     MOBILE_DEVICE = 4,
     FAUXNY = 5,
     NIKON = 6,
