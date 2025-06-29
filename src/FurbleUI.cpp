@@ -106,6 +106,7 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
     case m5::board_t::board_M5StickCPlus2:
     case m5::board_t::board_M5StackCore2:
     case m5::board_t::board_M5Stack:
+    case m5::board_t::board_M5Tough:
       m_MinimumBrightness = 32;
       break;
     case m5::board_t::board_M5StickCPlus:
@@ -411,6 +412,7 @@ void UI::initInputDevices(void) {
       break;
 
     case m5::board_t::board_M5StackCore2:
+    case m5::board_t::board_M5Tough:
       m_Touch = lv_indev_create();
       lv_indev_set_type(m_Touch, LV_INDEV_TYPE_POINTER);
       lv_indev_set_read_cb(m_Touch, touchRead);
