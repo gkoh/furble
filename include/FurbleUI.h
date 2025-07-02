@@ -127,6 +127,9 @@ class UI {
 
   static ConnectContext_t m_ConnectContext;
 
+  // Click streak latency threshold in milliseconds
+  static const uint8_t m_ClickThreshold = 20;
+
   static const uint32_t m_KeyLeft = LV_KEY_LEFT;
   static const uint32_t m_KeyEnter = LV_KEY_ENTER;
   static const uint32_t m_KeyRight = LV_KEY_RIGHT;
@@ -225,8 +228,10 @@ class UI {
 
   lv_obj_t *m_PowerOff = nullptr;
 
-  static bool m_PMICHack;
-  static bool m_PMICClicked;
+  static uint8_t m_PMICClickCount;
+  bool m_PMICHack = false;
+  uint32_t m_PMICClickTime = 0;
+
   static void buttonPWRRead(lv_indev_t *drv, lv_indev_data_t *data);
   static void buttonPEKRead(lv_indev_t *drv, lv_indev_data_t *data);
   static void buttonARead(lv_indev_t *drv, lv_indev_data_t *data);
@@ -349,6 +354,9 @@ class UI {
 
   /** Configure slider control. */
   void configSliderControl(void);
+
+  /** Check lock screen activity. */
+  void handleLockScreen(void);
 };
 }  // namespace Furble
 
