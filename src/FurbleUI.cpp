@@ -373,8 +373,7 @@ void UI::displayFlush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map
 }
 
 uint32_t UI::tick(void) {
-  return xTaskGetTickCount();
-  //return (esp_timer_get_time() / 1000LL);
+  return (esp_timer_get_time() / 1000LL);
 }
 
 void UI::initInputDevices(void) {
@@ -1940,11 +1939,6 @@ void UI::handleLockScreen(void) {
 
 void UI::task(void) {
   while (true) {
-    uint32_t n = tick();
-    if ((n % 10000) == 0) {
-      ESP_LOGI("ui", "tick = %u", n);
-    }
-
     M5.update();
     if (m_PMICHack && M5.BtnPWR.wasClicked()) {
       // fake PMIC button as actual button, record the click streak
