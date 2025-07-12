@@ -10,7 +10,7 @@
 #include "Device.h"
 #include "Nikon.h"
 
-#define NIKON_DEBUG (1)
+#define NIKON_DEBUG (0)
 
 namespace Furble {
 
@@ -380,6 +380,13 @@ bool Nikon::_connect(void) {
   const auto name = Device::getStringID();
   ESP_LOGI(LOG_TAG, "Identifying as %s", name.c_str());
   if (!m_Client->setValue(SERVICE_UUID, ID_CHR_UUID, name, true)) {
+    return false;
+  }
+
+  if (m_Pairing->getType() == Pairing::Type::SMART_DEVICE) {
+    // Unable to continue at this time
+    // For some reason Nikon smart device pairing swaps to Bluetooth Classic to
+    // establish secure bond and our Bluetooth stack is LE only.
     return false;
   }
 
