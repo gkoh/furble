@@ -23,14 +23,12 @@ void app_main() {
 
   ESP_LOGI(LOG_TAG, "furble version: '%s'", FURBLE_VERSION);
 
-#if 0
   esp_pm_config_esp32_t pm_config = {
       .max_freq_mhz = 80,
       .min_freq_mhz = 10,
       .light_sleep_enable = true,
   };
   ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
-#endif
 
   auto cfg = M5.config();
   cfg.internal_imu = false;
