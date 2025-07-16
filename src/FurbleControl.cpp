@@ -94,7 +94,7 @@ Control &Control::getInstance(void) {
 
 Control::state_t Control::connectAll(void) {
   static uint32_t failcount = 0;
-  uint32_t timeout = m_InfiniteReconnect ? TIMEOUTMS_INFINITE : TIMEOUTMS_DEFAULT;
+  uint32_t timeout = m_InfiniteReconnect ? TIMEOUT_INFINITE_MS : TIMEOUT_DEFAULT_MS;
   const std::lock_guard<std::mutex> lock(m_Mutex);
 
   // Iterate over cameras and attempt connection.
@@ -119,8 +119,8 @@ Control::state_t Control::connectAll(void) {
 
   if (m_InfiniteReconnect || (failcount < 2)) {
     if (m_InfiniteReconnect) {
-      // sleep for timeout duration for 50% duty cycle
-      vTaskDelay(pdMS_TO_TICKS(TIMEOUTMS_INFINITE));
+      // sleep to idle
+      vTaskDelay(pdMS_TO_TICKS(SLEEP_INFINITE_MS));
     }
     return STATE_CONNECT;
   }

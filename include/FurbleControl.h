@@ -68,8 +68,9 @@ class Control {
   Control &operator=(Control const &) = delete;
   Control &operator=(Control &&) = delete;
 
-  const uint32_t TIMEOUTMS_DEFAULT = (30 * 1000);
-  const uint32_t TIMEOUTMS_INFINITE = (10 * 1000);
+  const uint32_t TIMEOUT_DEFAULT_MS = (30 * 1000);
+  const uint32_t TIMEOUT_INFINITE_MS = (5 * 1000);
+  const uint32_t SLEEP_INFINITE_MS = (5 * 1000);
 
   /**
    * FreeRTOS control task function.
