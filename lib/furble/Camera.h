@@ -62,8 +62,13 @@ class Camera {
 
   /**
    * Wrapper for protected pure virtual Camera::_connect().
+   *
+   * @param[in] power ESP32 transmit power level.
+   * @param[in] timeout Connection timeout in milliseconds.
+   *
+   * @return true iff the connect succeeded.
    */
-  bool connect(esp_power_level_t power);
+  bool connect(esp_power_level_t power, uint32_t timeout);
 
   /**
    * Wrapper for protected pure virtual Camera::_disconnect();

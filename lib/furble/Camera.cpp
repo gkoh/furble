@@ -13,8 +13,11 @@ Camera::~Camera() {
   m_Client = nullptr;
 }
 
-bool Camera::connect(esp_power_level_t power) {
+bool Camera::connect(esp_power_level_t power, uint32_t timeout) {
   const std::lock_guard<std::mutex> lock(m_Mutex);
+
+  // adjust connection timeout
+  m_Client->setConnectTimeout(timeout);
 
   // try extending range by adjusting connection parameters
   bool connected = this->_connect();
