@@ -12,12 +12,10 @@
 #include "FurbleSettings.h"
 #include "FurbleUI.h"
 
-extern "C" {
-
-void app_main() {
+void setup() {
   BaseType_t xRet;
-  TaskHandle_t xControlHandle = NULL;
-  TaskHandle_t xUIHandle = NULL;
+  TaskHandle_t xControlHandle = nullptr;
+  TaskHandle_t xUIHandle = nullptr;
 
   Serial.begin(115200);
 
@@ -28,7 +26,7 @@ void app_main() {
       .min_freq_mhz = 10,
       .light_sleep_enable = true,
   };
-  ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
+  ESP_ERROR_CHECK_WITHOUT_ABORT(esp_pm_configure(&pm_config));
 
   auto cfg = M5.config();
   cfg.internal_imu = false;
@@ -54,4 +52,5 @@ void app_main() {
     abort();
   }
 }
-}
+
+void loop() {}
