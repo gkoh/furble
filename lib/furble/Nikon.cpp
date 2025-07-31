@@ -9,7 +9,7 @@
 #include "Device.h"
 #include "Nikon.h"
 
-#define NIKON_DEBUG (0)
+#define NIKON_DEBUG (1)
 
 namespace Furble {
 
