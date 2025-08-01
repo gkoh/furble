@@ -104,17 +104,14 @@ bool Nikon::_connect(void) {
   ESP_LOGI(LOG_TAG, "Connected");
   m_Progress += 10;
 
-  ESP_LOGI(LOG_TAG, "Securing");
-  if (!m_Client->secureConnection()) {
-    return false;
-  }
-  ESP_LOGI(LOG_TAG, "Secured!");
-  m_Progress += 10;
-
+  ESP_LOGI(LOG_TAG, "Getting service UUID");
   auto *pSvc = m_Client->getService(SERVICE_UUID);
   if (pSvc == nullptr) {
     return false;
   }
+
+  ESP_LOGI(LOG_TAG, "Got service UUID!");
+  m_Progress += 10;
 
   volatile bool failed = false;
   volatile uint8_t stage = 0x00;
