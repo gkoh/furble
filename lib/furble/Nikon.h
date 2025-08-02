@@ -80,7 +80,7 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
 
   class RemotePairing: public Pairing {
    public:
-    RemotePairing(const Pairing::id_t &id);
+    RemotePairing(const uint64_t timestamp, const Pairing::id_t &id);
 
     const msg_t *processMessage(const msg_t &msg) final;
   };
@@ -217,7 +217,6 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   Pairing *m_Pairing = nullptr;
 
   QueueHandle_t m_Queue;
-  TaskHandle_t m_Task;
 
   /**
    * Convert decimal degrees to degrees, minutes, seconds and fraction.

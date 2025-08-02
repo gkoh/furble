@@ -10,7 +10,7 @@
 #include "Device.h"
 #include "Nikon.h"
 
-#define NIKON_DEBUG (0)
+#define NIKON_DEBUG (1)
 
 namespace Furble {
 
@@ -54,7 +54,8 @@ Nikon::Pairing::Type Nikon::Pairing::getType(void) const {
   return m_Type;
 }
 
-Nikon::RemotePairing::RemotePairing(const Pairing::id_t &id) : Pairing(Type::REMOTE, 0, id) {
+Nikon::RemotePairing::RemotePairing(const uint64_t timestamp, const Pairing::id_t &id)
+    : Pairing(Type::REMOTE, timestamp, id) {
   m_Stage[1].timestamp = 0x00;
   m_Stage[1].id = {0x00, 0x00};
   m_Stage[2].timestamp = 0x00;
@@ -201,6 +202,9 @@ Nikon::Nikon(const NimBLEAdvertisedDevice *pDevice) : Camera(Type::NIKON, PairTy
   m_Address = pDevice->getAddress();
   esp_fill_random(&m_Timestamp, sizeof(m_Timestamp));
   esp_fill_random(&m_ID, sizeof(m_ID));
+  // remote mode device ID always seems to start with 0x01
+  m_ID.device &= __builtin_bswap32(0x00ffffff);
+  m_ID.device |= __builtin_bswap32(0x01000000);
   m_Queue = xQueueCreate(3, sizeof(Pairing::msg_t *));
 }
 
@@ -239,7 +243,6 @@ void Nikon::onResult(const NimBLEAdvertisedDevice *pDevice) {
 bool Nikon::_connect(void) {
   bool success = false;
   m_Progress = 0;
-  m_Task = xTaskGetCurrentTaskHandle();
 
   if (m_PairType == PairType::SAVED) {
     ESP_LOGI(LOG_TAG, "Scanning");
@@ -268,43 +271,8 @@ bool Nikon::_connect(void) {
   ESP_LOGI(LOG_TAG, "Connected");
   m_Progress += 10;
 
-#if 0
-    ESP_LOGI(LOG_TAG, "Securing");
-    if (!m_Client->secureConnection()) {
-      return false;
-    }
-    ESP_LOGI(LOG_TAG, "Secured!");
-    m_Progress += 10;
-#endif
-
   auto *pSvc = m_Client->getService(SERVICE_UUID);
   if (pSvc == nullptr) {
-    return false;
-  }
-
-  volatile bool failed = false;
-  volatile uint8_t stage = 0x00;
-
-  auto *pChr = pSvc->getCharacteristic(NOT1_CHR_UUID);
-  if (pChr == nullptr) {
-    return false;
-  }
-
-  if (!pChr->subscribe(
-          true,
-          [this](NimBLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData,
-                 size_t length, bool isNotify) {
-            bool rc = false;
-#if NIKON_DEBUG
-            ESP_LOGI(LOG_TAG, "data(not1) = %s",
-                     NimBLEUtils::dataToHexString(pData, length).c_str());
-#endif
-            if (memcmp(pData, SUCCESS.data(), length) == 0) {
-              rc = true;
-            }
-            xQueueSend(m_Queue, &rc, 0);
-          },
-          true)) {
     return false;
   }
 
@@ -317,12 +285,47 @@ bool Nikon::_connect(void) {
       return false;
     }
     m_Pairing = new SmartPairing(m_Timestamp, m_ID);
-    ESP_LOGI(LOG_TAG, "Connecting as smart device");
+    ESP_LOGI(LOG_TAG, "Connecting as smart device, subscribing to success notification");
+    auto *pChr = pSvc->getCharacteristic(NOT1_CHR_UUID);
+    if (!pChr->subscribe(
+            true,
+            [this](NimBLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData,
+                   size_t length, bool isNotify) {
+              bool rc = false;
+#if NIKON_DEBUG
+              ESP_LOGI(LOG_TAG, "data(not1) = %s",
+                       NimBLEUtils::dataToHexString(pData, length).c_str());
+#endif
+              if (memcmp(pData, SUCCESS.data(), length) == 0) {
+                rc = true;
+              }
+              xQueueSend(m_Queue, &rc, 0);
+            },
+            true)) {
+      return false;
+    }
+    ESP_LOGI(LOG_TAG, "Subscribed to success notification!");
   } else {
-    m_Pairing = new RemotePairing(m_ID);
-    ESP_LOGI(LOG_TAG, "Connecting as remote");
+    // Remote timestamp always seems to be 0x01
+    m_Pairing = new RemotePairing(__builtin_bswap64(0x01), m_ID);
+    ESP_LOGI(LOG_TAG, "Connecting as remote, subscribing to indication 1");
+    auto *pChr = pSvc->getCharacteristic(REMOTE_IND1_CHR_UUID);
+    if (!pChr->subscribe(
+            false,
+            [this](NimBLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData,
+                   size_t length, bool isNotify) {
+#if NIKON_DEBUG
+              ESP_LOGI(LOG_TAG, "data(ind1) = %s",
+                       NimBLEUtils::dataToHexString(pData, length).c_str());
+#endif
+            },
+            true)) {
+      return false;
+    }
+    ESP_LOGI(LOG_TAG, "Subscribed to indication 1!");
   }
 
+  ESP_LOGI(LOG_TAG, "Subscribing to pairing indication");
   if (!m_PairChr->subscribe(
           false,
           [this](NimBLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData,
@@ -343,9 +346,12 @@ bool Nikon::_connect(void) {
           true)) {
     return false;
   }
+  ESP_LOGI(LOG_TAG, "Subscribed to pairing indication!");
+
+  success = true;
 
   // perform four stage handshake
-  for (; stage < 4 && !failed; stage += 2) {
+  for (uint8_t stage = 0; stage < 4 && success; stage += 2) {
     const auto *msg = m_Pairing->getMessage();
     if (!m_PairChr->writeValue((const uint8_t *)msg, sizeof(*msg), true)) {
       return false;
@@ -357,9 +363,7 @@ bool Nikon::_connect(void) {
 
     // wait 10s for a notification
     BaseType_t timeout = xQueueReceive(m_Queue, &success, pdMS_TO_TICKS(10000));
-    if (timeout == pdFALSE) {
-      success = false;
-    }
+    success = (timeout == pdTRUE);
     m_Progress += 5;
   }
 
@@ -369,13 +373,20 @@ bool Nikon::_connect(void) {
 
   m_Progress += 10;
 
-  // wait for final OK
-  BaseType_t timeout = xQueueReceive(m_Queue, &success, pdMS_TO_TICKS(10000));
-  if (timeout == pdFALSE) {
-    success = false;
+  if (m_Pairing->getType() == Pairing::Type::SMART_DEVICE) {
+    // wait for final OK
+    BaseType_t timeout = xQueueReceive(m_Queue, &success, pdMS_TO_TICKS(10000));
+    if (timeout == pdFALSE) {
+      success = false;
+    }
+    ESP_LOGI(LOG_TAG, "%s", success ? "Done!" : "Failed to receive final OK.");
+  } else {
+    success = true;
   }
 
-  ESP_LOGI(LOG_TAG, "%s", success ? "Done!" : "Failed to receive final OK.");
+  if (!success) {
+    return false;
+  }
 
   const auto name = Device::getStringID();
   ESP_LOGI(LOG_TAG, "Identifying as %s", name.c_str());
@@ -387,6 +398,7 @@ bool Nikon::_connect(void) {
     // Unable to continue at this time
     // For some reason Nikon smart device pairing swaps to Bluetooth Classic to
     // establish secure bond and our Bluetooth stack is LE only.
+    ESP_LOGI(LOG_TAG, "Nikon smart device pairing not fully functional");
     return false;
   }
 
