@@ -391,13 +391,13 @@ bool Nikon::_connect(void) {
     return false;
   }
 
-  const auto name = Device::getStringID();
-  ESP_LOGI(LOG_TAG, "Identifying as %s", name.c_str());
-  if (!m_Client->setValue(SERVICE_UUID, ID_CHR_UUID, name, true)) {
-    return false;
-  }
-
   if (m_Pairing->getType() == Pairing::Type::SMART_DEVICE) {
+    const auto name = Device::getStringID();
+    ESP_LOGI(LOG_TAG, "Identifying as %s", name.c_str());
+    if (!m_Client->setValue(SERVICE_UUID, ID_CHR_UUID, name, true)) {
+      return false;
+    }
+
     // Unable to continue at this time
     // For some reason Nikon smart device pairing swaps to Bluetooth Classic to
     // establish secure bond and our Bluetooth stack is LE only.
