@@ -81,8 +81,11 @@ const Nikon::Pairing::msg_t *Nikon::RemotePairing::processMessage(const msg_t &m
     } break;
     case 4:
     {
-      const msg_t *expected = &m_Stage[3];
-      if (memcmp(&msg, expected, sizeof(msg)) == 0) {
+      if (msg.timestamp == m_Stage[3].timestamp) {
+        char serial[sizeof(msg.serial) + 1] = {0x00};
+        strncpy(serial, msg.serial, sizeof(serial) - 1);
+
+        ESP_LOGI(LOG_TAG, "Serial: %s", serial);
         m_Msg = &m_Stage[4];
         return m_Msg;
       }
