@@ -381,8 +381,8 @@ bool Nikon::_connect(void) {
     BaseType_t timeout = xQueueReceive(m_Queue, &success, pdMS_TO_TICKS(10000));
     if (timeout == pdFALSE) {
       success = false;
+      ESP_LOGI(LOG_TAG, "Failed to receive final OK.");
     }
-    ESP_LOGI(LOG_TAG, "%s", success ? "Done!" : "Failed to receive final OK.");
   } else {
     success = true;
   }
@@ -402,8 +402,26 @@ bool Nikon::_connect(void) {
     // For some reason Nikon smart device pairing swaps to Bluetooth Classic to
     // establish secure bond and our Bluetooth stack is LE only.
     ESP_LOGI(LOG_TAG, "Nikon smart device pairing not fully functional");
+
     return false;
+  } else {
+#if NIKON_DEBUG
+    // dump various characteristics
+    std::array<const NimBLEUUID, 7> read_uuids = {
+        UNK1_CHR_UUID, UNK2_CHR_UUID, UNK3_CHR_UUID, UNK4_CHR_UUID,
+        UNK5_CHR_UUID, UNK6_CHR_UUID, UNK7_CHR_UUID,
+    };
+
+    ESP_LOGI(LOG_TAG, "Reading various characteristics ...");
+    for (auto uuid : read_uuids) {
+      auto v = m_Client->getValue(SERVICE_UUID, uuid);
+      ESP_LOGI(LOG_TAG, " %s = '%s'", uuid.toString().c_str(),
+               NimBLEUtils::dataToHexString(v.data(), v.size()).c_str());
+    }
+#endif
   }
+
+  ESP_LOGI(LOG_TAG, "%s", success ? "Done!" : "Failed to receive final OK.");
 
   m_Progress = 100;
 
@@ -412,12 +430,12 @@ bool Nikon::_connect(void) {
 
 void Nikon::shutterPress(void) {
   std::array<uint8_t, 2> cmd = {MODE_SHUTTER, CMD_PRESS};
-  m_Client->setValue(SERVICE_UUID, REMOTE_SHUTTER_CHR_UUID, {cmd.data(), cmd.size()}, false);
+  m_Client->setValue(SERVICE_UUID, REMOTE_SHUTTER_CHR_UUID, {cmd.data(), cmd.size()}, true);
 }
 
 void Nikon::shutterRelease(void) {
   std::array<uint8_t, 2> cmd = {MODE_SHUTTER, CMD_RELEASE};
-  m_Client->setValue(SERVICE_UUID, REMOTE_SHUTTER_CHR_UUID, {cmd.data(), cmd.size()}, false);
+  m_Client->setValue(SERVICE_UUID, REMOTE_SHUTTER_CHR_UUID, {cmd.data(), cmd.size()}, true);
 }
 
 void Nikon::focusPress(void) {
