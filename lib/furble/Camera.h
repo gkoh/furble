@@ -23,13 +23,14 @@ class Camera {
    * Camera types.
    */
   enum class Type : uint32_t {
-    FUJIFILM = 1,
+    FUJIFILM_BASIC = 1,
     CANON_EOS_M6 = 2,
     CANON_EOS_R = 3,
     MOBILE_DEVICE = 4,
     FAUXNY = 5,
     NIKON = 6,
     SONY = 7,
+    FUJIFILM_SECURE = 8,
   };
 
   enum class PairType : uint8_t {
