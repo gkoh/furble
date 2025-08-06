@@ -38,6 +38,9 @@ class FujifilmSecure: public Fujifilm {
     uint8_t type;        /** Address type. */
   } nvs_t;
 
+  // Advertised service UUID
+  static const NimBLEUUID SERVICE_UUID;
+
   // Primary service UUID
   static const NimBLEUUID PRI_SVC_UUID;
 
