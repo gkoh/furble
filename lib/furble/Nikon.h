@@ -235,6 +235,9 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
                     uint8_t &seconds,
                     uint8_t &fraction);
 
+  /** Advertised device has requisite service UUID. */
+  static bool matchesServiceUUID(const NimBLEAdvertisedDevice *pDevice);
+
   /**
    * Called during scanning for connection to saved device.
    */

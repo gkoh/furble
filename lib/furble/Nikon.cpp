@@ -197,7 +197,7 @@ Nikon::Nikon(const void *data, size_t len) : Camera(Type::NIKON, PairType::SAVED
   m_Address = NimBLEAddress(nikon->address, nikon->type);
   esp_fill_random(&m_Timestamp, sizeof(m_Timestamp));
   memcpy(&m_ID, &nikon->id, sizeof(m_ID));
-  m_Queue = xQueueCreate(3, sizeof(Pairing::msg_t *));
+  m_Queue = xQueueCreate(3, sizeof(bool));
 }
 
 Nikon::Nikon(const NimBLEAdvertisedDevice *pDevice) : Camera(Type::NIKON, PairType::NEW) {
@@ -208,37 +208,37 @@ Nikon::Nikon(const NimBLEAdvertisedDevice *pDevice) : Camera(Type::NIKON, PairTy
   // remote mode device ID always seems to start with 0x01
   m_ID.device &= __builtin_bswap32(0x00ffffff);
   m_ID.device |= __builtin_bswap32(0x01000000);
-  m_Queue = xQueueCreate(3, sizeof(Pairing::msg_t *));
+  m_Queue = xQueueCreate(3, sizeof(bool));
 }
 
 Nikon::~Nikon(void) {
   vQueueDelete(m_Queue);
 }
 
+bool Nikon::matchesServiceUUID(const NimBLEAdvertisedDevice *pDevice) {
+  return (pDevice->haveServiceUUID() && (pDevice->getServiceUUID() == SERVICE_UUID));
+}
+
 /**
  * Determine if the advertised BLE device is a Nikon.
+ *
+ * During remote pairing, the camera appears to:
+ * * advertise the service UUID
+ * * have no manufacturer data
  */
 bool Nikon::matches(const NimBLEAdvertisedDevice *pDevice) {
-  if (pDevice->haveServiceUUID()) {
-    auto uuid = pDevice->getServiceUUID();
-
-    return (uuid == SERVICE_UUID);
-  }
-
-  return false;
+  return (!pDevice->haveManufacturerData() && matchesServiceUUID(pDevice));
 }
 
 void Nikon::onResult(const NimBLEAdvertisedDevice *pDevice) {
-  if (Nikon::matches(pDevice)) {
-    if (pDevice->haveManufacturerData()) {
-      nikon_adv_t saved = {COMPANY_ID, m_ID.device, 0x00};
-      nikon_adv_t found = pDevice->getManufacturerData<nikon_adv_t>();
+  if (pDevice->haveManufacturerData() && matchesServiceUUID(pDevice)) {
+    nikon_adv_t saved = {COMPANY_ID, m_ID.device, 0x00};
+    nikon_adv_t found = pDevice->getManufacturerData<nikon_adv_t>();
 
-      if (memcmp(&saved, &found, sizeof(saved)) == 0) {
-        m_Address = pDevice->getAddress();
-        bool success = true;
-        xQueueSend(m_Queue, &success, 0);
-      }
+    if ((saved.companyID == found.companyID) && (saved.device == found.device)) {
+      m_Address = pDevice->getAddress();
+      bool success = true;
+      xQueueSend(m_Queue, &success, 0);
     }
   }
 }
@@ -366,7 +366,12 @@ bool Nikon::_connect(void) {
 
     // wait 10s for a notification
     BaseType_t timeout = xQueueReceive(m_Queue, &success, pdMS_TO_TICKS(10000));
-    success = (timeout == pdTRUE);
+    if (timeout == pdFALSE) {
+      success = false;
+      ESP_LOGI(LOG_TAG, "Timeout waiting for stage response.");
+      break;
+    }
+
     m_Progress += 5;
   }
 
@@ -381,7 +386,7 @@ bool Nikon::_connect(void) {
     BaseType_t timeout = xQueueReceive(m_Queue, &success, pdMS_TO_TICKS(10000));
     if (timeout == pdFALSE) {
       success = false;
-      ESP_LOGI(LOG_TAG, "Failed to receive final OK.");
+      ESP_LOGI(LOG_TAG, "Timeout waiting for final OK.");
     }
   } else {
     success = true;
@@ -405,20 +410,7 @@ bool Nikon::_connect(void) {
 
     return false;
   } else {
-#if NIKON_DEBUG
-    // dump various characteristics
-    std::array<const NimBLEUUID, 7> read_uuids = {
-        UNK1_CHR_UUID, UNK2_CHR_UUID, UNK3_CHR_UUID, UNK4_CHR_UUID,
-        UNK5_CHR_UUID, UNK6_CHR_UUID, UNK7_CHR_UUID,
-    };
-
-    ESP_LOGI(LOG_TAG, "Reading various characteristics ...");
-    for (auto uuid : read_uuids) {
-      auto v = m_Client->getValue(SERVICE_UUID, uuid);
-      ESP_LOGI(LOG_TAG, " %s = '%s'", uuid.toString().c_str(),
-               NimBLEUtils::dataToHexString(v.data(), v.size()).c_str());
-    }
-#endif
+    // nothing more needed for remote mode
   }
 
   ESP_LOGI(LOG_TAG, "%s", success ? "Done!" : "Failed to receive final OK.");
