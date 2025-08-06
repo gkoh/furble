@@ -21,8 +21,11 @@ void FujifilmBasic::print_token(const std::array<uint8_t, TOKEN_LEN> &token) {
  */
 bool FujifilmBasic::matches(const NimBLEAdvertisedDevice *pDevice) {
   if (Fujifilm::matches(pDevice) && pDevice->getManufacturerData().length() == ADV_LEN) {
-    return pDevice->isAdvertisingService(PRI1_SVC_UUID)
-           || pDevice->isAdvertisingService(PRI2_SVC_UUID);
+    const fujifilm_adv_t adv = pDevice->getManufacturerData<fujifilm_adv_t>();
+    if (adv.type == TYPE_TOKEN) {
+      return pDevice->isAdvertisingService(PRI1_SVC_UUID)
+             || pDevice->isAdvertisingService(PRI2_SVC_UUID);
+    }
   }
 
   return false;

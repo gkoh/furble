@@ -62,8 +62,6 @@ class Fujifilm: public Camera {
   NimBLERemoteCharacteristic *m_Shutter = nullptr;
 
  private:
-  static constexpr uint8_t TYPE_TOKEN = 0x02;
-
   /**
    * Time synchronisation.
    */

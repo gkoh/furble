@@ -30,6 +30,8 @@ class FujifilmBasic: public Fujifilm {
   static constexpr size_t ADV_LEN = 7;
   static constexpr size_t TOKEN_LEN = 4;
 
+  static constexpr uint8_t TYPE_TOKEN = 0x02;
+
   /**
    * Advertisement manufacturer data.
    */

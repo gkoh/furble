@@ -60,9 +60,7 @@ bool Fujifilm::matches(const NimBLEAdvertisedDevice *pDevice) {
   if (pDevice->haveManufacturerData()
       && pDevice->getManufacturerData().length() >= sizeof(fujifilm_adv_t)) {
     const fujifilm_adv_t adv = pDevice->getManufacturerData<fujifilm_adv_t>();
-    if (adv.company_id == COMPANY_ID && adv.type == TYPE_TOKEN) {
-      return true;
-    }
+    return (adv.company_id == COMPANY_ID);
   }
   return false;
 }
