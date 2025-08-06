@@ -9,13 +9,14 @@
 
 namespace Furble {
 
+const NimBLEUUID FujifilmSecure::SERVICE_UUID {0xa9d2b304, 0xe8d6, 0x4902, 0x8336352b772d7597};
 const NimBLEUUID FujifilmSecure::PRI_SVC_UUID {0x731893f9, 0x744e, 0x4899, 0xb7e3174106ff2b82};
 
 /**
  * Determine if the advertised BLE device is a Fujifilm secure camera.
  */
 bool FujifilmSecure::matches(const NimBLEAdvertisedDevice *pDevice) {
-  if (Fujifilm::matches(pDevice) && pDevice->isAdvertisingService(PRI_SVC_UUID)) {
+  if (Fujifilm::matches(pDevice) && pDevice->isAdvertisingService(SERVICE_UUID)) {
     return true;
   }
 
