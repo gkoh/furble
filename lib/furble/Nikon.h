@@ -3,6 +3,7 @@
 
 #include <NimBLERemoteCharacteristic.h>
 
+#include "Blowfish.h"
 #include "Camera.h"
 #include "Scan.h"
 
@@ -34,13 +35,74 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   void _disconnect(void) override final;
 
  private:
-  static constexpr uint16_t COMPANY_ID = 0x0399;
+  class Pairing {
+   public:
+    enum class Type {
+      REMOTE,
+      SMART_DEVICE,
+    };
 
-  /** Identifier. */
-  typedef struct __attribute__((packed)) _id_t {
-    uint32_t device;  // sent in manufacturer data in reconnect
-    uint32_t nonce;
-  } id_t;
+    /** Identifier. */
+    typedef struct __attribute__((packed)) _id_t {
+      uint32_t device;  // sent in manufacturer data in reconnect
+      uint32_t nonce;
+    } id_t;
+
+    /** Pairing message. */
+    typedef struct __attribute__((packed)) _msg_t {
+      uint8_t stage;
+      union {
+        struct __attribute__((packed)) {
+          uint32_t timestampH;
+          uint32_t timestampL;
+        };
+        uint64_t timestamp;
+      };
+      union {
+        Pairing::id_t id;
+        char serial[8];
+      };
+    } msg_t;
+
+    virtual const msg_t *processMessage(const msg_t &msg) = 0;
+    const msg_t *getMessage(void) const;
+    Type getType(void) const;
+
+   protected:
+    Pairing(const Pairing::Type type, const uint64_t timestamp, const Pairing::id_t id);
+
+    msg_t *m_Msg = nullptr;
+    std::array<msg_t, 5> m_Stage;
+
+   private:
+    const Pairing::Type m_Type;
+  };
+
+  class RemotePairing: public Pairing {
+   public:
+    RemotePairing(const uint64_t timestamp, const Pairing::id_t &id);
+
+    const msg_t *processMessage(const msg_t &msg) final;
+  };
+
+  class SmartPairing: public Pairing, Blowfish {
+   public:
+    SmartPairing(const uint64_t timestamp, const Pairing::id_t id);
+
+    const msg_t *processMessage(const msg_t &msg) final;
+
+    std::array<uint32_t, 2> hash(const uint32_t *src, size_t len) const;
+
+   private:
+    void scramble(uint32_t *pL, uint32_t *pR) const;
+    int8_t findSaltIndex(const msg_t &msg);
+
+    static const std::vector<uint8_t> KEY;
+    static const std::array<std::array<uint32_t, 2>, 8> SALT;
+    int8_t m_Salt = -1;
+  };
+
+  static constexpr uint16_t COMPANY_ID = 0x0399;
 
   /** Connect saved advertised manufacturer data. */
   typedef struct __attribute__((packed)) _nikon_adv_t {
@@ -48,16 +110,6 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
     uint32_t device;
     uint8_t zero;
   } nikon_adv_t;
-
-  /** Pairing message. */
-  typedef struct __attribute__((packed)) _pair_msg_t {
-    uint8_t stage;
-    uint64_t timestamp;
-    union {
-      uint64_t key;
-      id_t id;
-    };
-  } pair_msg_t;
 
   /** Time synchronisation. */
   typedef struct __attribute__((packed)) _nikon_time_t {
@@ -69,14 +121,19 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
     uint8_t second;
   } nikon_time_t;
 
+  // 10 bytes
   typedef struct __attribute__((packed)) _timesync_msg_t {
     nikon_time_t time;
-    uint8_t pad[3];
+    uint8_t dst_offset;
+    uint8_t tz_offset_hours;
+    uint8_t tz_offset_minutes;
   } timesync_msg_t;
 
+  // 41 bytes
   /** Location synchronisation. */
   typedef struct __attribute__((packed)) _nikon_geo_t {
-    uint16_t header;             // 0x7f00
+    uint16_t header;             // 0x7f00 = isLat | isLon | isSat | isAlt |
+                                 // isPos | isGps | isMap
     uint8_t latitude_direction;  // {N|S}
     uint8_t latitude_degrees;
     uint8_t latitude_minutes;
@@ -87,10 +144,11 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
     uint8_t longitude_minutes;
     uint8_t longitude_seconds;
     uint8_t longitude_fraction;
-    uint8_t unknown0[2];
+    uint16_t extras;  // always 0x0050? no. of satellites
     uint16_t altitude;
     nikon_time_t time;
-    uint8_t unknown1[2];
+    uint8_t subseconds;
+    uint8_t valid;        // 0x01 == valid
     uint8_t standard[6];  // WGS-84
     uint8_t pad[10];
   } nikon_geo_t;
@@ -102,7 +160,7 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
     char name[MAX_NAME]; /** Human readable device name. */
     uint64_t address;    /** Device MAC address. */
     uint8_t type;        /** Address type. */
-    id_t id;             /** Unique identifiers. */
+    Pairing::id_t id;    /** Unique identifiers. */
   } nikon_t;
 
   // Re-pair scan time
@@ -112,12 +170,19 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   static const NimBLEUUID SERVICE_UUID;
 
   // Subscription UUIDs
-  const NimBLEUUID NOT1_CHR_UUID {0x0002008, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
-  const NimBLEUUID NOT2_CHR_UUID {0x000200a, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
-  const NimBLEUUID IND0_CHR_UUID {0x0002000, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID NOT1_CHR_UUID {0x00002008, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID NOT2_CHR_UUID {0x0000200a, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
 
-  // Unknown UUIDs
-  const NimBLEUUID UNK1_CHR_UUID {0x00002000, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  // Stage UUIDs
+  const NimBLEUUID PAIR_CHR_UUID {0x00002000, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+
+  const NimBLEUUID UNK1_CHR_UUID {0x00002009, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID UNK2_CHR_UUID {0x00002080, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID UNK3_CHR_UUID {0x00002086, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID UNK4_CHR_UUID {0x00002001, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID UNK5_CHR_UUID {0x00002082, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID UNK6_CHR_UUID {0x00002084, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID UNK7_CHR_UUID {0x00002001, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
 
   // Identifier UUIDs
   const NimBLEUUID ID_CHR_UUID {0x00002002, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
@@ -126,13 +191,16 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   const NimBLEUUID TIME_CHR_UUID {0x00002006, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
   const NimBLEUUID GEO_CHR_UUID {0x00002007, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
 
+  // Unknown UUIDs
+  const NimBLEUUID UNK0_CHR_UUID {0x00002009, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+
   // Remote UUIDs
-  const NimBLEUUID R1_CHR_UUID {0x00002080, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
-  const NimBLEUUID W1_CHR_UUID {0x00002082, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID REMOTE_R1_CHR_UUID {0x00002080, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID REMOTE_W1_CHR_UUID {0x00002082, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
   const NimBLEUUID REMOTE_SHUTTER_CHR_UUID {0x00002083, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
-  const NimBLEUUID IND1_CHR_UUID {0x00002084, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
-  const NimBLEUUID R2_CHR_UUID {0x00002086, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
-  const NimBLEUUID IND2_CHR_UUID {0x00002087, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID REMOTE_IND1_CHR_UUID {0x00002084, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID REMOTE_R2_CHR_UUID {0x00002086, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
+  const NimBLEUUID REMOTE_PAIR_CHR_UUID {0x00002087, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
 
   // Notification responses
   static const std::array<uint8_t, 2> SUCCESS;
@@ -151,16 +219,12 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   static const uint8_t CMD_PRESS = 0x02;
   static const uint8_t CMD_RELEASE = 0x00;
 
-  id_t m_ID;
-  pair_msg_t m_RemotePair[4] = {
-      {0x01, 0x00, 0x00},
-      {0x02, 0x00, 0x00},
-      {0x03, 0x00, 0x00},
-      {0x04, 0x00, 0x00},
-  };
+  uint64_t m_Timestamp;
+  Pairing::id_t m_ID;
+  NimBLERemoteCharacteristic *m_PairChr = nullptr;
+  Pairing *m_Pairing = nullptr;
 
   QueueHandle_t m_Queue;
-  TaskHandle_t m_Task;
 
   /**
    * Convert decimal degrees to degrees, minutes, seconds and fraction.
@@ -170,6 +234,9 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
                     uint8_t &minutes,
                     uint8_t &seconds,
                     uint8_t &fraction);
+
+  /** Advertised device has requisite service UUID. */
+  static bool matchesServiceUUID(const NimBLEAdvertisedDevice *pDevice);
 
   /**
    * Called during scanning for connection to saved device.

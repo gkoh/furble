@@ -6,16 +6,187 @@
 
 #include <esp_random.h>
 
+#include "Blowfish.h"
 #include "Device.h"
 #include "Nikon.h"
 
-#define NIKON_DEBUG (0)
+#define NIKON_DEBUG (1)
 
 namespace Furble {
 
+const std::vector<uint8_t> Nikon::SmartPairing::KEY = {0xff, 0xff, 0xaa, 0x55,
+                                                       0x11, 0x22, 0x33, 0x00};
+const std::array<std::array<uint32_t, 2>, 8> Nikon::SmartPairing::SALT = {
+    {
+     {0x704066e4u, 0x0433d552u},
+     {0xed4b8facu, 0x15f7e47bu},
+     {0x24471f11u, 0x8b5ea1fcu},
+     {0x05960c31u, 0x2b8c7f41u},
+     {0xfda588c1u, 0xeba8b1f3u},
+     {0x99166056u, 0x1bd3d550u},
+     {0xcd32687fu, 0xa9e28a30u},
+     {0x2a8fe834u, 0xdec7ebf4u},
+
+     }
+};
 const NimBLEUUID Nikon::SERVICE_UUID {0x0000de00, 0x3dd4, 0x4255, 0x8d626dc7b9bd5561};
 const std::array<uint8_t, 2> Nikon::SUCCESS = {0x01, 0x00};
 const std::array<uint8_t, 2> Nikon::GEO = {0x00, 0x01};
+
+Nikon::Pairing::Pairing(const Pairing::Type type, const uint64_t timestamp, const id_t id)
+    : m_Type(type) {
+  m_Stage[0].stage = 0x01;
+  m_Stage[0].timestamp = timestamp;
+  m_Stage[0].id = id;
+  m_Stage[1].stage = 0x02;
+  m_Stage[2].stage = 0x03;
+  m_Stage[3].stage = 0x04;
+  m_Stage[4].stage = 0x05;
+
+  m_Msg = &m_Stage[0];
+};
+
+const Nikon::Pairing::msg_t *Nikon::Pairing::getMessage(void) const {
+  return m_Msg;
+}
+
+Nikon::Pairing::Type Nikon::Pairing::getType(void) const {
+  return m_Type;
+}
+
+Nikon::RemotePairing::RemotePairing(const uint64_t timestamp, const Pairing::id_t &id)
+    : Pairing(Type::REMOTE, timestamp, id) {
+  m_Stage[1].timestamp = 0x00;
+  m_Stage[1].id = {0x00, 0x00};
+  m_Stage[2].timestamp = 0x00;
+  m_Stage[2].id = {0x00, 0x00};
+  m_Stage[3].timestamp = 0x00;
+  m_Stage[3].id = {0x00, 0x00};
+  m_Stage[4].timestamp = 0x00;
+  m_Stage[4].id = {0x00, 0x00};
+};
+
+const Nikon::Pairing::msg_t *Nikon::RemotePairing::processMessage(const msg_t &msg) {
+  switch (msg.stage) {
+    case 0:
+      m_Msg = &m_Stage[0];
+      return m_Msg;
+    case 2:
+    {
+      const msg_t *expected = &m_Stage[1];
+      if (memcmp(&msg, expected, sizeof(msg)) == 0) {
+        m_Msg = &m_Stage[2];
+        return m_Msg;
+      }
+    } break;
+    case 4:
+    {
+      if (msg.timestamp == m_Stage[3].timestamp) {
+        char serial[sizeof(msg.serial) + 1] = {0x00};
+        strncpy(serial, msg.serial, sizeof(serial) - 1);
+
+        ESP_LOGI(LOG_TAG, "Serial: %s", serial);
+        m_Msg = &m_Stage[4];
+        return m_Msg;
+      }
+    } break;
+  }
+
+  return nullptr;
+}
+
+Nikon::SmartPairing::SmartPairing(const uint64_t timestamp, const id_t id)
+    : Pairing(Type::SMART_DEVICE, timestamp, id), Blowfish(KEY) {
+  m_Stage[2].timestamp = timestamp;
+};
+
+void Nikon::SmartPairing::scramble(uint32_t *pL, uint32_t *pR) const {
+  uint32_t xL = *pL;
+  uint32_t xR = *pR;
+  uint32_t tmp = 0;
+
+  for (int i = 0; i < N; i++) {
+    tmp = xL ^ m_P[i];
+    xL = f(tmp) ^ xR;
+    xR = tmp;
+  }
+
+  *pL = tmp ^ m_P[N + 1];
+  *pR = xL ^ m_P[N];
+}
+
+std::array<uint32_t, 2> Nikon::SmartPairing::hash(const uint32_t *src, size_t len) const {
+  uint32_t right = 0x05060708;
+  uint32_t left = 0x01020304;
+  uint32_t inL = 0;
+  uint32_t inR = 0;
+
+  for (uint16_t i = 0; i < len; i += 2) {
+    inL = src[i] ^ left;
+    inR = src[i + 1] ^ right;
+    scramble(&inL, &inR);
+    left = inL;
+    right = inR;
+  }
+
+  return std::array<uint32_t, 2> {inL, inR};
+}
+
+int8_t Nikon::SmartPairing::findSaltIndex(const msg_t &msg) {
+  for (size_t i = 0; i < SALT.size(); i++) {
+    std::array<uint32_t, 6> s = {SALT[i][0],
+                                 SALT[i][1],
+                                 __builtin_bswap32(msg.timestampH),
+                                 __builtin_bswap32(msg.timestampL),
+                                 __builtin_bswap32(m_Stage[0].timestampH),
+                                 __builtin_bswap32(m_Stage[0].timestampL)};
+    std::array<uint32_t, 2> s2 = hash(s.data(), s.size());
+    if ((s2[0] == __builtin_bswap32(msg.id.device) && (s2[1] == __builtin_bswap32(msg.id.nonce)))) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+const Nikon::Pairing::msg_t *Nikon::SmartPairing::processMessage(const msg_t &msg) {
+  switch (msg.stage) {
+    case 0:
+      m_Msg = &m_Stage[0];
+      return m_Msg;
+    case 2:
+    {
+      m_Salt = findSaltIndex(msg);
+      if (m_Salt >= 0) {
+        std::array<uint32_t, 6> buffer = {SALT[m_Salt][0],
+                                          SALT[m_Salt][1],
+                                          __builtin_bswap32(m_Stage[0].timestampH),
+                                          __builtin_bswap32(m_Stage[0].timestampL),
+                                          __builtin_bswap32(msg.timestampH),
+                                          __builtin_bswap32(msg.timestampL)};
+        std::array<uint32_t, 2> s3 = hash(buffer.data(), buffer.size());
+        m_Stage[2].id = {__builtin_bswap32(s3[0]), __builtin_bswap32(s3[1])};
+        m_Msg = &m_Stage[2];
+
+        m_Stage[3].timestamp = msg.timestamp;
+
+        return m_Msg;
+      }
+    } break;
+    case 4:
+    {
+      if (msg.timestamp == m_Stage[3].timestamp) {
+        char serial[sizeof(msg.serial) + 1] = {0x00};
+        strncpy(serial, msg.serial, sizeof(serial) - 1);
+
+        ESP_LOGI(LOG_TAG, "Serial: %s", serial);
+        m_Msg = &m_Stage[4];
+        return m_Msg;
+      }
+    } break;
+  }
+
+  return nullptr;
+}
 
 Nikon::Nikon(const void *data, size_t len) : Camera(Type::NIKON, PairType::SAVED) {
   if (len != sizeof(nikon_t))
@@ -24,16 +195,19 @@ Nikon::Nikon(const void *data, size_t len) : Camera(Type::NIKON, PairType::SAVED
   const nikon_t *nikon = static_cast<const nikon_t *>(data);
   m_Name = std::string(nikon->name);
   m_Address = NimBLEAddress(nikon->address, nikon->type);
+  esp_fill_random(&m_Timestamp, sizeof(m_Timestamp));
   memcpy(&m_ID, &nikon->id, sizeof(m_ID));
-  m_RemotePair[0].id = m_ID;
   m_Queue = xQueueCreate(3, sizeof(bool));
 }
 
 Nikon::Nikon(const NimBLEAdvertisedDevice *pDevice) : Camera(Type::NIKON, PairType::NEW) {
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
+  esp_fill_random(&m_Timestamp, sizeof(m_Timestamp));
   esp_fill_random(&m_ID, sizeof(m_ID));
-  m_RemotePair[0].id = m_ID;
+  // remote mode device ID always seems to start with 0x01
+  m_ID.device &= __builtin_bswap32(0x00ffffff);
+  m_ID.device |= __builtin_bswap32(0x01000000);
   m_Queue = xQueueCreate(3, sizeof(bool));
 }
 
@@ -41,41 +215,37 @@ Nikon::~Nikon(void) {
   vQueueDelete(m_Queue);
 }
 
+bool Nikon::matchesServiceUUID(const NimBLEAdvertisedDevice *pDevice) {
+  return (pDevice->haveServiceUUID() && (pDevice->getServiceUUID() == SERVICE_UUID));
+}
+
 /**
  * Determine if the advertised BLE device is a Nikon.
+ *
+ * During remote pairing, the camera appears to:
+ * * advertise the service UUID
+ * * have no manufacturer data
  */
 bool Nikon::matches(const NimBLEAdvertisedDevice *pDevice) {
-  if (pDevice->haveServiceUUID()) {
-    auto uuid = pDevice->getServiceUUID();
-
-    return (uuid == SERVICE_UUID);
-  }
-
-  return false;
+  return (!pDevice->haveManufacturerData() && matchesServiceUUID(pDevice));
 }
 
 void Nikon::onResult(const NimBLEAdvertisedDevice *pDevice) {
-  if (Nikon::matches(pDevice)) {
-    if (pDevice->haveManufacturerData()) {
-      nikon_adv_t saved = {COMPANY_ID, m_ID.device, 0x00};
-      nikon_adv_t found = pDevice->getManufacturerData<nikon_adv_t>();
+  if (pDevice->haveManufacturerData() && matchesServiceUUID(pDevice)) {
+    nikon_adv_t saved = {COMPANY_ID, m_ID.device, 0x00};
+    nikon_adv_t found = pDevice->getManufacturerData<nikon_adv_t>();
 
-      if (memcmp(&saved, &found, sizeof(saved)) == 0) {
-        m_Address = pDevice->getAddress();
-        bool success = true;
-        xQueueSend(m_Queue, &success, 0);
-      }
+    if ((saved.companyID == found.companyID) && (saved.device == found.device)) {
+      m_Address = pDevice->getAddress();
+      bool success = true;
+      xQueueSend(m_Queue, &success, 0);
     }
   }
 }
 
-/**
- * Connect to a Nikon.
- */
 bool Nikon::_connect(void) {
   bool success = false;
   m_Progress = 0;
-  m_Task = xTaskGetCurrentTaskHandle();
 
   if (m_PairType == PairType::SAVED) {
     ESP_LOGI(LOG_TAG, "Scanning");
@@ -104,88 +274,104 @@ bool Nikon::_connect(void) {
   ESP_LOGI(LOG_TAG, "Connected");
   m_Progress += 10;
 
-  ESP_LOGI(LOG_TAG, "Securing");
-  if (!m_Client->secureConnection()) {
-    return false;
-  }
-  ESP_LOGI(LOG_TAG, "Secured!");
-  m_Progress += 10;
-
   auto *pSvc = m_Client->getService(SERVICE_UUID);
   if (pSvc == nullptr) {
     return false;
   }
 
-  volatile bool failed = false;
-  volatile uint8_t stage = 0x00;
-
-  auto *pChr = pSvc->getCharacteristic(NOT1_CHR_UUID);
-  if (pChr == nullptr) {
-    return false;
+  // try as remote connection first
+  m_PairChr = pSvc->getCharacteristic(REMOTE_PAIR_CHR_UUID);
+  if (m_PairChr == nullptr) {
+    // then try as smart device
+    m_PairChr = pSvc->getCharacteristic(PAIR_CHR_UUID);
+    if (m_PairChr == nullptr) {
+      return false;
+    }
+    m_Pairing = new SmartPairing(m_Timestamp, m_ID);
+    ESP_LOGI(LOG_TAG, "Connecting as smart device, subscribing to success notification");
+    auto *pChr = pSvc->getCharacteristic(NOT1_CHR_UUID);
+    if (!pChr->subscribe(
+            true,
+            [this](NimBLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData,
+                   size_t length, bool isNotify) {
+              bool rc = false;
+#if NIKON_DEBUG
+              ESP_LOGI(LOG_TAG, "data(not1) = %s",
+                       NimBLEUtils::dataToHexString(pData, length).c_str());
+#endif
+              if (memcmp(pData, SUCCESS.data(), length) == 0) {
+                rc = true;
+              }
+              xQueueSend(m_Queue, &rc, 0);
+            },
+            true)) {
+      return false;
+    }
+    ESP_LOGI(LOG_TAG, "Subscribed to success notification!");
+  } else {
+    // Remote timestamp always seems to be 0x01
+    m_Pairing = new RemotePairing(__builtin_bswap64(0x01), m_ID);
+    ESP_LOGI(LOG_TAG, "Connecting as remote, subscribing to indication 1");
+    auto *pChr = pSvc->getCharacteristic(REMOTE_IND1_CHR_UUID);
+    if (!pChr->subscribe(
+            false,
+            [this](NimBLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData,
+                   size_t length, bool isNotify) {
+#if NIKON_DEBUG
+              ESP_LOGI(LOG_TAG, "data(ind1) = %s",
+                       NimBLEUtils::dataToHexString(pData, length).c_str());
+#endif
+            },
+            true)) {
+      return false;
+    }
+    ESP_LOGI(LOG_TAG, "Subscribed to indication 1!");
   }
 
-  if (!pChr->subscribe(
-          true,
+  ESP_LOGI(LOG_TAG, "Subscribing to pairing indication");
+  if (!m_PairChr->subscribe(
+          false,
           [this](NimBLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData,
                  size_t length, bool isNotify) {
-            bool rc = false;
 #if NIKON_DEBUG
-            ESP_LOGI(LOG_TAG, "data(not1) = %s",
+            ESP_LOGI(LOG_TAG, "data(stage) = %s",
                      NimBLEUtils::dataToHexString(pData, length).c_str());
 #endif
-            if (memcmp(pData, SUCCESS.data(), length) == 0) {
-              rc = true;
+            Nikon::Pairing::msg_t msg;
+            memcpy(&msg, pData, sizeof(msg));
+            auto pMsg = this->m_Pairing->processMessage(msg);
+            bool rc = (pMsg != nullptr);
+            if (!rc) {
+              ESP_LOGI(LOG_TAG, "Stage response mismatch");
             }
             xQueueSend(m_Queue, &rc, 0);
           },
           true)) {
     return false;
   }
+  ESP_LOGI(LOG_TAG, "Subscribed to pairing indication!");
 
-  pChr = pSvc->getCharacteristic(IND2_CHR_UUID);
-  if (pChr == nullptr) {
-    return false;
-  }
-  if (!pChr->subscribe(
-          false,
-          [this, &stage, &failed](NimBLERemoteCharacteristic *pBLERemoteCharacteristic,
-                                  uint8_t *pData, size_t length, bool isNotify) {
-            bool rc = false;
-#if NIKON_DEBUG
-            ESP_LOGI(LOG_TAG, "data(ind2) = %s",
-                     NimBLEUtils::dataToHexString(pData, length).c_str());
-#endif
-            if (memcmp(pData, &m_RemotePair[stage + 1], length) == 0) {
-              rc = true;
-            } else {
-              ESP_LOGI(LOG_TAG, "Stage %u response mismatch", stage);
-              rc = false;
-            }
-            xQueueSend(m_Queue, &rc, 0);
-          },
-          true)) {
-    return false;
-  }
+  success = true;
 
   // perform four stage handshake
-  for (; stage < 4 && !failed; stage += 2) {
-    if (!m_Client->setValue(
-            SERVICE_UUID, IND2_CHR_UUID,
-            {(const uint8_t *)&m_RemotePair[stage], (uint16_t)sizeof(m_RemotePair[stage])}, true)) {
+  for (uint8_t stage = 0; stage < 4 && success; stage += 2) {
+    const auto *msg = m_Pairing->getMessage();
+    if (!m_PairChr->writeValue((const uint8_t *)msg, sizeof(*msg), true)) {
       return false;
     }
 #if NIKON_DEBUG
     ESP_LOGI(LOG_TAG, "sent = %s",
-             NimBLEUtils::dataToHexString((const uint8_t *)&m_RemotePair[stage],
-                                          sizeof(m_RemotePair[stage]))
-                 .c_str());
+             NimBLEUtils::dataToHexString((const uint8_t *)msg, sizeof(*msg)).c_str());
 #endif
 
     // wait 10s for a notification
     BaseType_t timeout = xQueueReceive(m_Queue, &success, pdMS_TO_TICKS(10000));
     if (timeout == pdFALSE) {
       success = false;
+      ESP_LOGI(LOG_TAG, "Timeout waiting for stage response.");
+      break;
     }
+
     m_Progress += 5;
   }
 
@@ -193,18 +379,38 @@ bool Nikon::_connect(void) {
     return false;
   }
 
-  const auto name = Device::getStringID();
-  ESP_LOGI(LOG_TAG, "Identifying as %s", name.c_str());
-  if (!m_Client->setValue(SERVICE_UUID, ID_CHR_UUID, name, true)) {
+  m_Progress += 10;
+
+  if (m_Pairing->getType() == Pairing::Type::SMART_DEVICE) {
+    // wait for final OK
+    BaseType_t timeout = xQueueReceive(m_Queue, &success, pdMS_TO_TICKS(10000));
+    if (timeout == pdFALSE) {
+      success = false;
+      ESP_LOGI(LOG_TAG, "Timeout waiting for final OK.");
+    }
+  } else {
+    success = true;
+  }
+
+  if (!success) {
     return false;
   }
 
-  m_Progress += 10;
+  if (m_Pairing->getType() == Pairing::Type::SMART_DEVICE) {
+    const auto name = Device::getStringID();
+    ESP_LOGI(LOG_TAG, "Identifying as %s", name.c_str());
+    if (!m_Client->setValue(SERVICE_UUID, ID_CHR_UUID, name, true)) {
+      return false;
+    }
 
-  // wait for final OK
-  BaseType_t timeout = xQueueReceive(m_Queue, &success, pdMS_TO_TICKS(10000));
-  if (timeout == pdFALSE) {
-    success = false;
+    // Unable to continue at this time
+    // For some reason Nikon smart device pairing swaps to Bluetooth Classic to
+    // establish secure bond and our Bluetooth stack is LE only.
+    ESP_LOGI(LOG_TAG, "Nikon smart device pairing not fully functional");
+
+    return false;
+  } else {
+    // nothing more needed for remote mode
   }
 
   ESP_LOGI(LOG_TAG, "%s", success ? "Done!" : "Failed to receive final OK.");
@@ -216,12 +422,12 @@ bool Nikon::_connect(void) {
 
 void Nikon::shutterPress(void) {
   std::array<uint8_t, 2> cmd = {MODE_SHUTTER, CMD_PRESS};
-  m_Client->setValue(SERVICE_UUID, REMOTE_SHUTTER_CHR_UUID, {cmd.data(), cmd.size()}, false);
+  m_Client->setValue(SERVICE_UUID, REMOTE_SHUTTER_CHR_UUID, {cmd.data(), cmd.size()}, true);
 }
 
 void Nikon::shutterRelease(void) {
   std::array<uint8_t, 2> cmd = {MODE_SHUTTER, CMD_RELEASE};
-  m_Client->setValue(SERVICE_UUID, REMOTE_SHUTTER_CHR_UUID, {cmd.data(), cmd.size()}, false);
+  m_Client->setValue(SERVICE_UUID, REMOTE_SHUTTER_CHR_UUID, {cmd.data(), cmd.size()}, true);
 }
 
 void Nikon::focusPress(void) {
@@ -254,10 +460,11 @@ void Nikon::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
       .longitude_minutes = 0,
       .longitude_seconds = 0,
       .longitude_fraction = 0,
-      .unknown0 = {0x00, 0x50},
+      .extras = (uint16_t)gps.satellites,
       .altitude = (uint16_t)gps.altitude,
       .time = ntime,
-      .unknown1 = {0x1e, 0x01},
+      .subseconds = (uint8_t)timesync.centisecond,
+      .valid = 0x01,
       .standard = {'W', 'G', 'S', '-', '8', '4'},
       .pad = {0x00},
   };
