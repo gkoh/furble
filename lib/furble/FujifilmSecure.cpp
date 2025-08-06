@@ -16,9 +16,26 @@ const NimBLEUUID FujifilmSecure::PRI_SVC_UUID {0x731893f9, 0x744e, 0x4899, 0xb7e
  * Determine if the advertised BLE device is a Fujifilm secure camera.
  */
 bool FujifilmSecure::matches(const NimBLEAdvertisedDevice *pDevice) {
+#if 1
+  if (pDevice->haveManufacturerData()
+      && pDevice->getManufacturerData().length() >= sizeof(fujifilm_adv_t)) {
+    const fujifilm_adv_t adv = pDevice->getManufacturerData<fujifilm_adv_t>();
+    if (adv.company_id == COMPANY_ID) {
+      ESP_LOGI(LOG_TAG, "Found Fujifilm (0x%x, 0x%02x): %s", adv.company_id, adv.type,
+               pDevice->getAddress().toString().c_str());
+      if (pDevice->haveServiceUUID()) {
+        ESP_LOGI(LOG_TAG, "Service UUID count = %u", pDevice->getServiceUUIDCount());
+        ESP_LOGI(LOG_TAG, "Service UUID(0) = %s", pDevice->getServiceUUID().toString().c_str());
+      } else {
+        ESP_LOGI(LOG_TAG, "No service UUIDs");
+      }
+    }
+  }
+#else
   if (Fujifilm::matches(pDevice) && pDevice->isAdvertisingService(SERVICE_UUID)) {
     return true;
   }
+#endif
 
   return false;
 }
