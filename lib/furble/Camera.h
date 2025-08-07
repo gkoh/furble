@@ -59,6 +59,7 @@ class Camera {
     unsigned int second;
   } timesync_t;
 
+  Camera();
   ~Camera();
 
   /**

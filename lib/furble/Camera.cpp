@@ -4,20 +4,24 @@
 
 namespace Furble {
 
-Camera::Camera(Type type, PairType pairType) : m_PairType(pairType), m_Type(type) {
-  m_Client = NimBLEDevice::createClient();
-}
+Camera::Camera(Type type, PairType pairType) : m_PairType(pairType), m_Type(type) {}
 
 Camera::~Camera() {
-  NimBLEDevice::deleteClient(m_Client);
   m_Client = nullptr;
 }
 
 bool Camera::connect(esp_power_level_t power, uint32_t timeout) {
   const std::lock_guard<std::mutex> lock(m_Mutex);
 
-  // adjust connection timeout
+  m_Client = NimBLEDevice::createClient();
+  if (m_Client == nullptr) {
+    ESP_LOGI(LOG_TAG, "Failed to create client");
+    return false;
+  }
+
+  // adjust connection timeout and parameters
   m_Client->setConnectTimeout(timeout);
+  m_Client->setConnectionParams(m_MinInterval, m_MaxInterval, m_Latency, m_Timeout);
 
   // try extending range by adjusting connection parameters
   bool connected = this->_connect();
@@ -25,7 +29,6 @@ bool Camera::connect(esp_power_level_t power, uint32_t timeout) {
     if (m_Type != Type::FAUXNY) {
       // Set BLE transmit power after connection is established.
       NimBLEDevice::setPower(power);
-      m_Client->updateConnParams(m_MinInterval, m_MaxInterval, m_Latency, m_Timeout);
     }
     m_Connected = true;
   } else {
@@ -41,6 +44,10 @@ void Camera::disconnect(void) {
   m_Active = false;
   m_Progress = 0;
   this->_disconnect();
+
+  if (m_Client) {
+    NimBLEDevice::deleteClient(m_Client);
+  }
 }
 
 bool Camera::isActive(void) const {
