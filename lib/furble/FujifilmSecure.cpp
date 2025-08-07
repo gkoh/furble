@@ -65,8 +65,6 @@ bool FujifilmSecure::subscribeNotification(const NimBLEUUID &svc, const NimBLEUU
 bool FujifilmSecure::_connect(void) {
   m_Progress = 10;
 
-  // NimBLERemoteCharacteristic *pChr = nullptr;
-
   ESP_LOGI(LOG_TAG, "Connecting");
   if (!m_Client->connect(m_Address))
     return false;
