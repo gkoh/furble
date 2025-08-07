@@ -81,20 +81,50 @@ bool FujifilmSecure::_connect(void) {
   ESP_LOGI(LOG_TAG, "Secured!");
   m_Progress = 40;
 
+  ESP_LOGI(LOG_TAG, "Requesting status");
+  auto status = m_Client->getValue(PAIR_SVC_UUID, STATUS_CHR_UUID);
+  if (status.size() == 4) {
+    ESP_LOGI(LOG_TAG, "Status: %s",
+             NimBLEUtils::dataToHexString(status.data(), status.size()).c_str());
+    const auto ack = NimBLEAttValue({status[0], status[1], 0x02, status[3]});
+    ESP_LOGI(LOG_TAG, "Responding status with %s",
+             NimBLEUtils::dataToHexString(ack.data(), ack.size()).c_str());
+    if (!m_Client->setValue(PAIR_SVC_UUID, STATUS_CHR_UUID, ack, true)) {
+      ESP_LOGI(LOG_TAG, "Failed to write status response");
+      return false;
+    }
+  } else {
+    ESP_LOGI(LOG_TAG, "Failed to request status");
+    return false;
+  }
+  m_Progress = 50;
+
+  auto name = NimBLEAttValue(Device::getStringID());
+  ESP_LOGI(LOG_TAG, "Identifying as %s", name.c_str());
+  if (!m_Client->setValue(PAIR_SVC_UUID, IDENT_CHR_UUID, name, true)) {
+    ESP_LOGI(LOG_TAG, "Failed to send identifier");
+    return false;
+  }
+  ESP_LOGI(LOG_TAG, "Identified!");
+  m_Progress = 60;
+
   ESP_LOGI(LOG_TAG, "Subscribing to notification 1");
   if (!subscribeNotification(NOT1_SVC_UUID, NOT1_CHR_UUID)) {
     return false;
   }
+  m_Progress = 65;
 
   ESP_LOGI(LOG_TAG, "Subscribing to notification 2");
   if (!subscribeNotification(NOT1_SVC_UUID, NOT1_CHR_UUID)) {
     return false;
   }
+  m_Progress = 70;
 
   ESP_LOGI(LOG_TAG, "Subscribing to notification 3");
   if (!subscribeNotification(NOT1_SVC_UUID, NOT1_CHR_UUID)) {
     return false;
   }
+  m_Progress = 75;
 
   ESP_LOGI(LOG_TAG, "Subscribing to notification 4");
   if (!subscribeNotification(NOT1_SVC_UUID, NOT1_CHR_UUID)) {
@@ -105,11 +135,13 @@ bool FujifilmSecure::_connect(void) {
   if (!subscribeNotification(NOT1_SVC_UUID, NOT1_CHR_UUID)) {
     return false;
   }
+  m_Progress = 80;
 
   ESP_LOGI(LOG_TAG, "Subscribing to notification 6");
   if (!subscribeNotification(NOT1_SVC_UUID, NOT1_CHR_UUID)) {
     return false;
   }
+  m_Progress = 85;
 
   ESP_LOGI(LOG_TAG, "Getting shutter service");
   auto *pSvc = m_Client->getService(SHUTTER_SVC_UUID);
@@ -117,6 +149,7 @@ bool FujifilmSecure::_connect(void) {
     ESP_LOGI(LOG_TAG, "Failed to get shutter service");
     return false;
   }
+  m_Progress = 90;
 
   ESP_LOGI(LOG_TAG, "Getting shutter characteristic");
   m_Shutter = pSvc->getCharacteristic(CHR_SHUTTER_UUID);
@@ -124,6 +157,7 @@ bool FujifilmSecure::_connect(void) {
     ESP_LOGI(LOG_TAG, "Failed to get shutter characteristic");
     return false;
   }
+  m_Progress = 100;
 
   return true;
 }
