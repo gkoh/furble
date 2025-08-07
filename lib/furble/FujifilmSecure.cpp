@@ -86,7 +86,7 @@ bool FujifilmSecure::_connect(void) {
   if (status.size() == 4) {
     ESP_LOGI(LOG_TAG, "Status: %s",
              NimBLEUtils::dataToHexString(status.data(), status.size()).c_str());
-    const auto ack = NimBLEAttValue({status[0], status[1], 0x02, status[3]});
+    const auto ack = NimBLEAttValue({status[0], status[1], status[2], 0x02});
     ESP_LOGI(LOG_TAG, "Responding status with %s",
              NimBLEUtils::dataToHexString(ack.data(), ack.size()).c_str());
     if (!m_Client->setValue(PAIR_SVC_UUID, STATUS_CHR_UUID, ack, true)) {
