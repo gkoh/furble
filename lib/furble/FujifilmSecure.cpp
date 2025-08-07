@@ -155,6 +155,19 @@ bool FujifilmSecure::_connect(void) {
     ESP_LOGI(LOG_TAG, "Failed to get shutter characteristic");
     return false;
   }
+
+  ESP_LOGI(LOG_TAG, "Writing 0x01");
+  if (!m_Client->setValue(SVC_READ_UUID, UNK0_CHR_UUID, {0x01}, true)) {
+    ESP_LOGI(LOG_TAG, "Failed to write 0x01");
+    return false;
+  }
+
+  ESP_LOGI(LOG_TAG, "Writing 0x0a00");
+  if (!m_Client->setValue(SVC_READ_UUID, NOT6_CHR_UUID, {0x0a, 0x00}, true)) {
+    ESP_LOGI(LOG_TAG, "Failed to write 0x0a00");
+    return false;
+  }
+
   m_Progress = 100;
 
   return true;

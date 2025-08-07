@@ -53,6 +53,9 @@ class FujifilmSecure: public Fujifilm {
   // Identifier UUID
   const NimBLEUUID IDENT_CHR_UUID {0x85b9163e, 0x62d1, 0x49ff, 0xa6f5054b4630d4a1};
 
+  // Unknown UUID - SVC_READ_UUID
+  const NimBLEUUID UNK0_CHR_UUID {0x98934b2c, 0x756c, 0x4632, 0xaa2fdcba1bfec824};
+
   // Service UUID for NOT1
   const NimBLEUUID NOT1_SVC_UUID {0x4c0020fe, 0xf3b6, 0x40de, 0xacc977d129067b14};
   const NimBLEUUID NOT1_CHR_UUID {0xe6692c5c, 0xb7cd, 0x44f4, 0x95fceda07ce32560};

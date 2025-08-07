@@ -52,6 +52,9 @@ class Fujifilm: public Camera {
   const NimBLEUUID CHR_NOT2_UUID {0xad06c7b7, 0xf41a, 0x46f4, 0xa29a712055319122};
   const NimBLEUUID CHR_IND3_UUID {0x049ec406, 0xef75, 0x4205, 0xa39008fe209c51f0};
 
+  // unknown
+  const NimBLEUUID SVC_READ_UUID {0x4e941240, 0xd01d, 0x46b9, 0xa5ea67636806830b};
+
   // Shutter characteristic
   const NimBLEUUID CHR_SHUTTER_UUID {0x7fcf49c6, 0x4ff0, 0x4777, 0xa03d1a79166af7a8};
 
@@ -86,7 +89,6 @@ class Fujifilm: public Camera {
   } geotag_t;
 
   // Currently unused
-  // const NimBLEUUID SVC_READ_UUID{0x4e941240, 0xd01d, 0x46b9, 0xa5ea67636806830b};
   // const NimBLEUUID CHR_READ_UUID{0xbf6dc9cf, 0x3606, 0x4ec9, 0xa4c8d77576e93ea4};
 
   const NimBLEUUID SVC_GEOTAG_UUID {0x3b46ec2b, 0x48ba, 0x41fd, 0xb1b8ed860b60d22b};
