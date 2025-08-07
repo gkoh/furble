@@ -44,8 +44,14 @@ class FujifilmSecure: public Fujifilm {
   // Primary service UUID
   static const NimBLEUUID PRI_SVC_UUID;
 
-  // Unknown service UUID
-  const NimBLEUUID UNK0_SVC_UUID {0x123d8f06, 0x62a1, 0x4935, 0x9322833c531ee225};
+  // Pairing service UUID
+  const NimBLEUUID PAIR_SVC_UUID {0x123d8f06, 0x62a1, 0x4935, 0x9322833c531ee225};
+
+  // read and ack - 0x07960000 -> 0x07960020
+  const NimBLEUUID STATUS_CHR_UUID {0xf557d96b, 0x8284, 0x4667, 0x8793b971c1deca2a};
+
+  // Identifier UUID
+  const NimBLEUUID IDENT_CHR_UUID {0x85b9163e, 0x62d1, 0x49ff, 0xa6f5054b4630d4a1};
 
   // Service UUID for NOT1
   const NimBLEUUID NOT1_SVC_UUID {0x4c0020fe, 0xf3b6, 0x40de, 0xacc977d129067b14};
