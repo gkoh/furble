@@ -15,8 +15,8 @@ constexpr std::array<uint8_t, 2> Fujifilm::SHUTTER_PRESS;
 constexpr std::array<uint8_t, 2> Fujifilm::SHUTTER_FOCUS;
 
 void Fujifilm::notify(BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
-  ESP_LOGI(LOG_TAG, "Got %s callback: %u bytes from %s", isNotify ? "notification" : "indication",
-           length, pChr->getUUID().toString().c_str());
+  ESP_LOGI(LOG_TAG, "Got %s (%u bytes) from %s", isNotify ? "notification" : "indication", length,
+           pChr->getUUID().toString().c_str());
   if (length > 0) {
     ESP_LOGI(LOG_TAG, " %s", NimBLEUtils::dataToHexString(pData, length).c_str());
   }
@@ -30,11 +30,11 @@ void Fujifilm::notify(BLERemoteCharacteristic *pChr, uint8_t *pData, size_t leng
       m_GeoRequested = true;
     }
   } else {
-    ESP_LOGW(LOG_TAG, "Unhandled notification handle.");
+    ESP_LOGW(LOG_TAG, "Unhandled subscription.");
   }
 }
 
-bool Fujifilm::subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool notifications) {
+bool Fujifilm::subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool notification) {
   auto pSvc = m_Client->getService(svc);
   if (pSvc == nullptr) {
     return false;
@@ -46,7 +46,7 @@ bool Fujifilm::subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool noti
   }
 
   return pChr->subscribe(
-      notifications,
+      notification,
       [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
         this->notify(pChr, pData, length, isNotify);
       },

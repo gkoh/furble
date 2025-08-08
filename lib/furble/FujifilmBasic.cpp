@@ -9,8 +9,8 @@
 
 namespace Furble {
 
-const NimBLEUUID FujifilmBasic::PRI1_SVC_UUID {0xaf854c2e, 0xb214, 0x458e, 0x97e2912c4ecf2cb8};
-const NimBLEUUID FujifilmBasic::PRI2_SVC_UUID {0x117c4142, 0xedd4, 0x4c77, 0x8696dd18eebb770a};
+const NimBLEUUID FujifilmBasic::CR_SVC_UUID {0xaf854c2e, 0xb214, 0x458e, 0x97e2912c4ecf2cb8};
+const NimBLEUUID FujifilmBasic::XAPP_SVC_UUID {0x117c4142, 0xedd4, 0x4c77, 0x8696dd18eebb770a};
 
 void FujifilmBasic::print_token(const std::array<uint8_t, TOKEN_LEN> &token) {
   ESP_LOGI(LOG_TAG, "Token = %02x%02x%02x%02x", token[0], token[1], token[2], token[3]);
@@ -23,8 +23,8 @@ bool FujifilmBasic::matches(const NimBLEAdvertisedDevice *pDevice) {
   if (Fujifilm::matches(pDevice) && pDevice->getManufacturerData().length() == ADV_LEN) {
     const fujifilm_adv_t adv = pDevice->getManufacturerData<fujifilm_adv_t>();
     if (adv.type == TYPE_TOKEN) {
-      return pDevice->isAdvertisingService(PRI1_SVC_UUID)
-             || pDevice->isAdvertisingService(PRI2_SVC_UUID);
+      return pDevice->isAdvertisingService(CR_SVC_UUID)
+             || pDevice->isAdvertisingService(XAPP_SVC_UUID);
     }
   }
 
@@ -129,7 +129,7 @@ bool FujifilmBasic::_connect(void) {
   }
   m_Progress = 70;
 
-  if (!this->subscribe(SVC_CONF_UUID, CHR_NOT2_UUID, true)) {
+  if (!this->subscribe(SVC_CONF_UUID, GEOTAG_UPDATE, true)) {
     return false;
   }
   m_Progress = 80;
