@@ -51,10 +51,10 @@ class FujifilmBasic: public Fujifilm {
   } nvs_t;
 
   // Primary service UUID
-  static const NimBLEUUID PRI1_SVC_UUID;
+  static const NimBLEUUID CR_SVC_UUID;
 
   // Secondary service UUID
-  static const NimBLEUUID PRI2_SVC_UUID;
+  static const NimBLEUUID XAPP_SVC_UUID;
 
   // Shutter service UUID
   const NimBLEUUID SVC_SHUTTER_UUID {0x6514eb81, 0x4e8f, 0x458d, 0xaa2ae691336cdfac};

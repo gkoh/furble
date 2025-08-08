@@ -37,7 +37,7 @@ FujifilmSecure::FujifilmSecure(const NimBLEAdvertisedDevice *pDevice)
   ESP_LOGI(LOG_TAG, "Address = %s", m_Address.toString().c_str());
 }
 
-bool FujifilmSecure::subscribeNotification(const NimBLEUUID &svc, const NimBLEUUID &chr) {
+bool FujifilmSecure::subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool notification) {
   auto pSvc = m_Client->getService(svc);
   if (pSvc == nullptr) {
     return false;
@@ -49,7 +49,7 @@ bool FujifilmSecure::subscribeNotification(const NimBLEUUID &svc, const NimBLEUU
   }
 
   return pChr->subscribe(
-      true,
+      notification,
       [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
         ESP_LOGI(LOG_TAG, "Notification received on %s", pChr->getUUID().toString().c_str());
         if (length > 0) {
@@ -63,21 +63,21 @@ bool FujifilmSecure::subscribeNotification(const NimBLEUUID &svc, const NimBLEUU
  * Connect to a Fujifilm secure.
  */
 bool FujifilmSecure::_connect(void) {
-  m_Progress = 10;
+  m_Progress = 0;
 
   ESP_LOGI(LOG_TAG, "Connecting");
   if (!m_Client->connect(m_Address))
     return false;
 
   ESP_LOGI(LOG_TAG, "Connected");
-  m_Progress = 20;
+  m_Progress += 5;
 
   ESP_LOGI(LOG_TAG, "Securing");
   if (!m_Client->secureConnection()) {
     return false;
   }
   ESP_LOGI(LOG_TAG, "Secured!");
-  m_Progress = 40;
+  m_Progress += 5;
 
   ESP_LOGI(LOG_TAG, "Requesting status");
   auto status = m_Client->getValue(PAIR_SVC_UUID, STATUS_CHR_UUID);
@@ -95,7 +95,7 @@ bool FujifilmSecure::_connect(void) {
     ESP_LOGI(LOG_TAG, "Failed to request status");
     return false;
   }
-  m_Progress = 50;
+  m_Progress += 5;
 
   auto name = NimBLEAttValue(Device::getStringID());
   ESP_LOGI(LOG_TAG, "Identifying as %s", name.c_str());
@@ -104,42 +104,63 @@ bool FujifilmSecure::_connect(void) {
     return false;
   }
   ESP_LOGI(LOG_TAG, "Identified!");
-  m_Progress = 60;
+  m_Progress += 5;
 
-  ESP_LOGI(LOG_TAG, "Subscribing to notification 1");
-  if (!subscribeNotification(NOT1_SVC_UUID, NOT1_CHR_UUID)) {
-    return false;
-  }
-  m_Progress = 65;
+  const std::array<sub_t, 7> subscription0 = {
+      {
+       {"indication 1", SVC_CONF_UUID, CHR_IND1_UUID, false},
+       {"indication 2", SVC_CONF_UUID, CHR_IND2_UUID, false},
+       {"notification 1", SVC_CONF_UUID, CHR_NOT1_UUID, true},
+       {"notification 2", SVC_CONF_UUID, GEOTAG_UPDATE, true},
+       {"notification 3", NOT3_SVC_UUID, NOT3_CHR_UUID, true},
+       {"notification 4", NOTX_SVC_UUID, NOT4_CHR_UUID, true},
+       {"notification 5", NOTX_SVC_UUID, NOT5_CHR_UUID, true},
+       }
+  };
 
-  ESP_LOGI(LOG_TAG, "Subscribing to notification 2");
-  if (!subscribeNotification(NOT1_SVC_UUID, NOT1_CHR_UUID)) {
-    return false;
-  }
-  m_Progress = 70;
-
-  ESP_LOGI(LOG_TAG, "Subscribing to notification 3");
-  if (!subscribeNotification(NOT1_SVC_UUID, NOT1_CHR_UUID)) {
-    return false;
-  }
-  m_Progress = 75;
-
-  ESP_LOGI(LOG_TAG, "Subscribing to notification 4");
-  if (!subscribeNotification(NOT1_SVC_UUID, NOT1_CHR_UUID)) {
-    return false;
+  for (const auto &sub : subscription0) {
+    ESP_LOGI(LOG_TAG, "Subscribing to %s", sub.name.c_str());
+    if (!subscribe(sub.service, sub.uuid, sub.notification)) {
+      return false;
+    }
+    m_Progress += 5;
   }
 
-  ESP_LOGI(LOG_TAG, "Subscribing to notification 5");
-  if (!subscribeNotification(NOT1_SVC_UUID, NOT1_CHR_UUID)) {
+  ESP_LOGI(LOG_TAG, "Writing 0x01");
+  if (!m_Client->setValue(NOTX_SVC_UUID, UNK0_CHR_UUID, {0x01}, true)) {
+    ESP_LOGI(LOG_TAG, "Failed to write 0x01");
     return false;
   }
-  m_Progress = 80;
 
-  ESP_LOGI(LOG_TAG, "Subscribing to notification 6");
-  if (!subscribeNotification(NOT1_SVC_UUID, NOT1_CHR_UUID)) {
+  // may need to send time sync message?
+  // SVC: e872b11fd5264ae19bb489a99d48fa59
+  // CHR: c52edbce1fe24ecc9483907e6592be9e}
+
+  const std::array<sub_t, 6> subscription1 = {
+      {
+       {"notification 6", SVC_CONF_UUID, NOT6_CHR_UUID, true},
+       {"notification 7", NOTX_SVC_UUID, NOT7_CHR_UUID, true},
+       {"notification 8", NOTX_SVC_UUID, NOT8_CHR_UUID, true},
+       {"notification 9", NOTX_SVC_UUID, NOT9_CHR_UUID, true},
+       {"notification 10", NOTX_SVC_UUID, NOT10_CHR_UUID, true},
+       {"notification 11", NOTX_SVC_UUID, NOT11_CHR_UUID, true},
+       }
+  };
+
+  for (const auto &sub : subscription1) {
+    ESP_LOGI(LOG_TAG, "Subscribing to %s", sub.name.c_str());
+    if (!subscribe(sub.service, sub.uuid, sub.notification)) {
+      return false;
+    }
+    m_Progress += 5;
+  }
+
+  ESP_LOGI(LOG_TAG, "Writing 0x0a00");
+  if (!m_Client->setValue(NOTX_SVC_UUID, NOT6_CHR_UUID, {0x0a, 0x00}, true)) {
+    ESP_LOGI(LOG_TAG, "Failed to write 0x0a00");
     return false;
   }
-  m_Progress = 85;
+  m_Progress += 5;
 
   ESP_LOGI(LOG_TAG, "Getting shutter service");
   auto *pSvc = m_Client->getService(SHUTTER_SVC_UUID);
@@ -147,24 +168,12 @@ bool FujifilmSecure::_connect(void) {
     ESP_LOGI(LOG_TAG, "Failed to get shutter service");
     return false;
   }
-  m_Progress = 90;
+  m_Progress += 5;
 
   ESP_LOGI(LOG_TAG, "Getting shutter characteristic");
   m_Shutter = pSvc->getCharacteristic(CHR_SHUTTER_UUID);
   if (m_Shutter == nullptr) {
     ESP_LOGI(LOG_TAG, "Failed to get shutter characteristic");
-    return false;
-  }
-
-  ESP_LOGI(LOG_TAG, "Writing 0x01");
-  if (!m_Client->setValue(SVC_READ_UUID, UNK0_CHR_UUID, {0x01}, true)) {
-    ESP_LOGI(LOG_TAG, "Failed to write 0x01");
-    return false;
-  }
-
-  ESP_LOGI(LOG_TAG, "Writing 0x0a00");
-  if (!m_Client->setValue(SVC_READ_UUID, NOT6_CHR_UUID, {0x0a, 0x00}, true)) {
-    ESP_LOGI(LOG_TAG, "Failed to write 0x0a00");
     return false;
   }
 
