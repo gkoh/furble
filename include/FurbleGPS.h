@@ -1,11 +1,11 @@
 #ifndef FURBLE_GPS_H
 #define FURBLE_GPS_H
 
-//#include <HardwareSerial.h>
+#include <driver/uart.h>
 
 #include <lvgl.h>
 
-//#include <TinyGPS++.h>
+#include <TinyGPS++.h>
 
 namespace Furble {
 class GPS {
@@ -23,9 +23,8 @@ class GPS {
   bool isEnabled(void);
   void reloadSetting(void);
   void startService(void);
-#if 0
+
   TinyGPSPlus &get(void);
-#endif
 
   void update(void);
 
@@ -46,16 +45,14 @@ class GPS {
 
   void serviceSerial(void);
 
-#if 0
-  HardwareSerial m_SerialPort = HardwareSerial(2);
-#endif
+  uart_port_t m_UART;
 
   lv_obj_t *m_Icon = NULL;
   lv_timer_t *m_Timer = NULL;
 
   bool m_Enabled = false;
   bool m_HasFix = false;
-  //TinyGPSPlus m_GPS;
+  TinyGPSPlus m_GPS;
 };
 }  // namespace Furble
 
