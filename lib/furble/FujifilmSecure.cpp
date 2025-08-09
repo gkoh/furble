@@ -143,7 +143,7 @@ bool FujifilmSecure::_connect(void) {
        {"notification 8", NOTX_SVC_UUID, NOT8_CHR_UUID, true},
        {"notification 9", NOTX_SVC_UUID, NOT9_CHR_UUID, true},
        {"notification 10", NOTX_SVC_UUID, NOT10_CHR_UUID, true},
-       {"notification 11", NOTX_SVC_UUID, NOT11_CHR_UUID, true},
+       {"notification 11", NOTX_SVC_UUID, GEOTAG_SYNC_INTERVAL_UUID, true},
        }
   };
 
@@ -155,9 +155,11 @@ bool FujifilmSecure::_connect(void) {
     m_Progress += 5;
   }
 
-  ESP_LOGI(LOG_TAG, "Writing 0x0a00");
-  if (!m_Client->setValue(NOTX_SVC_UUID, NOT6_CHR_UUID, {0x0a, 0x00}, true)) {
-    ESP_LOGI(LOG_TAG, "Failed to write 0x0a00");
+  auto sync_interval = NimBLEAttValue(reinterpret_cast<const uint8_t *>(&GEOTAG_SYNC_INTERVAL),
+                                      sizeof(GEOTAG_SYNC_INTERVAL));
+  ESP_LOGI(LOG_TAG, "Configuring %hus geotag sync interval", GEOTAG_SYNC_INTERVAL);
+  if (!m_Client->setValue(NOTX_SVC_UUID, GEOTAG_SYNC_INTERVAL_UUID, sync_interval, true)) {
+    ESP_LOGI(LOG_TAG, "Failed to configure geotag sync interval");
     return false;
   }
   m_Progress += 5;

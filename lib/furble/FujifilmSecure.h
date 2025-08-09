@@ -79,7 +79,7 @@ class FujifilmSecure: public Fujifilm {
   const NimBLEUUID NOT8_CHR_UUID {0x2a125640, 0x706d, 0x4dd1, 0xb420c0f4ab93c361};
   const NimBLEUUID NOT9_CHR_UUID {0x82a9f452, 0xc5ce, 0x4ef5, 0x82033fc9a47f8171};
   const NimBLEUUID NOT10_CHR_UUID {0xdeef7187, 0x3f43, 0x4364, 0x9e2211a8c8a15951};
-  const NimBLEUUID NOT11_CHR_UUID {0xc95d91ae, 0xb247, 0x4d6d, 0x86617dd5d6a0f85b};
+  const NimBLEUUID GEOTAG_SYNC_INTERVAL_UUID {0xc95d91ae, 0xb247, 0x4d6d, 0x86617dd5d6a0f85b};
 
   // Shutter service UUID
   const NimBLEUUID SHUTTER_SVC_UUID {0x6514eb81, 0x4e8f, 0x458d, 0xaa2ae691336cdfac};

@@ -58,6 +58,9 @@ class Fujifilm: public Camera {
   // Geo location characteristic
   const NimBLEUUID GEOTAG_UPDATE {0xad06c7b7, 0xf41a, 0x46f4, 0xa29a712055319122};
 
+  // Geolocation sync interval
+  const uint16_t GEOTAG_SYNC_INTERVAL = 10;
+
   void _disconnect(void) override final;
   bool subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool notification);
 
