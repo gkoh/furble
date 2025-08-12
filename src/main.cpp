@@ -17,7 +17,6 @@ extern "C" {
 void app_main() {
   BaseType_t xRet;
   TaskHandle_t xControlHandle = NULL;
-  TaskHandle_t xUIHandle = NULL;
 
   Serial.begin(115200);
 
@@ -48,12 +47,7 @@ void app_main() {
     abort();
   }
 
-  // Pin UI to same core (0) as NimBLE
-  xRet = xTaskCreatePinnedToCore(vUITask, "ui", 16384, &control, 2, &xUIHandle,
-                                 CONFIG_BT_NIMBLE_PINNED_TO_CORE);
-  if (xRet != pdPASS) {
-    ESP_LOGE(LOG_TAG, "Failed to create UI task.");
-    abort();
-  }
+  // Run UI in host task (here)
+  vUITask(NULL);
 }
 }
