@@ -16,7 +16,11 @@ const NimBLEUUID FujifilmSecure::PRI_SVC_UUID {0x731893f9, 0x744e, 0x4899, 0xb7e
  * Determine if the advertised BLE device is a Fujifilm secure camera.
  */
 bool FujifilmSecure::matches(const NimBLEAdvertisedDevice *pDevice) {
-  return (Fujifilm::matches(pDevice) && pDevice->isAdvertisingService(SERVICE_UUID));
+  if (Fujifilm::matches(pDevice) && pDevice->getManufacturerData().length() == sizeof(adv_secure_t)) {
+    return pDevice->isAdvertisingService(SERVICE_UUID);
+  }
+
+  return false;
 }
 
 FujifilmSecure::FujifilmSecure(const void *data, size_t len)
@@ -27,14 +31,18 @@ FujifilmSecure::FujifilmSecure(const void *data, size_t len)
   const nvs_t *fujifilm = static_cast<const nvs_t *>(data);
   m_Name = std::string(fujifilm->name);
   m_Address = NimBLEAddress(fujifilm->address, fujifilm->type);
+  m_Serial = fujifilm->serial;
 }
 
 FujifilmSecure::FujifilmSecure(const NimBLEAdvertisedDevice *pDevice)
     : Fujifilm(Type::FUJIFILM_SECURE, pDevice) {
+  const adv_secure_t secure = pDevice->getManufacturerData<adv_secure_t>();
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
+  m_Serial = secure.serial;
   ESP_LOGI(LOG_TAG, "Name = %s", m_Name.c_str());
   ESP_LOGI(LOG_TAG, "Address = %s", m_Address.toString().c_str());
+  ESP_LOGI(LOG_TAG, "Serial = %s", NimBLEUtils::dataToHexString(m_Serial.data, sizeof(m_Serial)).c_str());
 }
 
 bool FujifilmSecure::subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool notification) {

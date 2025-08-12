@@ -12,17 +12,17 @@ namespace Furble {
 const NimBLEUUID FujifilmBasic::CR_SVC_UUID {0xaf854c2e, 0xb214, 0x458e, 0x97e2912c4ecf2cb8};
 const NimBLEUUID FujifilmBasic::XAPP_SVC_UUID {0x117c4142, 0xedd4, 0x4c77, 0x8696dd18eebb770a};
 
-void FujifilmBasic::print_token(const std::array<uint8_t, TOKEN_LEN> &token) {
-  ESP_LOGI(LOG_TAG, "Token = %02x%02x%02x%02x", token[0], token[1], token[2], token[3]);
+void FujifilmBasic::print_token(const token_t &token) {
+  ESP_LOGI(LOG_TAG, "Token = %02x%02x%02x%02x", token.data[0], token.data[1], token.data[2], token.data[3]);
 }
 
 /**
  * Determine if the advertised BLE device is a Fujifilm basic.
  */
 bool FujifilmBasic::matches(const NimBLEAdvertisedDevice *pDevice) {
-  if (Fujifilm::matches(pDevice) && pDevice->getManufacturerData().length() == ADV_LEN) {
-    const fujifilm_adv_t adv = pDevice->getManufacturerData<fujifilm_adv_t>();
-    if (adv.type == TYPE_TOKEN) {
+  if (Fujifilm::matches(pDevice) && pDevice->getManufacturerData().length() == sizeof(adv_basic_t)) {
+    const adv_basic_t basic = pDevice->getManufacturerData<adv_basic_t>();
+    if (basic.adv.type == TYPE_TOKEN) {
       return pDevice->isAdvertisingService(CR_SVC_UUID)
              || pDevice->isAdvertisingService(XAPP_SVC_UUID);
     }
@@ -39,15 +39,15 @@ FujifilmBasic::FujifilmBasic(const void *data, size_t len)
   const nvs_t *fujifilm = static_cast<const nvs_t *>(data);
   m_Name = std::string(fujifilm->name);
   m_Address = NimBLEAddress(fujifilm->address, fujifilm->type);
-  memcpy(m_Token.data(), fujifilm->token, TOKEN_LEN);
+  m_Token = fujifilm->token;
 }
 
 FujifilmBasic::FujifilmBasic(const NimBLEAdvertisedDevice *pDevice)
     : Fujifilm(Type::FUJIFILM_BASIC, pDevice) {
-  const adv_basic_t adv = pDevice->getManufacturerData<adv_basic_t>();
+  const adv_basic_t basic = pDevice->getManufacturerData<adv_basic_t>();
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
-  m_Token = {adv.token[0], adv.token[1], adv.token[2], adv.token[3]};
+  m_Token = basic.token;
   ESP_LOGI(LOG_TAG, "Name = %s", m_Name.c_str());
   ESP_LOGI(LOG_TAG, "Address = %s", m_Address.toString().c_str());
   print_token(m_Token);
@@ -84,7 +84,7 @@ bool FujifilmBasic::_connect(void) {
   if (!pChr->canWrite())
     return false;
   print_token(m_Token);
-  if (!pChr->writeValue(m_Token.data(), m_Token.size(), true))
+  if (!pChr->writeValue(reinterpret_cast<const uint8_t *>(&m_Token), sizeof(m_Token), true))
     return false;
   ESP_LOGI(LOG_TAG, "Paired!");
   m_Progress = 30;
@@ -171,7 +171,7 @@ bool FujifilmBasic::serialise(void *buffer, size_t bytes) const {
   strncpy(x->name, m_Name.c_str(), MAX_NAME);
   x->address = (uint64_t)m_Address;
   x->type = m_Address.getType();
-  memcpy(x->token, m_Token.data(), TOKEN_LEN);
+  x->token = m_Token;
 
   return true;
 }

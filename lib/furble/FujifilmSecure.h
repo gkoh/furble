@@ -29,6 +29,19 @@ class FujifilmSecure: public Fujifilm {
   bool _connect(void) override final;
 
  private:
+  static constexpr size_t SERIAL_LEN = 5;
+
+  /** Serial advertisement. */
+  typedef struct __attribute__((packed)) {
+    uint8_t data[SERIAL_LEN];
+  } serial_t;
+
+  /** Advertisement data. */
+  typedef struct __attribute__((packed)) {
+    fujifilm_adv_t adv;
+    serial_t serial;
+  } adv_secure_t;
+
   /**
    * Non-volatile storage type.
    */
@@ -36,6 +49,7 @@ class FujifilmSecure: public Fujifilm {
     char name[MAX_NAME]; /** Human readable device name. */
     uint64_t address;    /** Device MAC address. */
     uint8_t type;        /** Address type. */
+    serial_t serial;     /** Camera serial. */
   } nvs_t;
 
   /** Subscription item. */
@@ -85,6 +99,8 @@ class FujifilmSecure: public Fujifilm {
   const NimBLEUUID SHUTTER_SVC_UUID {0x6514eb81, 0x4e8f, 0x458d, 0xaa2ae691336cdfac};
 
   bool subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool notification);
+
+  serial_t m_Serial;
 };
 
 }  // namespace Furble

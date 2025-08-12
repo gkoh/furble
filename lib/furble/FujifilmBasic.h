@@ -27,17 +27,19 @@ class FujifilmBasic: public Fujifilm {
   bool _connect(void) override final;
 
  private:
-  static constexpr size_t ADV_LEN = 7;
   static constexpr size_t TOKEN_LEN = 4;
 
   static constexpr uint8_t TYPE_TOKEN = 0x02;
 
-  /**
-   * Advertisement manufacturer data.
-   */
+  /** 4 byte token. */
+  typedef struct __attribute__((packed)) {
+    uint8_t data[TOKEN_LEN];
+  } token_t;
+
+  /** Advertisement manufacturer data. */
   typedef struct __attribute__((packed)) {
     fujifilm_adv_t adv;
-    uint8_t token[TOKEN_LEN];
+    token_t token;
   } adv_basic_t;
 
   /**
@@ -47,7 +49,7 @@ class FujifilmBasic: public Fujifilm {
     char name[MAX_NAME];      /** Human readable device name. */
     uint64_t address;         /** Device MAC address. */
     uint8_t type;             /** Address type. */
-    uint8_t token[TOKEN_LEN]; /** Pairing token. */
+    token_t token;            /** Pairing token. */
   } nvs_t;
 
   // Primary service UUID
@@ -59,9 +61,9 @@ class FujifilmBasic: public Fujifilm {
   // Shutter service UUID
   const NimBLEUUID SVC_SHUTTER_UUID {0x6514eb81, 0x4e8f, 0x458d, 0xaa2ae691336cdfac};
 
-  void print_token(const std::array<uint8_t, TOKEN_LEN> &token);
+  void print_token(const token_t &token);
 
-  std::array<uint8_t, TOKEN_LEN> m_Token = {0};
+  token_t m_Token = {0};
 };
 
 }  // namespace Furble
