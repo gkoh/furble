@@ -75,8 +75,10 @@ bool FujifilmSecure::subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, boo
 }
 
 void FujifilmSecure::onResult(const NimBLEAdvertisedDevice *pDevice) {
-  if (FujifilmSecure::matches(pDevice)) {
-    adv_secure_t scan = pDevice->getManufacturerData<adv_secure_t>();
+  if ((Fujifilm::matches(pDevice)
+       && (pDevice->getManufacturerData().length() == sizeof(adv_secure_t))
+       && pDevice->isAdvertisingService(PAIR_SVC_UUID))) {
+    const adv_secure_t scan = pDevice->getManufacturerData<adv_secure_t>();
     if (memcmp(&scan.serial, &m_Serial, sizeof(m_Serial)) == 0) {
       m_Address = pDevice->getAddress();
       bool success = true;
