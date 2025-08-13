@@ -17,7 +17,6 @@ extern "C" {
 void app_main() {
   BaseType_t xRet;
   TaskHandle_t xControlHandle = NULL;
-  TaskHandle_t xUIHandle = NULL;
 
   Serial.begin(115200);
 
@@ -25,7 +24,7 @@ void app_main() {
 
   esp_pm_config_esp32_t pm_config = {
       .max_freq_mhz = 80,
-      .min_freq_mhz = 10,
+      .min_freq_mhz = 40,
       .light_sleep_enable = true,
   };
   ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
@@ -46,12 +45,7 @@ void app_main() {
     abort();
   }
 
-  // Pin UI to same core (0) as NimBLE
-  xRet = xTaskCreatePinnedToCore(vUITask, "ui", 16384, &control, 2, &xUIHandle,
-                                 CONFIG_BT_NIMBLE_PINNED_TO_CORE);
-  if (xRet != pdPASS) {
-    ESP_LOGE(LOG_TAG, "Failed to create UI task.");
-    abort();
-  }
+  // Run UI
+  vUITask(NULL);
 }
 }
