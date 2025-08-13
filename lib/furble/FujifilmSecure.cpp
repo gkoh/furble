@@ -200,7 +200,11 @@ bool FujifilmSecure::_connect(void) {
   for (const auto &sub : subscription1) {
     ESP_LOGI(LOG_TAG, "Subscribing to %s", sub.name.c_str());
     if (!subscribe(sub.service, sub.uuid, sub.notification)) {
-      return false;
+      ESP_LOGI(LOG_TAG, "Failed to subscribe to %s", sub.name.c_str());
+      if (sub.uuid == GEOTAG_SYNC_INTERVAL_UUID) {
+        // Geotag subscription must succeed
+        return false;
+      }
     }
     m_Progress += 5;
   }
