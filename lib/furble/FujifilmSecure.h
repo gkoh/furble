@@ -12,10 +12,11 @@ namespace Furble {
  * Secured Bluetooth communications. For cameras running newer firmware from
  * circa July 2025 onwards.
  */
-class FujifilmSecure: public Fujifilm {
+class FujifilmSecure: public Fujifilm, public NimBLEScanCallbacks {
  public:
   FujifilmSecure(const void *data, size_t len);
   FujifilmSecure(const NimBLEAdvertisedDevice *pDevice);
+  ~FujifilmSecure(void);
 
   /**
    * Determine if the advertised BLE device is a Fujifilm secure camera.
@@ -98,9 +99,16 @@ class FujifilmSecure: public Fujifilm {
   // Shutter service UUID
   const NimBLEUUID SHUTTER_SVC_UUID {0x6514eb81, 0x4e8f, 0x458d, 0xaa2ae691336cdfac};
 
+  // Scan time for previously paired camera
+  static constexpr uint32_t SCAN_TIME_MS = 60000;
+
   bool subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool notification);
 
-  serial_t m_Serial;
+  /** Called during scanning for connection to saved device. */
+  void onResult(const NimBLEAdvertisedDevice *pDevice) override final;
+
+  QueueHandle_t m_Queue = NULL;
+  serial_t m_Serial = {0x00};
 };
 
 }  // namespace Furble

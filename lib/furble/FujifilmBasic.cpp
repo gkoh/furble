@@ -13,14 +13,16 @@ const NimBLEUUID FujifilmBasic::CR_SVC_UUID {0xaf854c2e, 0xb214, 0x458e, 0x97e29
 const NimBLEUUID FujifilmBasic::XAPP_SVC_UUID {0x117c4142, 0xedd4, 0x4c77, 0x8696dd18eebb770a};
 
 void FujifilmBasic::print_token(const token_t &token) {
-  ESP_LOGI(LOG_TAG, "Token = %02x%02x%02x%02x", token.data[0], token.data[1], token.data[2], token.data[3]);
+  ESP_LOGI(LOG_TAG, "Token = %02x%02x%02x%02x", token.data[0], token.data[1], token.data[2],
+           token.data[3]);
 }
 
 /**
  * Determine if the advertised BLE device is a Fujifilm basic.
  */
 bool FujifilmBasic::matches(const NimBLEAdvertisedDevice *pDevice) {
-  if (Fujifilm::matches(pDevice) && pDevice->getManufacturerData().length() == sizeof(adv_basic_t)) {
+  if (Fujifilm::matches(pDevice)
+      && pDevice->getManufacturerData().length() == sizeof(adv_basic_t)) {
     const adv_basic_t basic = pDevice->getManufacturerData<adv_basic_t>();
     if (basic.adv.type == TYPE_TOKEN) {
       return pDevice->isAdvertisingService(CR_SVC_UUID)
@@ -44,10 +46,10 @@ FujifilmBasic::FujifilmBasic(const void *data, size_t len)
 
 FujifilmBasic::FujifilmBasic(const NimBLEAdvertisedDevice *pDevice)
     : Fujifilm(Type::FUJIFILM_BASIC, pDevice) {
-  const adv_basic_t basic = pDevice->getManufacturerData<adv_basic_t>();
+  const adv_basic_t adv = pDevice->getManufacturerData<adv_basic_t>();
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
-  m_Token = basic.token;
+  m_Token = adv.token;
   ESP_LOGI(LOG_TAG, "Name = %s", m_Name.c_str());
   ESP_LOGI(LOG_TAG, "Address = %s", m_Address.toString().c_str());
   print_token(m_Token);
