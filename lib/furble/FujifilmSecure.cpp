@@ -6,6 +6,7 @@
 
 #include "Device.h"
 #include "FujifilmSecure.h"
+#include "Scan.h"
 
 namespace Furble {
 
@@ -16,11 +17,9 @@ const NimBLEUUID FujifilmSecure::PRI_SVC_UUID {0x731893f9, 0x744e, 0x4899, 0xb7e
  * Determine if the advertised BLE device is a Fujifilm secure camera.
  */
 bool FujifilmSecure::matches(const NimBLEAdvertisedDevice *pDevice) {
-  if (Fujifilm::matches(pDevice) && pDevice->getManufacturerData().length() == sizeof(adv_secure_t)) {
-    return pDevice->isAdvertisingService(SERVICE_UUID);
-  }
-
-  return false;
+  return (Fujifilm::matches(pDevice)
+          && (pDevice->getManufacturerData().length() == sizeof(adv_secure_t))
+          && pDevice->isAdvertisingService(SERVICE_UUID));
 }
 
 FujifilmSecure::FujifilmSecure(const void *data, size_t len)
@@ -32,6 +31,7 @@ FujifilmSecure::FujifilmSecure(const void *data, size_t len)
   m_Name = std::string(fujifilm->name);
   m_Address = NimBLEAddress(fujifilm->address, fujifilm->type);
   m_Serial = fujifilm->serial;
+  m_Queue = xQueueCreate(3, sizeof(bool));
 }
 
 FujifilmSecure::FujifilmSecure(const NimBLEAdvertisedDevice *pDevice)
@@ -40,9 +40,16 @@ FujifilmSecure::FujifilmSecure(const NimBLEAdvertisedDevice *pDevice)
   m_Name = pDevice->getName();
   m_Address = pDevice->getAddress();
   m_Serial = secure.serial;
+  m_Queue = xQueueCreate(3, sizeof(bool));
+
   ESP_LOGI(LOG_TAG, "Name = %s", m_Name.c_str());
   ESP_LOGI(LOG_TAG, "Address = %s", m_Address.toString().c_str());
-  ESP_LOGI(LOG_TAG, "Serial = %s", NimBLEUtils::dataToHexString(m_Serial.data, sizeof(m_Serial)).c_str());
+  ESP_LOGI(LOG_TAG, "Serial = %s",
+           NimBLEUtils::dataToHexString(m_Serial.data, sizeof(m_Serial)).c_str());
+}
+
+FujifilmSecure::~FujifilmSecure(void) {
+  vQueueDelete(m_Queue);
 }
 
 bool FujifilmSecure::subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool notification) {
@@ -67,13 +74,48 @@ bool FujifilmSecure::subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, boo
       true);
 }
 
+void FujifilmSecure::onResult(const NimBLEAdvertisedDevice *pDevice) {
+  if (FujifilmSecure::matches(pDevice)) {
+    adv_secure_t scan = pDevice->getManufacturerData<adv_secure_t>();
+    if (memcmp(&scan.serial, &m_Serial, sizeof(m_Serial)) == 0) {
+      m_Address = pDevice->getAddress();
+      bool success = true;
+      xQueueSend(m_Queue, &success, 0);
+    }
+  }
+}
+
 /**
  * Connect to a Fujifilm secure.
  */
 bool FujifilmSecure::_connect(void) {
+  bool success = false;
   m_Progress = 0;
 
-  ESP_LOGI(LOG_TAG, "Connecting");
+  if (m_PairType == PairType::SAVED) {
+    ESP_LOGI(LOG_TAG, "Scanning");
+    // need to scan for advertising camera
+    auto &scan = Scan::getInstance();
+    scan.clear();
+    scan.start(this, SCAN_TIME_MS);
+    m_Progress += 10;
+
+    // wait up to 60s for camera to appear
+    BaseType_t timeout = xQueueReceive(m_Queue, &success, pdMS_TO_TICKS(60000));
+    scan.stop();
+
+    if (timeout == pdFALSE) {
+      ESP_LOGI(LOG_TAG, "Timeout waiting for camera");
+      return false;
+    }
+
+    if (!success) {
+      ESP_LOGI(LOG_TAG, "Failed to scan paired camera");
+      return false;
+    }
+  }
+
+  ESP_LOGI(LOG_TAG, "Connecting to %s", m_Address.toString().c_str());
   if (!m_Client->connect(m_Address))
     return false;
 

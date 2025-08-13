@@ -46,10 +46,10 @@ class FujifilmBasic: public Fujifilm {
    * Non-volatile storage type.
    */
   typedef struct _nvs_t {
-    char name[MAX_NAME];      /** Human readable device name. */
-    uint64_t address;         /** Device MAC address. */
-    uint8_t type;             /** Address type. */
-    token_t token;            /** Pairing token. */
+    char name[MAX_NAME]; /** Human readable device name. */
+    uint64_t address;    /** Device MAC address. */
+    uint8_t type;        /** Address type. */
+    token_t token;       /** Pairing token. */
   } nvs_t;
 
   // Primary service UUID
