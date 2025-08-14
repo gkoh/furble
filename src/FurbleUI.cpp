@@ -170,7 +170,7 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
         // exponentially weighted moving average with alpha = 0.33
         mean = mean + (current - mean) / 3;
 
-        lv_label_set_text_fmt(status->batteryIcon, "%d", mean);
+        lv_label_set_text_fmt(status->batteryIcon, "%ld", mean);
 #else
         const char *symbol = NULL;
         int32_t level = M5.Power.getBatteryLevel();
@@ -1392,15 +1392,14 @@ void UI::addGPSMenu(const menu_t &parent) {
 
   static lv_timer_t *timer = lv_timer_create(
       [](lv_timer_t *t) {
-#if 0
         auto *gpsData = static_cast<menu_t *>(lv_timer_get_user_data(t));
         auto &gps = GPS::getInstance().get();
         static lv_obj_t *valid = lv_label_create(gpsData->page);
-        lv_label_set_text_fmt(valid, "%s (%u)", gps.location.isValid() ? "Valid" : "Invalid",
+        lv_label_set_text_fmt(valid, "%s (%lu)", gps.location.isValid() ? "Valid" : "Invalid",
                               gps.satellites.value());
 
         static lv_obj_t *age = lv_label_create(gpsData->page);
-        lv_label_set_text_fmt(age, "%us ago", gps.time.age() / 1000);
+        lv_label_set_text_fmt(age, "%lus ago", gps.location.age() / 1000);
 
         static lv_obj_t *lat = lv_label_create(gpsData->page);
         lv_label_set_text_fmt(lat, "%.2f°", gps.location.lat());
@@ -1423,7 +1422,6 @@ void UI::addGPSMenu(const menu_t &parent) {
         static lv_obj_t *time = lv_label_create(gpsData->page);
         lv_label_set_text_fmt(time, "%02u:%02u:%02u", gps.time.hour(), gps.time.minute(),
                               gps.time.second());
-#endif
 #endif
       },
       1000, &gpsData);

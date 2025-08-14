@@ -22,24 +22,40 @@ void GPS::setIcon(lv_obj_t *icon) {
   m_Icon = icon;
 }
 
+/** Install UART driver. */
+void GPS::installDriver(uint32_t baud) {
+  const uart_config_t uart_config = {
+      .baud_rate = (int)baud,
+      .data_bits = UART_DATA_8_BITS,
+      .parity = UART_PARITY_DISABLE,
+      .stop_bits = UART_STOP_BITS_1,
+      .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+      .rx_flow_ctrl_thresh = 0,
+      .source_clk = UART_SCLK_REF_TICK,
+      .flags = {},
+  };
+  uart_driver_install(m_UART, BUFFER_SIZE, 0, 0, NULL, 0);
+  uart_param_config(m_UART, &uart_config);
+  uart_set_pin(m_UART, TX, RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+  uart_flush(m_UART);
+}
+
+/** Delete UART driver. */
+void GPS::deleteDriver(void) {
+  if (uart_is_driver_installed(m_UART)) {
+    uart_driver_delete(m_UART);
+  }
+}
+
 /** Refresh the setting from NVS. */
 void GPS::reloadSetting(void) {
   m_Enabled = Settings::load<bool>(Settings::GPS);
   if (m_Enabled) {
     const int baud = Settings::load<uint32_t>(Settings::GPS_BAUD);
-    const uart_config_t uart_config = {
-      .baud_rate = baud,
-      .data_bits = UART_DATA_8_BITS,
-      .parity = UART_PARITY_DISABLE,
-      .stop_bits = UART_STOP_BITS_1,
-      .flow_ctrl = UART_HW_FLOWCTRL_CTS_RTS,
-      .rx_flow_ctrl_thresh = 122,
-    };
-    ESP_ERROR_CHECK(uart_param_config(UART_NUM_2, &uart_config));
-    ESP_ERROR_CHECK(uart_set_pin(UART_NUM_2, TX, RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
-#if 0
-    m_SerialPort.begin(baud, SERIAL_8N1, RX, TX);
-#endif
+    deleteDriver();
+    installDriver(baud);
+  } else {
+    deleteDriver();
   }
 }
 
@@ -68,7 +84,7 @@ void GPS::update(void) {
   }
 
   if (m_GPS.location.isUpdated() && m_GPS.location.isValid() && m_GPS.date.isUpdated()
-      && m_GPS.date.isValid() && m_GPS.time.isValid() && m_GPS.time.isValid()) {
+      && m_GPS.date.isValid() && m_GPS.time.isUpdated() && m_GPS.time.isValid()) {
     Camera::gps_t dgps = {
         m_GPS.location.lat(),
         m_GPS.location.lng(),
@@ -90,23 +106,19 @@ void GPS::update(void) {
 
 /** Read and decode the GPS data from serial port. */
 void GPS::serviceSerial(void) {
-  static std::array<uint8_t, BUFFER_SIZE> buffer;
   static uint8_t lostFix = 0;
+  std::array<uint8_t, BUFFER_SIZE> buffer;
 
   if (!m_Enabled) {
     return;
   }
 
-#if 0
-  size_t available = m_SerialPort.available();
-  if (available > 0) {
-    size_t bytes = m_SerialPort.readBytes(buffer.data(), std::min(buffer.size(), available));
-
+  int bytes = uart_read_bytes(m_UART, buffer.data(), buffer.size(), 1);
+  if (bytes > 0) {
     for (size_t i = 0; i < bytes; i++) {
       m_GPS.encode(buffer[i]);
     }
   }
-#endif
 
   if ((m_GPS.location.age() < MAX_AGE_MS) && m_GPS.location.isValid()
       && (m_GPS.date.age() < MAX_AGE_MS) && m_GPS.date.isValid() && (m_GPS.time.age() < MAX_AGE_MS)
