@@ -17,10 +17,6 @@ void app_main() {
   BaseType_t xRet;
   TaskHandle_t xControlHandle = NULL;
 
-#if 0
-  Serial.begin(115200);
-#endif
-
   ESP_LOGI(LOG_TAG, "furble version: '%s'", FURBLE_VERSION);
 
   esp_pm_config_t pm_config = {
@@ -40,7 +36,7 @@ void app_main() {
   Furble::Device::init(Furble::Settings::load<esp_power_level_t>(Furble::Settings::TX_POWER));
 
   auto &control = Furble::Control::getInstance();
-  xRet = xTaskCreatePinnedToCore(control_task, "control", 8192, &control, 4, &xControlHandle, 1);
+  xRet = xTaskCreate(control_task, "control", 8192, &control, 4, &xControlHandle);
   if (xRet != pdPASS) {
     ESP_LOGE(LOG_TAG, "Failed to create control task.");
     abort();

@@ -1,8 +1,5 @@
-#if 0
-#include <Esp.h>
-#endif
-#include <esp_mac.h>
 #include <NimBLEDevice.h>
+#include <esp_mac.h>
 
 #include "Device.h"
 #include "FurbleTypes.h"

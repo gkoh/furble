@@ -33,7 +33,7 @@ Control::cmd_t Control::Target::getCommand(void) {
   return cmd;
 }
 
-void Control::Target::updateGPS(Camera::gps_t &gps, Camera::timesync_t &timesync) {
+void Control::Target::updateGPS(const Camera::gps_t &gps, const Camera::timesync_t &timesync) {
   m_GPS = gps;
   m_Timesync = timesync;
 }
@@ -190,7 +190,7 @@ BaseType_t Control::sendCommand(cmd_t cmd) {
   return xQueueSend(m_Queue, &cmd, 0);
 }
 
-BaseType_t Control::updateGPS(Camera::gps_t &gps, Camera::timesync_t &timesync) {
+BaseType_t Control::updateGPS(const Camera::gps_t &gps, const Camera::timesync_t &timesync) {
   for (const auto &target : m_Targets) {
     target->updateGPS(gps, timesync);
   }
@@ -246,15 +246,15 @@ void Control::disconnect(void) {
 void Control::addActive(Camera *camera) {
   const std::lock_guard<std::mutex> lock(m_Mutex);
 
-  auto target = std::unique_ptr<Control::Target>(new Control::Target(camera));
+  auto target = std::make_unique<Control::Target>(camera);
 
   // Create per-target task that will self-delete on disconnect
-  BaseType_t ret = xTaskCreatePinnedToCore(
+  BaseType_t ret = xTaskCreate(
       [](void *param) {
         auto *target = static_cast<Furble::Control::Target *>(param);
         target->task();
       },
-      camera->getName().c_str(), 4096, target.get(), 3, NULL, 1);
+      camera->getName().c_str(), 4096, target.get(), 3, NULL);
   if (ret != pdPASS) {
     ESP_LOGE(LOG_TAG, "Failed to create task for '%s'.", camera->getName().c_str());
   } else {
