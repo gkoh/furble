@@ -40,7 +40,7 @@ void Device::init(esp_power_level_t power) {
   NimBLEDevice::setPower(power);
   NimBLEDevice::setSecurityAuth(true, true, true);
   NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_YESNO);
-  // NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_PUBLIC);
+  NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_RPA_PUBLIC_DEFAULT);
 }
 
 Device::uuid128_t Device::getUUID128(void) {
