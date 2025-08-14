@@ -3,7 +3,7 @@
 #include <NimBLEDevice.h>
 #include <NimBLERemoteCharacteristic.h>
 #include <NimBLERemoteService.h>
-#include <nimble/nimble/host/services/gap/include/services/gap/ble_svc_gap.h>
+#include <services/gap/ble_svc_gap.h>
 
 #include "CameraList.h"
 #include "Device.h"

@@ -1,5 +1,5 @@
 #include <M5Unified.h>
-#include <TinyGPS++.h>
+//#include <TinyGPS++.h>
 #include <lvgl.h>
 
 #include "FurbleControl.h"
@@ -26,8 +26,10 @@ void GPS::setIcon(lv_obj_t *icon) {
 void GPS::reloadSetting(void) {
   m_Enabled = Settings::load<bool>(Settings::GPS);
   if (m_Enabled) {
+#if 0
     uint32_t baud = Settings::load<uint32_t>(Settings::GPS_BAUD);
     m_SerialPort.begin(baud, SERIAL_8N1, RX, TX);
+#endif
   }
 }
 
@@ -55,6 +57,7 @@ void GPS::update(void) {
     return;
   }
 
+#if 0
   if (m_HasFix) {
     Camera::gps_t dgps = {
         m_GPS.location.lat(),
@@ -73,6 +76,7 @@ void GPS::update(void) {
       Control::getInstance().updateGPS(dgps, timesync);
     }
   }
+#endif
 }
 
 /** Read and decode the GPS data from serial port. */
@@ -84,6 +88,7 @@ void GPS::serviceSerial(void) {
     return;
   }
 
+#if 0
   size_t available = m_SerialPort.available();
   if (available > 0) {
     size_t bytes = m_SerialPort.readBytes(buffer.data(), std::min(buffer.size(), available));
@@ -92,7 +97,9 @@ void GPS::serviceSerial(void) {
       m_GPS.encode(buffer[i]);
     }
   }
+#endif
 
+#if 0
   if ((m_GPS.location.age() < MAX_AGE_MS) && m_GPS.location.isValid()
       && (m_GPS.date.age() < MAX_AGE_MS) && m_GPS.date.isValid() && (m_GPS.time.age() < MAX_AGE_MS)
       && m_GPS.time.isValid()) {
@@ -101,6 +108,7 @@ void GPS::serviceSerial(void) {
   } else {
     lostFix++;
   }
+#endif
 
   if (lostFix > 10) {
     // only lose fix after 10 straight losses
@@ -112,7 +120,9 @@ void GPS::serviceSerial(void) {
   }
 }
 
+#if 0
 TinyGPSPlus &GPS::get(void) {
   return m_GPS;
 }
+#endif
 }  // namespace Furble

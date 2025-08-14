@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include <NimBLEAddress.h>
 #include <NimBLEAdvertisedDevice.h>
 #include <NimBLEDevice.h>
