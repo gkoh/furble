@@ -38,18 +38,17 @@ class Control {
     friend class Control;
 
    public:
+    Target(Camera *camera);
     ~Target();
 
     Camera *getCamera(void) const;
     cmd_t getCommand(void);
     void sendCommand(cmd_t cmd);
-    void updateGPS(Camera::gps_t &gps, Camera::timesync_t &timesync);
+    void updateGPS(const Camera::gps_t &gps, const Camera::timesync_t &timesync);
 
     void task(void);
 
    protected:
-    Target(Camera *camera);
-
     volatile bool m_Stopped = false;
 
    private:
@@ -85,7 +84,7 @@ class Control {
   /**
    * Update GPS and timesync values.
    */
-  BaseType_t updateGPS(Camera::gps_t &gps, Camera::timesync_t &timesync);
+  BaseType_t updateGPS(const Camera::gps_t &gps, const Camera::timesync_t &timesync);
 
   /**
    * Are all active cameras still connected?

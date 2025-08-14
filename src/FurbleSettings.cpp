@@ -1,8 +1,8 @@
 #include <esp_bt.h>
 #include <nvs_flash.h>
 
-#include "FurbleTypes.h"
 #include "FurbleSettings.h"
+#include "FurbleTypes.h"
 #include "Preferences.h"
 
 namespace Furble {
