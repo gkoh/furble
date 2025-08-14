@@ -119,9 +119,9 @@ void Fujifilm::sendGeoData(const gps_t &gps, const timesync_t &timesync) {
 
     ESP_LOGI(LOG_TAG,
              "Sending geotag data (%u bytes) to 0x%04x\r\n"
-             "  lat: %f, %d\r\n"
-             "  lon: %f, %d\r\n"
-             "  alt: %f, %d\r\n",
+             "  lat: %f, %ld\r\n"
+             "  lon: %f, %ld\r\n"
+             "  alt: %f, %ld\r\n",
              sizeof(geotag), pChr->getHandle(), gps.latitude, geotag.latitude, gps.longitude,
              geotag.longitude, gps.altitude, geotag.altitude);
 

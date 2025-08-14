@@ -39,6 +39,8 @@ class Device {
  private:
   static constexpr size_t DEVICE_ID_STR_MAX = 16;
 
+  static uint64_t getEfuseMac(void);
+
   static uuid128_t m_Uuid;
   static char m_StringID[DEVICE_ID_STR_MAX];
   static std::string m_ID;

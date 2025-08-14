@@ -1,4 +1,7 @@
+#if 0
 #include <Esp.h>
+#endif
+#include <esp_mac.h>
 #include <NimBLEDevice.h>
 
 #include "Device.h"
@@ -21,15 +24,21 @@ static uint32_t xorshift(uint32_t x) {
   return x;
 }
 
+uint64_t Device::getEfuseMac(void) {
+  uint64_t _chipmacid = 0LL;
+  esp_efuse_mac_get_default((uint8_t *)(&_chipmacid));
+  return _chipmacid;
+}
+
 void Device::init(esp_power_level_t power) {
-  uint32_t chip_id = (uint32_t)ESP.getEfuseMac();
+  uint32_t chip_id = (uint32_t)getEfuseMac();
   for (size_t i = 0; i < UUID128_AS_32_LEN; i++) {
     chip_id = xorshift(chip_id);
     m_Uuid.uint32[i] = chip_id;
   }
 
   // truncate ID to 5 hex characters (arbitrary, just make it 'nice' to read)
-  snprintf(m_StringID, DEVICE_ID_STR_MAX, "%s-%05x", FURBLE_STR, m_Uuid.uint32[0] & 0xFFFFF);
+  snprintf(m_StringID, DEVICE_ID_STR_MAX, "%s-%05lx", FURBLE_STR, m_Uuid.uint32[0] & 0xFFFFF);
 
   m_ID = std::string(m_StringID);
 
