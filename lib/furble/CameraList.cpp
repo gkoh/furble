@@ -37,7 +37,7 @@ void CameraList::fillSaveEntry(index_entry_t &entry, const Camera *camera) {
 
 void CameraList::save_index(std::vector<CameraList::index_entry_t> &index) {
   if (index.size() > 0) {
-    m_Prefs.putBytes(FURBLE_PREF_INDEX, index.data(), sizeof(index[0]) * index.size());
+    m_Prefs.put(FURBLE_PREF_INDEX, index.data(), sizeof(index[0]) * index.size());
   } else {
     m_Prefs.remove(FURBLE_PREF_INDEX);
   }
@@ -52,7 +52,7 @@ std::vector<CameraList::index_entry_t> CameraList::load_index(void) {
       uint8_t buffer[bytes] = {0};
       size_t count = bytes / sizeof(index_entry_t);
       ESP_LOGI(LOG_TAG, "Index entries: %d", count);
-      m_Prefs.getBytes(FURBLE_PREF_INDEX, buffer, bytes);
+      m_Prefs.get(FURBLE_PREF_INDEX, buffer, bytes);
       index_entry_t *entry = (index_entry_t *)buffer;
 
       for (int i = 0; i < count; i++) {
@@ -96,7 +96,7 @@ void CameraList::save(const Furble::Camera *camera) {
   uint8_t dbuffer[dbytes] = {0};
   if (camera->serialise(dbuffer, dbytes)) {
     // Store the entry and the index if serialisation succeeds
-    m_Prefs.putBytes(entry.name, dbuffer, dbytes);
+    m_Prefs.put(entry.name, dbuffer, dbytes);
     ESP_LOGI(LOG_TAG, "Saved %s", entry.name);
     save_index(index);
     ESP_LOGI(LOG_TAG, "Index entries: %d", index.size());
@@ -147,7 +147,7 @@ void CameraList::load(void) {
       continue;
     }
     uint8_t dbuffer[dbytes] = {0};
-    m_Prefs.getBytes(i.name, dbuffer, dbytes);
+    m_Prefs.get(i.name, dbuffer, dbytes);
 
     switch (i.type) {
       case Camera::Type::FUJIFILM_BASIC:

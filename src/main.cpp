@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include <M5Unified.h>
 #include <freertos/FreeRTOS.h>
 #include <lvgl.h>
@@ -18,11 +17,13 @@ void app_main() {
   BaseType_t xRet;
   TaskHandle_t xControlHandle = NULL;
 
+#if 0
   Serial.begin(115200);
+#endif
 
   ESP_LOGI(LOG_TAG, "furble version: '%s'", FURBLE_VERSION);
 
-  esp_pm_config_esp32_t pm_config = {
+  esp_pm_config_t pm_config = {
       .max_freq_mhz = 80,
       .min_freq_mhz = 80,
       .light_sleep_enable = true,

@@ -2,8 +2,8 @@
 #include <nvs_flash.h>
 
 #include "FurbleTypes.h"
-
 #include "FurbleSettings.h"
+#include "Preferences.h"
 
 namespace Furble {
 Preferences Settings::m_Prefs;
@@ -31,7 +31,7 @@ template <>
 bool Settings::load<bool>(type_t type) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, true);
-  bool value = m_Prefs.getBool(setting.key);
+  bool value = m_Prefs.get<bool>(setting.key);
   m_Prefs.end();
 
   return value;
@@ -41,7 +41,7 @@ template <>
 uint8_t Settings::load<uint8_t>(type_t type) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, true);
-  uint8_t value = m_Prefs.getUChar(setting.key);
+  uint8_t value = m_Prefs.get<uint8_t>(setting.key);
   m_Prefs.end();
 
   return value;
@@ -51,7 +51,7 @@ template <>
 uint32_t Settings::load<uint32_t>(type_t type) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, true);
-  uint32_t value = m_Prefs.getUInt(setting.key);
+  uint32_t value = m_Prefs.get<uint32_t>(setting.key);
   m_Prefs.end();
 
   return value;
@@ -61,7 +61,7 @@ template <>
 std::string Settings::load<std::string>(type_t type) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, true);
-  std::string value = std::string(m_Prefs.getString(setting.key).c_str());
+  std::string value = m_Prefs.get(setting.key);
   m_Prefs.end();
 
   return value;
@@ -73,7 +73,7 @@ interval_t Settings::load<interval_t>(type_t type) {
   interval_t interval;
 
   m_Prefs.begin(setting.nvs_namespace, true);
-  size_t len = m_Prefs.getBytes(setting.key, &interval, sizeof(interval_t));
+  size_t len = m_Prefs.get(setting.key, &interval, sizeof(interval_t));
   if (len != sizeof(interval_t)) {
     // default values
     interval.count = INTERVAL_DEFAULT_COUNT;
@@ -90,7 +90,7 @@ template <>
 esp_power_level_t Settings::load<esp_power_level_t>(type_t type) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, true);
-  uint8_t value = m_Prefs.getUChar(setting.key);
+  uint8_t value = m_Prefs.get<uint8_t>(setting.key);
   m_Prefs.end();
 
   switch (value) {
@@ -108,7 +108,7 @@ template <>
 void Settings::save<bool>(const type_t type, const bool &value) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, false);
-  m_Prefs.putBool(setting.key, value);
+  m_Prefs.put<bool>(setting.key, value);
   m_Prefs.end();
 }
 
@@ -116,7 +116,7 @@ template <>
 void Settings::save<uint8_t>(const type_t type, const uint8_t &value) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, false);
-  m_Prefs.putUChar(setting.key, value);
+  m_Prefs.put<uint8_t>(setting.key, value);
   m_Prefs.end();
 }
 
@@ -124,7 +124,7 @@ template <>
 void Settings::save<uint32_t>(const type_t type, const uint32_t &value) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, false);
-  m_Prefs.putUInt(setting.key, value);
+  m_Prefs.put<uint32_t>(setting.key, value);
   m_Prefs.end();
 }
 
@@ -132,7 +132,7 @@ template <>
 void Settings::save<interval_t>(const type_t type, const interval_t &value) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, false);
-  m_Prefs.putBytes(setting.key, &value, sizeof(value));
+  m_Prefs.put(setting.key, &value, sizeof(value));
   m_Prefs.end();
 }
 
@@ -140,7 +140,7 @@ template <>
 void Settings::save<std::string>(const type_t type, const std::string &value) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, false);
-  m_Prefs.putString(setting.key, value.c_str());
+  m_Prefs.put(setting.key, value);
   m_Prefs.end();
 }
 

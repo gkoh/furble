@@ -1082,9 +1082,9 @@ void UI::intervalometer(lv_timer_t *timer) {
   static uint32_t count = 0;
 
   if (interval->m_Count.m_SpinValue.m_Unit == SpinValue::UNIT_INF) {
-    lv_label_set_text_fmt(m_IntervalCountLabel, "%09u", count);
+    lv_label_set_text_fmt(m_IntervalCountLabel, "%09lu", count);
   } else {
-    lv_label_set_text_fmt(m_IntervalCountLabel, "%03u/%03u", count,
+    lv_label_set_text_fmt(m_IntervalCountLabel, "%03lu/%03u", count,
                           interval->m_Count.m_SpinValue.m_Value);
   }
 
@@ -1392,6 +1392,7 @@ void UI::addGPSMenu(const menu_t &parent) {
 
   static lv_timer_t *timer = lv_timer_create(
       [](lv_timer_t *t) {
+#if 0
         auto *gpsData = static_cast<menu_t *>(lv_timer_get_user_data(t));
         auto &gps = GPS::getInstance().get();
         static lv_obj_t *valid = lv_label_create(gpsData->page);
@@ -1422,6 +1423,7 @@ void UI::addGPSMenu(const menu_t &parent) {
         static lv_obj_t *time = lv_label_create(gpsData->page);
         lv_label_set_text_fmt(time, "%02u:%02u:%02u", gps.time.hour(), gps.time.minute(),
                               gps.time.second());
+#endif
 #endif
       },
       1000, &gpsData);
@@ -1669,7 +1671,7 @@ void UI::addIntervalometerMenu(const menu_t &parent) {
         uint32_t now = tick();
         uint32_t remaining = m_IntervalNext > now ? m_IntervalNext - now : 0;
         SpinValue::hms_t hms = SpinValue::toHMS(remaining);
-        lv_label_set_text_fmt(m_IntervalRemainingLabel, "%02u:%02u:%02u", hms.hours, hms.minutes,
+        lv_label_set_text_fmt(m_IntervalRemainingLabel, "%02lu:%02lu:%02lu", hms.hours, hms.minutes,
                               hms.seconds);
       },
       500, NULL);
