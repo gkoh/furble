@@ -259,6 +259,7 @@ bool FujifilmSecure::serialise(void *buffer, size_t bytes) const {
   strncpy(x->name, m_Name.c_str(), MAX_NAME);
   x->address = (uint64_t)m_Address;
   x->type = m_Address.getType();
+  x->serial = m_Serial;
 
   return true;
 }
