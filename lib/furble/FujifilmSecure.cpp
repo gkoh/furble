@@ -131,13 +131,6 @@ bool FujifilmSecure::_connect(void) {
   ESP_LOGI(LOG_TAG, "Connected");
   m_Progress += 5;
 
-  ESP_LOGI(LOG_TAG, "Securing");
-  if (!m_Client->secureConnection()) {
-    return false;
-  }
-  ESP_LOGI(LOG_TAG, "Secured!");
-  m_Progress += 5;
-
   ESP_LOGI(LOG_TAG, "Requesting status");
   auto status = m_Client->getValue(PAIR_SVC_UUID, STATUS_CHR_UUID);
   if (status.size() == 4) {
