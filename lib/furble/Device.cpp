@@ -38,8 +38,16 @@ void Device::init(esp_power_level_t power) {
 
   NimBLEDevice::init(m_ID);
   NimBLEDevice::setPower(power);
+
+  // enable bonding, mitm and secure connection
   NimBLEDevice::setSecurityAuth(true, true, true);
+
+  // claim YESNO to enable numeric LE security
   NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_YESNO);
+
+  // configure RPA (where possible) and distribute encryption key and ID key (IRK)
+  NimBLEDevice::setSecurityInitKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
+  NimBLEDevice::setSecurityRespKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
   NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_RPA_PUBLIC_DEFAULT);
 }
 
