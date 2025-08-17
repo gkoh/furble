@@ -88,6 +88,8 @@ void FujifilmSecure::onResult(const NimBLEAdvertisedDevice *pDevice) {
              NimBLEUtils::dataToHexString(m_Serial.data, sizeof(m_Serial.data)).c_str());
     if (memcmp(&scan.serial, &m_Serial, sizeof(m_Serial)) == 0) {
       m_Address = pDevice->getAddress();
+      auto type = m_Address.getType();
+      ESP_LOGI(LOG_TAG, "address = %s, type = %d", m_Address.toString().c_str(), type);
       bool success = true;
       xQueueSend(m_Queue, &success, 0);
     }
