@@ -46,6 +46,7 @@ The following devices have been tested and confirmed to work:
    - Canon EOS R6 Mark II ([@hijae](https://github.com/hijae))
 - Nikon
    - Nikon COOLPIX B600
+   - Nikon Z6 III ([@herrfrei](https://github.com/herrfrei))
 - Sony
    - Sony ZV-1F
 - Mobile Devices (beta)
@@ -76,13 +77,13 @@ Currently supported features in `furble`:
 
 ### Table of Features
 
-| Camera | Scanning & Pairing | Shutter Release | Focus | GPS     |
-| :---:  | :---:              | :---:           | :---: | :---:   |
-| Fujifilm X & GFX | ✔️        | ✔️               | ✔️[^1] | ✔️       |
-| Canon EOS M6     | ✔️        | ✔️               | :x:   | :x:[^2] |
-| Canon EOS R      | ✔️        | ✔️               | ✔️     | :x:     |
-| Nikon COOLPIX    | ✔️        | ✔️               | :x:   | :x:     |
-| Sony ZV          | ✔️        | ✔️               | ✔️     | ✔️       |
+| Camera | Scanning & Pairing  | Shutter Release | Focus | GPS     |
+| :---:  | :---:               | :---:           | :---: | :---:   |
+| Fujifilm X & GFX  | ✔️        | ✔️               | ✔️[^1] | ✔️       |
+| Canon EOS M6      | ✔️        | ✔️               | :x:   | :x:[^2] |
+| Canon EOS R       | ✔️        | ✔️               | ✔️     | :x:     |
+| Nikon COOLPIX & Z | ✔️        | ✔️               | :x:   | :x:     |
+| Sony ZV           | ✔️        | ✔️               | ✔️     | ✔️       |
 
 [^1]: see [#99](https://github.com/gkoh/furble/discussions/99)
 [^2]: WiFi only
@@ -332,6 +333,7 @@ This has been tested on a Nikon COOLPIX B600. Unfortunately, the remote wireless
 mode has no support for GPS or focus functions, thus only shutter release works.
 Note that other Nikon cameras will appear in the scan, but will not pair
 (further support is under investigation).
+@herrfrei kindly assisted with Z6 III support.
 
 #### Sony
 
