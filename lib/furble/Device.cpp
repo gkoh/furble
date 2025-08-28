@@ -48,7 +48,7 @@ void Device::init(esp_power_level_t power) {
   // configure RPA (where possible) and distribute encryption key and ID key (IRK)
   NimBLEDevice::setSecurityInitKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
   NimBLEDevice::setSecurityRespKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
-  NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_PUBLIC);
+  NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_RPA_PUBLIC_DEFAULT);
 }
 
 Device::uuid128_t Device::getUUID128(void) {
