@@ -75,21 +75,14 @@ bool FujifilmSecure::subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, boo
 }
 
 void FujifilmSecure::onResult(const NimBLEAdvertisedDevice *pDevice) {
-  if (pDevice->haveManufacturerData()) {
-    ESP_LOGI(LOG_TAG, "onResult(), len(md) = %u, sizeof(adv_secure_t) = %u",
-             pDevice->getManufacturerData().length(), sizeof(adv_secure_t));
-  }
   if ((Fujifilm::matches(pDevice)
        && (pDevice->getManufacturerData().length() == sizeof(adv_secure_t))
        && pDevice->isAdvertisingService(PAIR_SVC_UUID))) {
     const adv_secure_t scan = pDevice->getManufacturerData<adv_secure_t>();
-    ESP_LOGI(LOG_TAG, "got %s, want %s",
+    ESP_LOGD(LOG_TAG, "got %s, want %s",
              NimBLEUtils::dataToHexString(scan.serial.data, sizeof(scan.serial.data)).c_str(),
              NimBLEUtils::dataToHexString(m_Serial.data, sizeof(m_Serial.data)).c_str());
     if (memcmp(&scan.serial, &m_Serial, sizeof(m_Serial)) == 0) {
-      m_Address = pDevice->getAddress();
-      auto type = m_Address.getType();
-      ESP_LOGI(LOG_TAG, "address = %s, type = %d", m_Address.toString().c_str(), type);
       bool success = true;
       xQueueSend(m_Queue, &success, 0);
     }
@@ -109,7 +102,7 @@ bool FujifilmSecure::_connect(void) {
     auto &scan = Scan::getInstance();
     scan.clear();
     scan.start(this, SCAN_TIME_MS);
-    m_Progress += 10;
+    m_Progress += 5;
 
     // wait up to 60s for camera to appear
     BaseType_t timeout = xQueueReceive(m_Queue, &success, pdMS_TO_TICKS(60000));
