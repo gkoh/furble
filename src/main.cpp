@@ -45,7 +45,7 @@ void app_main() {
     abort();
   }
 
-  // Run UI
+  // Run UI in host task (here)
   vUITask(NULL);
 }
 }

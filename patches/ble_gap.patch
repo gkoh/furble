@@ -1,0 +1,34 @@
+--- nimble.hack/ble_gap.c.orig	2025-08-28 07:47:53.776570301 +0930
++++ nimble.hack/ble_gap.c	2025-08-28 07:47:53.776570301 +0930
+@@ -8151,15 +8151,30 @@
+          * procedure.
+          */
+         rc = ble_store_read_peer_sec(&key_sec, &value_sec);
+-        if (rc == 0 && value_sec.ltk_present) {
++        if (rc != 0) {
++              BLE_HS_LOG(INFO, "Not found: Peer record for address type %d value ", key_sec.peer_addr.type);
++              BLE_HS_LOG_ADDR(INFO, key_sec.peer_addr.val);
++ 	      key_sec.peer_addr.type = !key_sec.peer_addr.type;
++              rc = ble_store_read_peer_sec(&key_sec, &value_sec);
++        }
++        if (rc != 0) {
++              BLE_HS_LOG(INFO, "Not found: Peer record for address type %d value ", key_sec.peer_addr.type);
++              BLE_HS_LOG_ADDR(INFO, key_sec.peer_addr.val);
++        } else {
++              BLE_HS_LOG(INFO, "Found: Peer record for address type %d value ", key_sec.peer_addr.type);
++              BLE_HS_LOG_ADDR(INFO, key_sec.peer_addr.val);
++ 	}
++	if (rc == 0 && value_sec.ltk_present) {
+             rc = ble_sm_enc_initiate(conn_handle, value_sec.key_size,
+                                      value_sec.ltk, value_sec.ediv,
+                                      value_sec.rand_num,
+                                      value_sec.authenticated);
++ 	    BLE_HS_LOG(INFO, "ble_sm_enc_initiate result: %d\n", rc);
+             if (rc != 0) {
+                 goto done;
+             }
+         } else {
++            BLE_HS_LOG(INFO, "Peer LTK not found,  initiate pairing\n");
+             rc = ble_sm_pair_initiate(conn_handle);
+             if (rc != 0) {
+                 goto done;
