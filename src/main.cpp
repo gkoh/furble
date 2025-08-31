@@ -24,7 +24,7 @@ void app_main() {
 
   esp_pm_config_esp32_t pm_config = {
       .max_freq_mhz = 80,
-      .min_freq_mhz = 40,
+      .min_freq_mhz = 80,
       .light_sleep_enable = true,
   };
   ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
