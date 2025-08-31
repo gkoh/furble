@@ -38,6 +38,9 @@ void GPS::installDriver(uint32_t baud) {
   uart_param_config(m_UART, &uart_config);
   uart_set_pin(m_UART, TX, RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
   uart_flush(m_UART);
+
+  // power on
+  M5.Power.setExtOutput(true, m5::ext_PA);
 }
 
 /** Delete UART driver. */
@@ -45,6 +48,8 @@ void GPS::deleteDriver(void) {
   if (uart_is_driver_installed(m_UART)) {
     uart_driver_delete(m_UART);
   }
+  // power off
+  M5.Power.setExtOutput(false, m5::ext_PA);
 }
 
 /** Refresh the setting from NVS. */
@@ -115,9 +120,7 @@ void GPS::serviceSerial(void) {
 
   int bytes = uart_read_bytes(m_UART, buffer.data(), buffer.size(), 1);
   if (bytes > 0) {
-    for (size_t i = 0; i < bytes; i++) {
-      m_GPS.encode(buffer[i]);
-    }
+    m_GPS.encode(reinterpret_cast<char *>(buffer.data()), bytes);
   }
 
   if ((m_GPS.location.age() < MAX_AGE_MS) && m_GPS.location.isValid()
