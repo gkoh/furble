@@ -7,7 +7,10 @@ namespace Furble {
 Camera::Camera(Type type, PairType pairType) : m_PairType(pairType), m_Type(type) {}
 
 Camera::~Camera() {
-  m_Client = nullptr;
+  if (m_Client) {
+    NimBLEDevice::deleteClient(m_Client);
+    m_Client = nullptr;
+  }
 }
 
 bool Camera::connect(esp_power_level_t power, uint32_t timeout) {
@@ -47,6 +50,7 @@ void Camera::disconnect(void) {
 
   if (m_Client) {
     NimBLEDevice::deleteClient(m_Client);
+    m_Client = nullptr;
   }
 }
 
