@@ -4,7 +4,7 @@ from os.path import join, relpath
 Import("env")
 
 def apply_patches(source, target, env):
-  print("{} -N -p1 -i {} {}".format("patch", "patches/ble_gap.patch", source[0]))
+  env.Execute("{} --verbose -N -p1 -i {} {}".format("patch", "patches/ble_gap.patch", source[0]))
 
 for lib in env.GetLibBuilders():
   if lib.name == "NimBLE-Arduino":
