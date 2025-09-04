@@ -155,6 +155,7 @@ class Camera: public NimBLEClientCallbacks {
   NimBLEClient *m_Client = nullptr;
   std::string m_Name;
   bool m_Connected = false;
+  bool m_Paired = false;
 
  private:
   /** Called on connection success. */
