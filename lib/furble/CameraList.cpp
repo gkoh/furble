@@ -126,10 +126,8 @@ void CameraList::remove(Furble::Camera *camera) {
 
   m_Prefs.end();
 
-  // delete bond if required
-  if (NimBLEDevice::isBonded(camera->getAddress())) {
-    NimBLEDevice::deleteBond(camera->getAddress());
-  }
+  // delete bond whether needed or not
+  NimBLEDevice::deleteBond(camera->getAddress());
 }
 
 /**
