@@ -486,7 +486,6 @@ void Nikon::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
 
 void Nikon::_disconnect(void) {
   m_Client->disconnect();
-  m_Connected = false;
 }
 
 void Nikon::degreesToDMS(double value,

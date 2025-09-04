@@ -17,7 +17,7 @@ namespace Furble {
 /**
  * Represents a single target camera.
  */
-class Camera {
+class Camera: public NimBLEClientCallbacks {
  public:
   /**
    * Camera types.
@@ -152,22 +152,28 @@ class Camera {
 
   const PairType m_PairType;
   NimBLEAddress m_Address = NimBLEAddress {};
-  NimBLEClient *m_Client;
+  NimBLEClient *m_Client = nullptr;
   std::string m_Name;
   bool m_Connected = false;
 
  private:
+  /** Called on connection success. */
+  void onConnect(NimBLEClient *pDevice) override final;
+
+  /** Called on disconnect. */
+  void onDisconnect(NimBLEClient *pDevice, int reason) override final;
+
   const uint16_t m_MinInterval = BLE_GAP_INITIAL_CONN_ITVL_MIN;
   const uint16_t m_MaxInterval = BLE_GAP_INITIAL_CONN_ITVL_MAX;
   // allow a packet to skip
   const uint16_t m_Latency = 1;
   // double the disconnect timeout
   const uint16_t m_Timeout = (2 * BLE_GAP_INITIAL_SUPERVISION_TIMEOUT);
-
   const Type m_Type;
 
-  std::mutex m_Mutex;
+  mutable std::mutex m_Mutex;
 
+  esp_power_level_t m_Power = ESP_PWR_LVL_P3;
   bool m_FromScan = false;
   bool m_Active = false;
 };

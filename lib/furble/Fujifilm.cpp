@@ -138,7 +138,6 @@ void Fujifilm::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
 
 void Fujifilm::_disconnect(void) {
   m_Client->disconnect();
-  m_Connected = false;
 }
 
 }  // namespace Furble

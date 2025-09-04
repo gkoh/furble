@@ -7,20 +7,34 @@ namespace Furble {
 Camera::Camera(Type type, PairType pairType) : m_PairType(pairType), m_Type(type) {}
 
 Camera::~Camera() {
-  if (m_Client) {
-    NimBLEDevice::deleteClient(m_Client);
-    m_Client = nullptr;
-  }
+  m_Connected = false;
+  m_Client = nullptr;
+}
+
+void Camera::onConnect(NimBLEClient *pClient) {
+  // Set BLE transmit power after connection is established.
+  NimBLEDevice::setPower(m_Power);
+  m_Connected = true;
+}
+
+void Camera::onDisconnect(NimBLEClient *pClient, int reason) {
+  m_Connected = false;
+  m_Progress = 0;
 }
 
 bool Camera::connect(esp_power_level_t power, uint32_t timeout) {
   const std::lock_guard<std::mutex> lock(m_Mutex);
+
+  m_Power = power;
 
   m_Client = NimBLEDevice::createClient();
   if (m_Client == nullptr) {
     ESP_LOGI(LOG_TAG, "Failed to create client");
     return false;
   }
+
+  m_Client->setClientCallbacks(this, false);
+  m_Client->setSelfDelete(true, true);  // self-delete on any connection failure
 
   // adjust connection timeout and parameters
   m_Client->setConnectTimeout(timeout);
@@ -29,14 +43,8 @@ bool Camera::connect(esp_power_level_t power, uint32_t timeout) {
   // try extending range by adjusting connection parameters
   bool connected = this->_connect();
   if (connected) {
-    if (m_Type != Type::FAUXNY) {
-      // Set BLE transmit power after connection is established.
-      NimBLEDevice::setPower(power);
-    }
-    m_Connected = true;
   } else {
     this->_disconnect();
-    m_Connected = false;
   }
 
   return m_Connected;
@@ -47,11 +55,6 @@ void Camera::disconnect(void) {
   m_Active = false;
   m_Progress = 0;
   this->_disconnect();
-
-  if (m_Client) {
-    NimBLEDevice::deleteClient(m_Client);
-    m_Client = nullptr;
-  }
 }
 
 bool Camera::isActive(void) const {
@@ -79,11 +82,12 @@ uint8_t Camera::getConnectProgress(void) const {
 }
 
 bool Camera::isConnected(void) const {
+  const std::lock_guard<std::mutex> lock(m_Mutex);
   if (m_Type == Type::FAUXNY) {
     return m_Connected;
   }
 
-  return m_Connected && m_Client->isConnected();
+  return m_Connected && m_Client && m_Client->isConnected();
 }
 
 }  // namespace Furble
