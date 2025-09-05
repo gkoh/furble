@@ -134,7 +134,7 @@ class UI {
   static const uint32_t m_KeyEnter = LV_KEY_ENTER;
   static const uint32_t m_KeyRight = LV_KEY_RIGHT;
 
-#if FURBLE_TEST_VERSION
+#if (FURBLE_TEST_VERSION + 0)
   static constexpr const char *m_Title = FURBLE_VERSION;
 #else
   static constexpr const char *m_Title = FURBLE_STR;
