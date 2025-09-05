@@ -4,7 +4,8 @@
 #include "CanonEOSM6.h"
 #include "CanonEOSR.h"
 #include "FauxNY.h"
-#include "Fujifilm.h"
+#include "FujifilmBasic.h"
+#include "FujifilmSecure.h"
 #include "MobileDevice.h"
 #include "Nikon.h"
 #include "Sony.h"
@@ -125,10 +126,8 @@ void CameraList::remove(Furble::Camera *camera) {
 
   m_Prefs.end();
 
-  // delete bond if required
-  if (NimBLEDevice::isBonded(camera->getAddress())) {
-    NimBLEDevice::deleteBond(camera->getAddress());
-  }
+  // delete bond whether needed or not
+  NimBLEDevice::deleteBond(camera->getAddress());
 }
 
 /**
@@ -151,8 +150,9 @@ void CameraList::load(void) {
     m_Prefs.getBytes(i.name, dbuffer, dbytes);
 
     switch (i.type) {
-      case Camera::Type::FUJIFILM:
-        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Fujifilm(dbuffer, dbytes)));
+      case Camera::Type::FUJIFILM_BASIC:
+        m_ConnectList.push_back(
+            std::unique_ptr<Furble::Camera>(new FujifilmBasic(dbuffer, dbytes)));
         break;
       case Camera::Type::CANON_EOS_M6:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new CanonEOSM6(dbuffer, dbytes)));
@@ -171,6 +171,10 @@ void CameraList::load(void) {
         break;
       case Camera::Type::SONY:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Sony(dbuffer, dbytes)));
+        break;
+      case Camera::Type::FUJIFILM_SECURE:
+        m_ConnectList.push_back(
+            std::unique_ptr<Furble::Camera>(new FujifilmSecure(dbuffer, dbytes)));
         break;
     }
   }
@@ -202,8 +206,8 @@ Furble::Camera *CameraList::get(size_t n) {
 }
 
 bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
-  if (Fujifilm::matches(pDevice)) {
-    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::Fujifilm(pDevice)));
+  if (FujifilmBasic::matches(pDevice)) {
+    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::FujifilmBasic(pDevice)));
     return true;
   } else if (CanonEOSM6::matches(pDevice)) {
     m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::CanonEOSM6(pDevice)));
@@ -216,6 +220,9 @@ bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
     return true;
   } else if (Sony::matches(pDevice)) {
     m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::Sony(pDevice)));
+    return true;
+  } else if (FujifilmSecure::matches(pDevice)) {
+    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::FujifilmSecure(pDevice)));
     return true;
   }
 
