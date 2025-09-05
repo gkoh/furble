@@ -12,12 +12,14 @@ Camera::~Camera() {
 }
 
 void Camera::onConnect(NimBLEClient *pClient) {
+  ESP_LOGI(LOG_TAG, "Connected, adjusting transmit power to %d", m_Power);
   // Set BLE transmit power after connection is established.
   NimBLEDevice::setPower(m_Power);
   m_Connected = true;
 }
 
 void Camera::onDisconnect(NimBLEClient *pClient, int reason) {
+  ESP_LOGI(LOG_TAG, "Disconnected");
   m_Connected = false;
   m_Progress = 0;
 }
