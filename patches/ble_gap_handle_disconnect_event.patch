@@ -1,0 +1,15 @@
+--- src/NimBLEClient.cpp.orig	2025-09-06 11:37:45.147160424 +0930
++++ src/NimBLEClient.cpp	2025-09-06 11:39:00.454149508 +0930
+@@ -934,11 +934,7 @@
+     switch (event->type) {
+         case BLE_GAP_EVENT_DISCONNECT: {
+ 
+-            // workaround for bug in NimBLE stack where disconnect event argument is not passed correctly
+-            pClient = NimBLEDevice::getClientByPeerAddress(event->disconnect.conn.peer_ota_addr);
+-            if (pClient == nullptr) {
+-                pClient = NimBLEDevice::getClientByPeerAddress(event->disconnect.conn.peer_id_addr);
+-            }
++            pClient = NimBLEDevice::getClientByHandle(event->disconnect.conn.conn_handle);
+ 
+             if (pClient == nullptr) {
+                 NIMBLE_LOGE(LOG_TAG, "Disconnected client not found, conn_handle=%d",
