@@ -3,9 +3,9 @@
 #include <tuple>
 
 #include <M5Unified.h>
+#include <esp_sleep.h>
 #include <lvgl.h>
 #include <src/themes/lv_theme_private.h>
-#include <esp_sleep.h>
 
 #include <Device.h>
 #include <Scan.h>
