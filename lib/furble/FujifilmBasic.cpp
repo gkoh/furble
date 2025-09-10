@@ -113,16 +113,14 @@ bool FujifilmBasic::_connect(void) {
   ESP_LOGI(LOG_TAG, "Configured");
   m_Progress = 50;
 
-#if 0
-  // wait for up to (10*500)ms callback
+  // wait for up to (10*100)ms callback
   for (unsigned int i = 0; i < 10; i++) {
     if (m_Configured) {
       break;
     }
     m_Progress = m_Progress.load() + 1;
-    vTaskDelay(pdMS_TO_TICKS(500));
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
-#endif
 
   m_Progress = 60;
   // notifications

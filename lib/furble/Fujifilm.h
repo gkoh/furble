@@ -64,7 +64,7 @@ class Fujifilm: public Camera {
   void _disconnect(void) override final;
   bool subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool notification);
 
-  bool m_Configured = false;
+  volatile bool m_Configured = false;
   NimBLERemoteCharacteristic *m_Shutter = nullptr;
 
  private:

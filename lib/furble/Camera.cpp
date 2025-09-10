@@ -40,11 +40,11 @@ bool Camera::connect(esp_power_level_t power, uint32_t timeout) {
 
   // adjust connection timeout and parameters
   m_Client->setConnectTimeout(timeout);
-  // try extending range by adjusting connection parameters
-  m_Client->setConnectionParams(m_MinInterval, m_MaxInterval, m_Latency, m_Timeout);
 
   bool connected = this->_connect();
   if (connected) {
+    // try extending range by adjusting connection parameters
+    m_Client->updateConnParams(m_MinInterval, m_MaxInterval, m_Latency, m_Timeout);
     m_Paired = true;
   } else {
     this->_disconnect();
