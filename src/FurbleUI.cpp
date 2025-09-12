@@ -815,6 +815,7 @@ void UI::addMainMenu(void) {
   lv_obj_add_event_cb(
       m_MainMenu.main,
       [](lv_event_t *e) {
+        auto *ui = static_cast<UI *>(lv_event_get_user_data(e));
         auto *target = static_cast<lv_obj_t *>(lv_event_get_target(e));
         auto *page = lv_menu_get_cur_main_page(target);
         auto *back = lv_menu_get_main_header_back_button(m_MainMenu.main);
@@ -862,6 +863,9 @@ void UI::addMainMenu(void) {
           m_ConnectContext.menuName = m_ScanStr;
         } else if (page == m_Menu.at(m_SettingsStr).page) {
         } else if (page == m_Menu.at(m_ConnectStr).page) {
+          // ensure menu control
+          // especially if arrived here from a disconnect/cancel
+          ui->configureControl(ControlMode::MENU);
         } else if (page == m_Menu.at(m_ConnectedStr).page) {
           // Ensure no active scans
           scan.stop();
@@ -885,7 +889,7 @@ void UI::addMainMenu(void) {
           lv_obj_remove_state(back, LV_STATE_DISABLED);
         }
       },
-      LV_EVENT_VALUE_CHANGED, NULL);
+      LV_EVENT_VALUE_CHANGED, this);
 
   lv_obj_add_event_cb(
       m_MainMenu.main,
