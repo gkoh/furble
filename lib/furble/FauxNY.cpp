@@ -34,6 +34,7 @@ bool FauxNY::_connect(void) {
     m_Progress = i;
   }
 
+  m_Connected = true;
   m_Progress = 100;
 
   return true;
