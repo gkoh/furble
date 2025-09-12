@@ -31,13 +31,13 @@ typedef struct {
 } index_entry_t;
 
 void CameraList::fillSaveEntry(index_entry_t &entry, const Camera *camera) {
-  snprintf(entry.name, 16, "%08llX", (uint64_t)camera->getAddress());
+  snprintf(entry.name, sizeof(entry.name), "%08llX", (uint64_t)camera->getAddress());
   entry.type = camera->getType();
 }
 
 void CameraList::save_index(std::vector<CameraList::index_entry_t> &index) {
   if (index.size() > 0) {
-    m_Prefs.putBytes(FURBLE_PREF_INDEX, index.data(), sizeof(index[0]) * index.size());
+    m_Prefs.put(FURBLE_PREF_INDEX, index.data(), sizeof(index[0]) * index.size());
   } else {
     m_Prefs.remove(FURBLE_PREF_INDEX);
   }
@@ -52,7 +52,7 @@ std::vector<CameraList::index_entry_t> CameraList::load_index(void) {
       uint8_t buffer[bytes] = {0};
       size_t count = bytes / sizeof(index_entry_t);
       ESP_LOGI(LOG_TAG, "Index entries: %d", count);
-      m_Prefs.getBytes(FURBLE_PREF_INDEX, buffer, bytes);
+      m_Prefs.get(FURBLE_PREF_INDEX, buffer, bytes);
       index_entry_t *entry = (index_entry_t *)buffer;
 
       for (int i = 0; i < count; i++) {
@@ -96,7 +96,7 @@ void CameraList::save(const Furble::Camera *camera) {
   uint8_t dbuffer[dbytes] = {0};
   if (camera->serialise(dbuffer, dbytes)) {
     // Store the entry and the index if serialisation succeeds
-    m_Prefs.putBytes(entry.name, dbuffer, dbytes);
+    m_Prefs.put(entry.name, dbuffer, dbytes);
     ESP_LOGI(LOG_TAG, "Saved %s", entry.name);
     save_index(index);
     ESP_LOGI(LOG_TAG, "Index entries: %d", index.size());
@@ -147,34 +147,40 @@ void CameraList::load(void) {
       continue;
     }
     uint8_t dbuffer[dbytes] = {0};
-    m_Prefs.getBytes(i.name, dbuffer, dbytes);
+    m_Prefs.get(i.name, dbuffer, dbytes);
 
     switch (i.type) {
       case Camera::Type::FUJIFILM_BASIC:
         m_ConnectList.push_back(
-            std::unique_ptr<Furble::Camera>(new FujifilmBasic(dbuffer, dbytes)));
+            std::make_unique<Furble::FujifilmBasic>(static_cast<const void *>(dbuffer), dbytes));
         break;
       case Camera::Type::CANON_EOS_M6:
-        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new CanonEOSM6(dbuffer, dbytes)));
+        m_ConnectList.push_back(
+            std::make_unique<Furble::CanonEOSM6>(static_cast<const void *>(dbuffer), dbytes));
         break;
       case Camera::Type::CANON_EOS_R:
-        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new CanonEOSR(dbuffer, dbytes)));
+        m_ConnectList.push_back(
+            std::make_unique<Furble::CanonEOSR>(static_cast<const void *>(dbuffer), dbytes));
         break;
       case Camera::Type::MOBILE_DEVICE:
-        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new MobileDevice(dbuffer, dbytes)));
+        m_ConnectList.push_back(
+            std::make_unique<Furble::MobileDevice>(static_cast<const void *>(dbuffer), dbytes));
         break;
       case Camera::Type::FAUXNY:
-        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new FauxNY(dbuffer, dbytes)));
+        m_ConnectList.push_back(
+            std::make_unique<Furble::FauxNY>(static_cast<const void *>(dbuffer), dbytes));
         break;
       case Camera::Type::NIKON:
-        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Nikon(dbuffer, dbytes)));
+        m_ConnectList.push_back(
+            std::make_unique<Furble::Nikon>(static_cast<const void *>(dbuffer), dbytes));
         break;
       case Camera::Type::SONY:
-        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Sony(dbuffer, dbytes)));
+        m_ConnectList.push_back(
+            std::make_unique<Furble::Sony>(static_cast<const void *>(dbuffer), dbytes));
         break;
       case Camera::Type::FUJIFILM_SECURE:
         m_ConnectList.push_back(
-            std::unique_ptr<Furble::Camera>(new FujifilmSecure(dbuffer, dbytes)));
+            std::make_unique<Furble::FujifilmSecure>(static_cast<const void *>(dbuffer), dbytes));
         break;
     }
   }
@@ -206,23 +212,23 @@ Furble::Camera *CameraList::get(size_t n) {
 }
 
 bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
-  if (FujifilmBasic::matches(pDevice)) {
-    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::FujifilmBasic(pDevice)));
+  if (Fujifilm::matches(pDevice)) {
+    m_ConnectList.push_back(std::make_unique<Furble::FujifilmBasic>(pDevice));
     return true;
   } else if (CanonEOSM6::matches(pDevice)) {
-    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::CanonEOSM6(pDevice)));
+    m_ConnectList.push_back(std::make_unique<Furble::CanonEOSM6>(pDevice));
     return true;
   } else if (CanonEOSR::matches(pDevice)) {
-    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::CanonEOSR(pDevice)));
+    m_ConnectList.push_back(std::make_unique<Furble::CanonEOSR>(pDevice));
     return true;
   } else if (Nikon::matches(pDevice)) {
-    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::Nikon(pDevice)));
+    m_ConnectList.push_back(std::make_unique<Furble::Nikon>(pDevice));
     return true;
   } else if (Sony::matches(pDevice)) {
-    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::Sony(pDevice)));
+    m_ConnectList.push_back(std::make_unique<Furble::Sony>(pDevice));
     return true;
   } else if (FujifilmSecure::matches(pDevice)) {
-    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::FujifilmSecure(pDevice)));
+    m_ConnectList.push_back(std::make_unique<Furble::FujifilmSecure>(pDevice));
     return true;
   }
 
@@ -230,11 +236,11 @@ bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
 }
 
 void CameraList::add(const NimBLEAddress &address, const std::string &name) {
-  m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::MobileDevice(address, name)));
+  m_ConnectList.push_back(std::make_unique<Furble::MobileDevice>(address, name));
 }
 
 void CameraList::addFauxNY(void) {
-  m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::FauxNY()));
+  m_ConnectList.push_back(std::make_unique<Furble::FauxNY>());
 }
 
 }  // namespace Furble

@@ -58,7 +58,7 @@ bool Fujifilm::subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool noti
  */
 bool Fujifilm::matches(const NimBLEAdvertisedDevice *pDevice) {
   if (pDevice->haveManufacturerData()
-      && pDevice->getManufacturerData().length() >= sizeof(fujifilm_adv_t)) {
+      && pDevice->getManufacturerData().length() == sizeof(fujifilm_adv_t)) {
     const fujifilm_adv_t adv = pDevice->getManufacturerData<fujifilm_adv_t>();
     return (adv.company_id == COMPANY_ID);
   }
@@ -119,9 +119,9 @@ void Fujifilm::sendGeoData(const gps_t &gps, const timesync_t &timesync) {
 
     ESP_LOGI(LOG_TAG,
              "Sending geotag data (%u bytes) to 0x%04x\r\n"
-             "  lat: %f, %d\r\n"
-             "  lon: %f, %d\r\n"
-             "  alt: %f, %d\r\n",
+             "  lat: %f, %ld\r\n"
+             "  lon: %f, %ld\r\n"
+             "  alt: %f, %ld\r\n",
              sizeof(geotag), pChr->getHandle(), gps.latitude, geotag.latitude, gps.longitude,
              geotag.longitude, gps.altitude, geotag.altitude);
 
