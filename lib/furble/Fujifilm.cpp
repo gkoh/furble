@@ -109,8 +109,8 @@ void Fujifilm::sendGeoData(const gps_t &gps, const timesync_t &timesync) {
         .pad = {0},
         .gps_time = {
                 .year = (uint16_t)timesync.year,
-                .day = (uint8_t)timesync.day,
                 .month = (uint8_t)timesync.month,
+                .day = (uint8_t)timesync.day,
                 .hour = (uint8_t)timesync.hour,
                 .minute = (uint8_t)timesync.minute,
                 .second = (uint8_t)timesync.second,

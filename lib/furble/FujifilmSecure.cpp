@@ -52,28 +52,6 @@ FujifilmSecure::~FujifilmSecure(void) {
   vQueueDelete(m_Queue);
 }
 
-bool FujifilmSecure::subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool notification) {
-  auto pSvc = m_Client->getService(svc);
-  if (pSvc == nullptr) {
-    return false;
-  }
-
-  auto pChr = pSvc->getCharacteristic(chr);
-  if (pChr == nullptr) {
-    return false;
-  }
-
-  return pChr->subscribe(
-      notification,
-      [this](BLERemoteCharacteristic *pChr, uint8_t *pData, size_t length, bool isNotify) {
-        ESP_LOGI(LOG_TAG, "Notification received on %s", pChr->getUUID().toString().c_str());
-        if (length > 0) {
-          ESP_LOGI(LOG_TAG, " %s", NimBLEUtils::dataToHexString(pData, length).c_str());
-        }
-      },
-      true);
-}
-
 void FujifilmSecure::onResult(const NimBLEAdvertisedDevice *pDevice) {
   if ((Fujifilm::matches(pDevice)
        && (pDevice->getManufacturerData().length() == sizeof(adv_secure_t))
@@ -179,16 +157,6 @@ bool FujifilmSecure::_connect(void) {
     }
     m_Progress += 5;
   }
-
-  ESP_LOGI(LOG_TAG, "Writing 0x01");
-  if (!m_Client->setValue(NOTX_SVC_UUID, UNK0_CHR_UUID, {0x01}, true)) {
-    ESP_LOGI(LOG_TAG, "Failed to write 0x01");
-    return false;
-  }
-
-  // may need to send time sync message?
-  // SVC: e872b11fd5264ae19bb489a99d48fa59
-  // CHR: c52edbce1fe24ecc9483907e6592be9e}
 
   const std::array<sub_t, 6> subscription1 = {
       {
