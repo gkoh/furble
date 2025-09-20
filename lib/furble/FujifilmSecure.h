@@ -102,8 +102,6 @@ class FujifilmSecure: public Fujifilm, public NimBLEScanCallbacks {
   // Scan time for previously paired camera
   static constexpr uint32_t SCAN_TIME_MS = 60000;
 
-  bool subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool notification);
-
   /** Called during scanning for connection to saved device. */
   void onResult(const NimBLEAdvertisedDevice *pDevice) override final;
 
