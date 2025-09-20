@@ -55,8 +55,7 @@ void GPS::update(void) {
     return;
   }
 
-  if (m_GPS.location.isUpdated() && m_GPS.location.isValid() && m_GPS.date.isUpdated()
-      && m_GPS.date.isValid() && m_GPS.time.isValid() && m_GPS.time.isValid()) {
+  if (m_HasFix) {
     Camera::gps_t dgps = {
         m_GPS.location.lat(),
         m_GPS.location.lng(),
@@ -68,8 +67,8 @@ void GPS::update(void) {
         m_GPS.time.minute(), m_GPS.time.second(), m_GPS.time.centisecond(),
     };
 
-    // only update every 1s
-    if (count++ > (1000 / SERVICE_MS)) {
+    // update every 1s
+    if (++count > (1000 / SERVICE_MS)) {
       count = 0;
       Control::getInstance().updateGPS(dgps, timesync);
     }
@@ -96,7 +95,7 @@ void GPS::serviceSerial(void) {
 
   if ((m_GPS.location.age() < MAX_AGE_MS) && m_GPS.location.isValid()
       && (m_GPS.date.age() < MAX_AGE_MS) && m_GPS.date.isValid() && (m_GPS.time.age() < MAX_AGE_MS)
-      && m_GPS.time.age()) {
+      && m_GPS.time.isValid()) {
     m_HasFix = true;
     lostFix = 0;
   } else {
