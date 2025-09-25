@@ -212,7 +212,7 @@ Furble::Camera *CameraList::get(size_t n) {
 }
 
 bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
-  if (Fujifilm::matches(pDevice)) {
+  if (FujifilmBasic::matches(pDevice)) {
     m_ConnectList.push_back(std::make_unique<Furble::FujifilmBasic>(pDevice));
     return true;
   } else if (CanonEOSSmart::matches(pDevice)) {

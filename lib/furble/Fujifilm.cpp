@@ -58,7 +58,7 @@ bool Fujifilm::subscribe(const NimBLEUUID &svc, const NimBLEUUID &chr, bool noti
  */
 bool Fujifilm::matches(const NimBLEAdvertisedDevice *pDevice) {
   if (pDevice->haveManufacturerData()
-      && pDevice->getManufacturerData().length() == sizeof(fujifilm_adv_t)) {
+      && pDevice->getManufacturerData().length() >= sizeof(fujifilm_adv_t)) {
     const fujifilm_adv_t adv = pDevice->getManufacturerData<fujifilm_adv_t>();
     return (adv.company_id == COMPANY_ID);
   }
