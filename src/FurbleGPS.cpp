@@ -88,7 +88,6 @@ void GPS::update(void) {
     return;
   }
 
-#if 0
   if (m_HasFix) {
     Camera::gps_t dgps = {
         m_GPS.location.lat(),
