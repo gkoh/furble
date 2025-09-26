@@ -83,7 +83,10 @@ bool FujifilmSecure::_connect(void) {
     m_Progress += 5;
 
     // wait up to 60s for camera to appear
-    BaseType_t timeout = xQueueReceive(m_Queue, &success, pdMS_TO_TICKS(60000));
+    BaseType_t timeout = pdFALSE;
+    do {
+      timeout = xQueueReceive(m_Queue, &success, pdMS_TO_TICKS(1000));
+    } while (scan.isActive() && !success);
     scan.stop();
 
     if (timeout == pdFALSE) {

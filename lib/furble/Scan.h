@@ -45,6 +45,11 @@ class Scan: public HIDServerCallbacks, public NimBLEScanCallbacks {
   void stop(void);
 
   /**
+   * Scanning is active.
+   */
+  bool isActive(void) const;
+
+  /**
    * Clear the scan list.
    */
   void clear(void);

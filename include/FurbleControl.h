@@ -31,7 +31,9 @@ class Control {
     /** Initial connection attempt failed. */
     STATE_CONNECT_FAILED,
     /** All connections active. */
-    STATE_ACTIVE
+    STATE_ACTIVE,
+    /** Disconnecting. */
+    STATE_DISCONNECTING,
   } state_t;
 
   class Target {
@@ -117,10 +119,10 @@ class Control {
    *
    * @return Camera being connected otherwise nullptr.
    */
-  Camera *getConnectingCamera(void);
+  Camera *getConnectingCamera(void) const;
 
   /** Retrieve current control state. */
-  state_t getState(void);
+  state_t getState(void) const;
 
   /** Set transmit power. */
   void setPower(esp_power_level_t power);
