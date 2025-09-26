@@ -70,6 +70,10 @@ void Scan::stop(void) {
   m_ScanResultCallback = nullptr;
 }
 
+bool Scan::isActive(void) const {
+  return m_Scan->isScanning();
+}
+
 void Scan::clear(void) {
   m_Scan->clearResults();
 }

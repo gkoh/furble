@@ -1073,6 +1073,7 @@ void UI::connectTimerHandler(lv_timer_t *timer) {
       break;
 
     case Control::STATE_IDLE:
+    case Control::STATE_DISCONNECTING:
       // nothing to do
       break;
   }
@@ -1156,6 +1157,7 @@ void UI::doConnect(lv_event_t *e) {
 
 void UI::doDisconnect(void) {
   lv_timer_pause(m_ConnectTimer);
+  Scan::getInstance().stop();
   Control::getInstance().disconnect();
 
   lv_obj_add_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN);
