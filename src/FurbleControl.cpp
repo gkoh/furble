@@ -117,6 +117,10 @@ Control::state_t Control::connectAll(void) {
     return STATE_ACTIVE;
   }
 
+  if (m_State == STATE_DISCONNECTING) {
+    return STATE_DISCONNECTING;
+  }
+
   if (m_InfiniteReconnect || (failcount < 2)) {
     if (m_InfiniteReconnect) {
       // sleep to idle
@@ -175,6 +179,9 @@ void Control::task(void) {
           }
         }
         break;
+
+      case STATE_DISCONNECTING:
+        break;
     }
   }
 }
@@ -213,6 +220,8 @@ void Control::connectAll(bool infiniteReconnect) {
 }
 
 void Control::disconnect(void) {
+  m_State = STATE_DISCONNECTING;
+
   // Force cancel any active connection attempts
   ble_gap_conn_cancel();
 
@@ -253,11 +262,11 @@ void Control::addActive(Camera *camera) {
   }
 }
 
-Camera *Control::getConnectingCamera(void) {
+Camera *Control::getConnectingCamera(void) const {
   return m_ConnectCamera;
 }
 
-Control::state_t Control::getState(void) {
+Control::state_t Control::getState(void) const {
   return m_State;
 }
 
