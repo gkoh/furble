@@ -86,7 +86,6 @@ bool Sony::_connect(void) {
 
 void Sony::_disconnect(void) {
   m_Client->disconnect();
-  m_Connected = false;
 }
 
 void Sony::shutterPress(void) {

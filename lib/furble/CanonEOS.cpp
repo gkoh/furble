@@ -29,7 +29,6 @@ CanonEOS::CanonEOS(Type type, const NimBLEAdvertisedDevice *pDevice) : Camera(ty
 
 void CanonEOS::_disconnect(void) {
   m_Client->disconnect();
-  m_Connected = false;
 }
 
 bool CanonEOS::writePrefix(const NimBLEUUID &serviceUUID,

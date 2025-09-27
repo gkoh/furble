@@ -40,6 +40,11 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Configure for test release
+        run: |
+          echo "FURBLE_TEST=1" >> $GITHUB_ENV
+        if: startsWith(github.ref_name, 'vTEST')
+
       - name: Build furble (${{ matrix.platform }})
         run: platformio run -e ${{ matrix.platform }}
 

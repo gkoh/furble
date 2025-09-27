@@ -247,7 +247,7 @@ bool Nikon::_connect(void) {
   bool success = false;
   m_Progress = 0;
 
-  if (m_PairType == PairType::SAVED) {
+  if (m_PairType == PairType::SAVED || m_Paired) {
     ESP_LOGI(LOG_TAG, "Scanning");
     // need to scan for advertising camera
     auto &scan = Scan::getInstance();
@@ -486,7 +486,6 @@ void Nikon::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
 
 void Nikon::_disconnect(void) {
   m_Client->disconnect();
-  m_Connected = false;
 }
 
 void Nikon::degreesToDMS(double value,

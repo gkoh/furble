@@ -822,8 +822,7 @@ void UI::addMainMenu(void) {
 
         if (page == m_MainMenu.page) {
           // Hide connect & delete if there are zero saved
-          CameraList::load();
-          if (CameraList::size() == 0) {
+          if (CameraList::getSaveCount() == 0) {
             lv_obj_add_flag(m_Menu.at(m_ConnectStr).button, LV_OBJ_FLAG_HIDDEN);
             lv_obj_add_flag(m_Menu.at(m_DeleteStr).button, LV_OBJ_FLAG_HIDDEN);
           } else {
