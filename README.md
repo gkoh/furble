@@ -77,16 +77,16 @@ Currently supported features in `furble`:
 
 ### Table of Features
 
-| Camera | Scanning & Pairing | Shutter Release | Focus  | GPS     |
-| :---:  | :---:              | :---:           | :---:  | :---:   |
-| Fujifilm X & GFX  | ✔️      | ✔️              | ✔️[^1] | ✔️      |
-| Canon EOS M6      | ✔️      | ✔️              | :x:    | :x:[^2] |
-| Canon EOS R       | ✔️      | ✔️              | ✔️     | ✔️      |
-| Nikon COOLPIX & Z | ✔️      | ✔️              | :x:    | :x:     |
-| Sony ZV           | ✔️      | ✔️              | ✔️     | ✔️      |
+| Camera             | Scanning & Pairing | Shutter Release | Focus | GPS   |
+| :---:              | :---:              | :---:           | :---: | :---: |
+| Fujifilm X & GFX   | ✔️                  | ✔️               | ✔️[^1] | ✔️     |
+| Canon EOS (Remote) | ✔️                  | ✔️               | ✔️     | :x:   |
+| Canon EOS (Smart)  | ✔️                  | ✔️               | :x:   | ✔️     |
+| Nikon (Remote)     | ✔️                  | ✔️               | :x:   | :x:   |
+| Nikon (Smart)      | :x:                | :x:             | :x:   | :x:   |
+| Sony ZV            | ✔️                  | ✔️               | ✔️     | ✔️     |
 
 [^1]: see [#99](https://github.com/gkoh/furble/discussions/99)
-[^2]: WiFi only
 
 ## Installation
 
