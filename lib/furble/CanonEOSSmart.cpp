@@ -119,13 +119,6 @@ bool CanonEOSSmart::_connect(void) {
     return false;
   }
 
-  ESP_LOGI(LOG_TAG, "Paired!");
-
-  /* write to 0xf104 */
-  x = {0x01};
-  if (!m_Client->setValue(PRI_SVC_UUID, CHR_IDEN_UUID, {x.data(), x.size()}))
-    return false;
-
   ESP_LOGI(LOG_TAG, "Retrieving location service");
   pSvc = m_Client->getService(GEO_SVC_UUID);
   if (pSvc != nullptr) {
@@ -156,6 +149,13 @@ bool CanonEOSSmart::_connect(void) {
     m_Progress += 10;
     ESP_LOGI(LOG_TAG, "Retrieved location service!");
   }
+
+  /* write to 0xf104 */
+  x = {0x01};
+  if (!m_Client->setValue(PRI_SVC_UUID, CHR_IDEN_UUID, {x.data(), x.size()}))
+    return false;
+
+  ESP_LOGI(LOG_TAG, "Paired!");
 
   m_Progress = 90;
 
@@ -209,11 +209,11 @@ void CanonEOSSmart::updateGeoData(const gps_t &gps, const timesync_t &timesync) 
     canon_geo_t geo = {
         .header = 0x04,
         .latitude_direction = gps.latitude < 0.0 ? 'S' : 'N',
-        .latitude = (float)gps.latitude,
+        .latitude = (float)std::abs(gps.latitude),
         .longitude_direction = gps.longitude < 0.0 ? 'W' : 'E',
-        .longitude = (float)gps.longitude,
+        .longitude = (float)std::abs(gps.longitude),
         .elevation_sign = gps.altitude < 0.0 ? '-' : '+',
-        .elevation = (float)gps.altitude,
+        .elevation = (float)std::abs(gps.altitude),
         .timestamp = static_cast<uint32_t>(timestamp),
     };
     if ((m_Geo != nullptr) && m_Geo->canWrite()) {
