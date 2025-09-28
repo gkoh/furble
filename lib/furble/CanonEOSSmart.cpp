@@ -209,11 +209,11 @@ void CanonEOSSmart::updateGeoData(const gps_t &gps, const timesync_t &timesync) 
     canon_geo_t geo = {
         .header = 0x04,
         .latitude_direction = gps.latitude < 0.0 ? 'S' : 'N',
-        .latitude = (float)std::abs(gps.latitude),
+        .latitude = static_cast<float>(std::abs(gps.latitude)),
         .longitude_direction = gps.longitude < 0.0 ? 'W' : 'E',
-        .longitude = (float)std::abs(gps.longitude),
+        .longitude = static_cast<float>(std::abs(gps.longitude)),
         .elevation_sign = gps.altitude < 0.0 ? '-' : '+',
-        .elevation = (float)std::abs(gps.altitude),
+        .elevation = static_cast<float>(std::abs(gps.altitude)),
         .timestamp = static_cast<uint32_t>(timestamp),
     };
     if ((m_Geo != nullptr) && m_Geo->canWrite()) {
