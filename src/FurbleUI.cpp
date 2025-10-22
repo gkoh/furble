@@ -666,7 +666,7 @@ void UI::addSettingItem(lv_obj_t *page, const char *symbol, Settings::type_t set
 
   lv_obj_t *sw = lv_switch_create(obj);
   bool enable = Settings::load<bool>(setting);
-  lv_obj_add_state(sw, enable ? LV_STATE_CHECKED : 0);
+  lv_obj_add_state(sw, enable ? LV_STATE_CHECKED : LV_STATE_DEFAULT);
   lv_obj_add_event_cb(
       sw,
       [](lv_event_t *e) {
@@ -1372,7 +1372,7 @@ void UI::addGPSMenu(const menu_t &parent) {
 
   lv_obj_t *baud_sw = lv_switch_create(m_Status.gpsBaud);
   uint32_t baud = Settings::load<uint32_t>(Settings::GPS_BAUD);
-  lv_obj_add_state(baud_sw, baud == Settings::BAUD_115200 ? LV_STATE_CHECKED : 0);
+  lv_obj_add_state(baud_sw, baud == Settings::BAUD_115200 ? LV_STATE_CHECKED : LV_STATE_DEFAULT);
   lv_obj_add_event_cb(
       baud_sw,
       [](lv_event_t *e) {
