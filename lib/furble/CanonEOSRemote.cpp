@@ -4,13 +4,13 @@
 #include <NimBLERemoteCharacteristic.h>
 #include <NimBLERemoteService.h>
 
-#include "CanonEOSR.h"
+#include "CanonEOSRemote.h"
 
 namespace Furble {
 
-const NimBLEUUID CanonEOSR::PRI_SVC_UUID {0x00050000, 0x0000, 0x1000, 0x0000d8492fffa821};
+const NimBLEUUID CanonEOSRemote::PRI_SVC_UUID {0x00050000, 0x0000, 0x1000, 0x0000d8492fffa821};
 
-bool CanonEOSR::matches(const NimBLEAdvertisedDevice *pDevice) {
+bool CanonEOSRemote::matches(const NimBLEAdvertisedDevice *pDevice) {
   if (pDevice->haveServiceUUID()) {
     auto uuid = pDevice->getServiceUUID();
 
@@ -20,7 +20,7 @@ bool CanonEOSR::matches(const NimBLEAdvertisedDevice *pDevice) {
   return false;
 }
 
-bool CanonEOSR::_connect(void) {
+bool CanonEOSRemote::_connect(void) {
   ESP_LOGI(LOG_TAG, "Connecting");
   if (!m_Client->connect(m_Address)) {
     ESP_LOGI(LOG_TAG, "Connection failed!!!");
@@ -52,8 +52,8 @@ bool CanonEOSR::_connect(void) {
     return false;
   }
 
-  pControl = pSvc->getCharacteristic(CTRL_CHR_UUID);
-  if (!pControl) {
+  m_Control = pSvc->getCharacteristic(CTRL_CHR_UUID);
+  if (!m_Control) {
     return false;
   }
   ESP_LOGI(LOG_TAG, "Retrieved control service!");
@@ -64,30 +64,30 @@ bool CanonEOSR::_connect(void) {
   return true;
 }
 
-void CanonEOSR::shutterPress(void) {
+void CanonEOSRemote::shutterPress(void) {
   const std::array<uint8_t, 1> cmd = {SHUTTER | CTRL};
-  pControl->writeValue(cmd.data(), cmd.size(), true);
+  m_Control->writeValue(cmd.data(), cmd.size(), true);
   return;
 }
 
-void CanonEOSR::shutterRelease(void) {
+void CanonEOSRemote::shutterRelease(void) {
   const std::array<uint8_t, 1> cmd = {CTRL};
-  pControl->writeValue(cmd.data(), cmd.size(), true);
+  m_Control->writeValue(cmd.data(), cmd.size(), true);
   return;
 }
 
-void CanonEOSR::focusPress(void) {
+void CanonEOSRemote::focusPress(void) {
   const std::array<uint8_t, 1> cmd = {FOCUS | CTRL};
-  pControl->writeValue(cmd.data(), cmd.size(), true);
+  m_Control->writeValue(cmd.data(), cmd.size(), true);
   return;
 }
 
-void CanonEOSR::focusRelease(void) {
+void CanonEOSRemote::focusRelease(void) {
   return shutterRelease();
 }
 
-void CanonEOSR::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
-  // do nothing
+void CanonEOSRemote::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
+  // not supported in remote mode
   return;
 }
 

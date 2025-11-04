@@ -24,6 +24,8 @@ class Camera: public NimBLEClientCallbacks {
    */
   enum class Type : uint32_t {
     FUJIFILM_BASIC = 1,
+    CANON_EOS_SMART = 2,
+    CANON_EOS_REMOTE = 3,
     CANON_EOS_M6 = 2,
     CANON_EOS_R = 3,
     MOBILE_DEVICE = 4,

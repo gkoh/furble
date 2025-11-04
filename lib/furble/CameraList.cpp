@@ -1,8 +1,8 @@
 #include <NimBLEAdvertisedDevice.h>
 #include <Preferences.h>
 
-#include "CanonEOSM6.h"
-#include "CanonEOSR.h"
+#include "CanonEOSRemote.h"
+#include "CanonEOSSmart.h"
 #include "FauxNY.h"
 #include "FujifilmBasic.h"
 #include "FujifilmSecure.h"
@@ -154,11 +154,13 @@ void CameraList::load(void) {
         m_ConnectList.push_back(
             std::unique_ptr<Furble::Camera>(new FujifilmBasic(dbuffer, dbytes)));
         break;
-      case Camera::Type::CANON_EOS_M6:
-        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new CanonEOSM6(dbuffer, dbytes)));
+      case Camera::Type::CANON_EOS_SMART:
+        m_ConnectList.push_back(
+            std::unique_ptr<Furble::Camera>(new CanonEOSSmart(dbuffer, dbytes)));
         break;
-      case Camera::Type::CANON_EOS_R:
-        m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new CanonEOSR(dbuffer, dbytes)));
+      case Camera::Type::CANON_EOS_REMOTE:
+        m_ConnectList.push_back(
+            std::unique_ptr<Furble::Camera>(new CanonEOSRemote(dbuffer, dbytes)));
         break;
       case Camera::Type::MOBILE_DEVICE:
         m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new MobileDevice(dbuffer, dbytes)));
@@ -209,11 +211,11 @@ bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
   if (FujifilmBasic::matches(pDevice)) {
     m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::FujifilmBasic(pDevice)));
     return true;
-  } else if (CanonEOSM6::matches(pDevice)) {
-    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::CanonEOSM6(pDevice)));
+  } else if (CanonEOSSmart::matches(pDevice)) {
+    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::CanonEOSSmart(pDevice)));
     return true;
-  } else if (CanonEOSR::matches(pDevice)) {
-    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::CanonEOSR(pDevice)));
+  } else if (CanonEOSRemote::matches(pDevice)) {
+    m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::CanonEOSRemote(pDevice)));
     return true;
   } else if (Nikon::matches(pDevice)) {
     m_ConnectList.push_back(std::unique_ptr<Furble::Camera>(new Furble::Nikon(pDevice)));
