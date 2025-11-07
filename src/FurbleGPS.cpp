@@ -28,7 +28,8 @@ GPS &GPS::getInstance() {
         .source_clk = UART_SCLK_REF_TICK,
         .flags = {},
     };
-    uart_driver_install(instance.m_UART, BUFFER_SIZE, 0, QUEUE_SIZE, &instance.m_Queue, ESP_INTR_FLAG_IRAM);
+    uart_driver_install(instance.m_UART, BUFFER_SIZE, 0, QUEUE_SIZE, &instance.m_Queue,
+                        ESP_INTR_FLAG_IRAM);
     uart_param_config(instance.m_UART, &uart_config);
     uart_set_pin(instance.m_UART, TX, RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     uart_enable_pattern_det_baud_intr(instance.m_UART, '\n', 1, 9, 0, 0);
