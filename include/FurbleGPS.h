@@ -20,7 +20,7 @@ class GPS {
   static void init(void);
 
   void setIcon(lv_obj_t *icon);
-  bool isEnabled(void);
+  bool isEnabled(void) const;
   void reloadSetting(void);
   void startService(void);
 
@@ -28,8 +28,6 @@ class GPS {
 
   void reset(void);
   void task(void);
-
-  void update(void);
 
  private:
   GPS() {};
@@ -50,6 +48,7 @@ class GPS {
   void enable(void);
   void disable(void);
   void serviceSerial(void);
+  void update(void);
 
   uart_port_t m_UART = UART_NUM_2;
 

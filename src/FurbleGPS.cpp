@@ -101,6 +101,7 @@ void GPS::enable(void) {
   const uint32_t baud = Settings::load<uint32_t>(Settings::GPS_BAUD);
 
   uart_set_baudrate(m_UART, baud);
+  reset();
 
   // power on
   M5.Power.setExtOutput(true, m5::ext_PA);
@@ -122,7 +123,7 @@ void GPS::reloadSetting(void) {
 }
 
 /** Is GPS enabled? */
-bool GPS::isEnabled(void) {
+bool GPS::isEnabled(void) const {
   return m_Enabled;
 }
 
