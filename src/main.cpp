@@ -2,8 +2,6 @@
 #include <freertos/FreeRTOS.h>
 #include <lvgl.h>
 
-#include "nimconfig.h"
-
 #include "Device.h"
 #include "Scan.h"
 

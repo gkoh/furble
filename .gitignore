@@ -1,3 +1,4 @@
 .pio
 .vscode
+managed_components
 sdkconfig.*.old
