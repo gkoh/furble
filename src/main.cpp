@@ -1,9 +1,6 @@
-#include <Arduino.h>
 #include <M5Unified.h>
 #include <freertos/FreeRTOS.h>
 #include <lvgl.h>
-
-#include "nimconfig.h"
 
 #include "Device.h"
 #include "Scan.h"
@@ -18,13 +15,11 @@ void app_main() {
   BaseType_t xRet;
   TaskHandle_t xControlHandle = NULL;
 
-  Serial.begin(115200);
-
   ESP_LOGI(LOG_TAG, "furble version: '%s'", FURBLE_VERSION);
 
-  esp_pm_config_esp32_t pm_config = {
+  esp_pm_config_t pm_config = {
       .max_freq_mhz = 80,
-      .min_freq_mhz = 80,
+      .min_freq_mhz = 40,
       .light_sleep_enable = true,
   };
   ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
@@ -39,7 +34,7 @@ void app_main() {
   Furble::Device::init(Furble::Settings::load<esp_power_level_t>(Furble::Settings::TX_POWER));
 
   auto &control = Furble::Control::getInstance();
-  xRet = xTaskCreatePinnedToCore(control_task, "control", 8192, &control, 4, &xControlHandle, 1);
+  xRet = xTaskCreate(control_task, "control", 8192, &control, 4, &xControlHandle);
   if (xRet != pdPASS) {
     ESP_LOGE(LOG_TAG, "Failed to create control task.");
     abort();
