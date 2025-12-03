@@ -51,6 +51,7 @@ class Control {
     void task(void);
 
    protected:
+
     volatile bool m_Stopped = false;
 
    private:

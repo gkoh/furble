@@ -158,7 +158,7 @@ void CameraList::load(void) {
         m_ConnectList.push_back(
             std::make_unique<Furble::CanonEOSSmart>(static_cast<const void *>(dbuffer), dbytes));
         break;
-      case Camera::Type::CANON_EOS_R:
+      case Camera::Type::CANON_EOS_REMOTE:
         m_ConnectList.push_back(
             std::make_unique<Furble::CanonEOSRemote>(static_cast<const void *>(dbuffer), dbytes));
         break;
