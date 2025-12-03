@@ -3,6 +3,7 @@
 #include <tuple>
 
 #include <M5Unified.h>
+#include <esp_sleep.h>
 #include <lvgl.h>
 #include <src/themes/lv_theme_private.h>
 
@@ -170,7 +171,7 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
         // exponentially weighted moving average with alpha = 0.33
         mean = mean + (current - mean) / 3;
 
-        lv_label_set_text_fmt(status->batteryIcon, "%d", mean);
+        lv_label_set_text_fmt(status->batteryIcon, "%ld", mean);
 #else
         const char *symbol = NULL;
         int32_t level = M5.Power.getBatteryLevel();
@@ -665,7 +666,7 @@ void UI::addSettingItem(lv_obj_t *page, const char *symbol, Settings::type_t set
 
   lv_obj_t *sw = lv_switch_create(obj);
   bool enable = Settings::load<bool>(setting);
-  lv_obj_add_state(sw, enable ? LV_STATE_CHECKED : 0);
+  lv_obj_add_state(sw, enable ? LV_STATE_CHECKED : LV_STATE_DEFAULT);
   lv_obj_add_event_cb(
       sw,
       [](lv_event_t *e) {
@@ -1087,9 +1088,9 @@ void UI::intervalometer(lv_timer_t *timer) {
   static uint32_t count = 0;
 
   if (interval->m_Count.m_SpinValue.m_Unit == SpinValue::UNIT_INF) {
-    lv_label_set_text_fmt(m_IntervalCountLabel, "%09u", count);
+    lv_label_set_text_fmt(m_IntervalCountLabel, "%09lu", count);
   } else {
-    lv_label_set_text_fmt(m_IntervalCountLabel, "%03u/%03u", count,
+    lv_label_set_text_fmt(m_IntervalCountLabel, "%03lu/%03u", count,
                           interval->m_Count.m_SpinValue.m_Value);
   }
 
@@ -1371,7 +1372,7 @@ void UI::addGPSMenu(const menu_t &parent) {
 
   lv_obj_t *baud_sw = lv_switch_create(m_Status.gpsBaud);
   uint32_t baud = Settings::load<uint32_t>(Settings::GPS_BAUD);
-  lv_obj_add_state(baud_sw, baud == Settings::BAUD_115200 ? LV_STATE_CHECKED : 0);
+  lv_obj_add_state(baud_sw, baud == Settings::BAUD_115200 ? LV_STATE_CHECKED : LV_STATE_DEFAULT);
   lv_obj_add_event_cb(
       baud_sw,
       [](lv_event_t *e) {
@@ -1400,12 +1401,12 @@ void UI::addGPSMenu(const menu_t &parent) {
       [](lv_timer_t *t) {
         auto *gpsData = static_cast<menu_t *>(lv_timer_get_user_data(t));
         auto &gps = GPS::getInstance().get();
-        static lv_obj_t *valid = lv_label_create(gpsData->page);
-        lv_label_set_text_fmt(valid, "%s (%u)", gps.location.isValid() ? "Valid" : "Invalid",
-                              gps.satellites.value());
 
         static lv_obj_t *age = lv_label_create(gpsData->page);
-        lv_label_set_text_fmt(age, "%us ago", gps.time.age() / 1000);
+        lv_label_set_text_fmt(age, "%lus ago", gps.location.age() / 1000);
+
+        static lv_obj_t *satellites = lv_label_create(gpsData->page);
+        lv_label_set_text_fmt(satellites, "%lu satellites", gps.satellites.value());
 
         static lv_obj_t *lat = lv_label_create(gpsData->page);
         lv_label_set_text_fmt(lat, "%.2f°", gps.location.lat());
@@ -1675,7 +1676,7 @@ void UI::addIntervalometerMenu(const menu_t &parent) {
         uint32_t now = tick();
         uint32_t remaining = m_IntervalNext > now ? m_IntervalNext - now : 0;
         SpinValue::hms_t hms = SpinValue::toHMS(remaining);
-        lv_label_set_text_fmt(m_IntervalRemainingLabel, "%02u:%02u:%02u", hms.hours, hms.minutes,
+        lv_label_set_text_fmt(m_IntervalRemainingLabel, "%02lu:%02lu:%02lu", hms.hours, hms.minutes,
                               hms.seconds);
       },
       500, NULL);

@@ -222,7 +222,7 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   uint64_t m_Timestamp;
   Pairing::id_t m_ID;
   NimBLERemoteCharacteristic *m_PairChr = nullptr;
-  Pairing *m_Pairing = nullptr;
+  std::unique_ptr<Pairing> m_Pairing = nullptr;
 
   QueueHandle_t m_Queue;
 

@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include <NimBLEAddress.h>
 #include <NimBLEAdvertisedDevice.h>
 #include <NimBLEDevice.h>
@@ -287,7 +289,7 @@ bool Nikon::_connect(void) {
     if (m_PairChr == nullptr) {
       return false;
     }
-    m_Pairing = new SmartPairing(m_Timestamp, m_ID);
+    m_Pairing = std::make_unique<SmartPairing>(m_Timestamp, m_ID);
     ESP_LOGI(LOG_TAG, "Connecting as smart device, subscribing to success notification");
     auto *pChr = pSvc->getCharacteristic(NOT1_CHR_UUID);
     if (!pChr->subscribe(
@@ -310,7 +312,7 @@ bool Nikon::_connect(void) {
     ESP_LOGI(LOG_TAG, "Subscribed to success notification!");
   } else {
     // Remote timestamp always seems to be 0x01
-    m_Pairing = new RemotePairing(__builtin_bswap64(0x01), m_ID);
+    m_Pairing = std::make_unique<RemotePairing>(__builtin_bswap64(0x01), m_ID);
     ESP_LOGI(LOG_TAG, "Connecting as remote, subscribing to indication 1");
     auto *pChr = pSvc->getCharacteristic(REMOTE_IND1_CHR_UUID);
     if (!pChr->subscribe(

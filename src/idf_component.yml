@@ -1,0 +1,3 @@
+dependencies:
+  h2zero/esp-nimble-cpp:
+   version: "2.3.2"
