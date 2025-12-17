@@ -2,6 +2,8 @@
 #include <TinyGPS++.h>
 #include <lvgl.h>
 
+#include "icons.h"
+
 #include "FurbleControl.h"
 #include "FurbleGPS.h"
 #include "FurbleSettings.h"
@@ -167,7 +169,7 @@ void GPS::update(void) {
   }
 
   if (m_Icon != NULL) {
-    lv_image_set_src(m_Icon, m_HasFix ? LV_SYMBOL_GPS : LV_SYMBOL_WARNING);
+    lv_image_set_src(m_Icon, m_HasFix ? &icon_my_location : &icon_location_disabled);
   }
 }
 

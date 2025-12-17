@@ -1,10 +1,10 @@
 dependencies:
   h2zero/esp-nimble-cpp:
-    component_hash: ecdcabe83333948495103f9d62e4ecb651bff866fce123d00bfc106baa383e54
+    component_hash: b018d62032c3ba6386ea2aa6d4a1638408a9210b1d0529b1eb194a52f3a3fc2c
     source:
       service_url: https://api.components.espressif.com/
       type: service
-    version: 2.3.4
+    version: 2.3.2
   idf:
     component_hash: null
     source:
