@@ -1,15 +1,33 @@
 dependencies:
   h2zero/esp-nimble-cpp:
-    component_hash: b018d62032c3ba6386ea2aa6d4a1638408a9210b1d0529b1eb194a52f3a3fc2c
+    component_hash: ecdcabe83333948495103f9d62e4ecb651bff866fce123d00bfc106baa383e54
     source:
       service_url: https://api.components.espressif.com/
       type: service
-    version: 2.3.2
+    version: 2.3.4
   idf:
     component_hash: null
     source:
       type: idf
     version: 5.4.2
-manifest_hash: c3b886ad15469890bb4e0c155c42ca81e9df112c65a99d81f49b253c8e3805a4
+  lvgl/lvgl:
+    component_hash: 17e68bfd21f0edf4c3ee838e2273da840bf3930e5dbc3bfa6c1190c3aed41f9f
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 9.4.0
+  m5stack/m5gfx:
+    component_hash: 4c420c89ae7bfe33231dab80b784f4508591279b2a3a935ac849dddb1942d0d5
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 0.2.17
+  m5stack/m5unified:
+    component_hash: 1c75bb80654da6c7fcdd11ef7a1cb9b7d6db2e98f96612a4babf12b5e9bc7196
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 0.2.11
+manifest_hash: 11bd1867af0bdd2b269779ca1811ee0e9f82bc6c0143e463191180a6aa791ed1
 target: esp32
 version: 1.0.0
