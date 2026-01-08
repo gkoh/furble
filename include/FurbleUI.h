@@ -208,8 +208,10 @@ class UI {
   static lv_timer_t *m_IntervalPageRefresh;
   static uint32_t m_IntervalNext;
 
-  const std::vector<int32_t> m_GridLayoutColDsc = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-  const std::vector<int32_t> m_GridLayoutRowDsc = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+  const std::vector<int32_t> m_GridLayoutColDsc = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1),
+                                                   LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+  const std::vector<int32_t> m_GridLayoutRowDsc = {LV_GRID_FR(1), LV_GRID_FR(1),
+                                                   LV_GRID_TEMPLATE_LAST};
 
   GPS &m_GPS;
 

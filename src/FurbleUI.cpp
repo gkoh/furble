@@ -236,7 +236,7 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
     m_NavBar = lv_obj_create(x);
 
     lv_obj_set_width(m_NavBar, LV_PCT(100));
-    lv_obj_set_height(m_NavBar, ICON_HEADER_SIZE+2);
+    lv_obj_set_height(m_NavBar, ICON_HEADER_SIZE + 2);
     lv_obj_set_layout(m_NavBar, LV_LAYOUT_FLEX);
     lv_obj_set_flex_flow(m_NavBar, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(m_NavBar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER,
@@ -514,7 +514,7 @@ void UI::shutterLock(Control &control) {
       lv_obj_set_style_bg_image_src(m_ShutterLockIcon, &icon_lock, 0);
     } else {
       lv_obj_set_style_bg_image_src(m_ShutterLockIcon, &icon_lock_24, 0);
-      lv_obj_set_style_radius(m_ShutterLockIcon, (ICON_HEADER_SIZE/2), LV_PART_MAIN);
+      lv_obj_set_style_radius(m_ShutterLockIcon, (ICON_HEADER_SIZE / 2), LV_PART_MAIN);
     }
   }
 }
@@ -1275,8 +1275,8 @@ UI::menu_t &UI::addConnectedMenu(void) {
     lv_obj_center(cont);
 
     static std::array<std::tuple<lv_obj_t *, lv_obj_t *, const char *, const lv_image_dsc_t *,
-                          const int32_t, const int32_t>,
-               3>
+                                 const int32_t, const int32_t>,
+                      3>
         buttons = {
             {
              {nullptr, nullptr, "Shutter\n", &icon_camera, 0, 0},
@@ -1333,17 +1333,30 @@ UI::menu_t &UI::addConnectedMenu(void) {
     const size_t n = 3;
     int32_t x1 = lv_obj_get_x(m_OK) - 2;
     int32_t y1 = lv_obj_get_y(m_Right) - a.y1 - 10;
-    static lv_point_precise_t points[] = {{x1+40,y1+12}, {x1+6, y1+12}, {x1+6, y1+64}};
+    static lv_point_precise_t points[] = {
+        {x1 + 40, y1 + 12},
+        {x1 + 6,  y1 + 12},
+        {x1 + 6,  y1 + 64}
+    };
 #elif defined(FURBLE_M5STACK_CORE)
     const size_t n = 4;
     const int32_t x1 = 188;
     const int32_t y1 = 80;
-    static lv_point_precise_t points[] = {{164,153}, {164, 92}, {82, 92}, {82,153}};
+    static lv_point_precise_t points[] = {
+        {164, 153},
+        {164, 92 },
+        {82,  92 },
+        {82,  153}
+    };
 #else
     const size_t n = 3;
     int32_t x1 = lv_obj_get_x(m_OK) - 2;
     int32_t y1 = lv_obj_get_y(m_Right) - a.y1 - 7;
-    static lv_point_precise_t points[] = {{x1+50,y1+12}, {x1-1, y1+12}, {x1-1, y1+103}};
+    static lv_point_precise_t points[] = {
+        {x1 + 50, y1 + 12 },
+        {x1 - 1,  y1 + 12 },
+        {x1 - 1,  y1 + 103}
+    };
 #endif
 
     lv_obj_set_pos(m_ShutterLockIcon, x1, y1);
