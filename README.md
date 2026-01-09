@@ -1,4 +1,4 @@
-# furble - ***FU***jifilm ***R***emote ***B***luetooth ***L***ow ***E***nergy
+# furble - ***F***lexible ***U***nified ***R***emote ***B***luetooth ***L***ow ***E***nergy
 
 ![PlatformIO CI](https://github.com/gkoh/furble/workflows/PlatformIO%20CI/badge.svg)
 
@@ -12,7 +12,7 @@ cameras. furble now supports:
 The remote uses the camera's native Bluetooth Low Energy interface thus additional
 adapters are not required.
 
-furble is developed as a PlatformIO project.
+furble is developed on ESP32 devices as a PlatformIO project.
 
 ## M5StickC Plus2 (Dark theme)
 
@@ -54,29 +54,7 @@ The following devices have been tested and confirmed to work:
    - Android
    - iOS
 
-## Supported Controllers
-
-Initially targeted at the M5StickC, the following controllers are supported:
-* M5StickC (EOL)
-* M5StickC Plus
-* M5StickC Plus2
-* M5Core Basic
-* M5Core2
-
-## What Works
-
-Currently supported features in `furble`:
-- scanning for supported cameras
-- initial pairing
-- saving pairing data
-- connecting to previously paired camera
-- shutter release
-- focus
-- GPS location tagging
-- intervalometer
-- multi-connect
-
-### Table of Features
+## Table of Features
 
 | Camera             | Scanning & Pairing | Shutter Release | Focus | GPS   |
 | :---:              | :---:              | :---:           | :---: | :---: |
@@ -88,6 +66,15 @@ Currently supported features in `furble`:
 | Sony ZV            | ✔️                  | ✔️               | ✔️     | ✔️     |
 
 [^1]: see [#99](https://github.com/gkoh/furble/discussions/99)
+
+## Supported Controllers
+
+Initially targeted at the M5StickC, the following controllers from [M5Stack](https://m5stack.com/) are supported:
+* M5StickC (EOL)
+* M5StickC Plus
+* M5StickC Plus2
+* M5Core Basic
+* M5Core2
 
 ## Installation
 
@@ -131,100 +118,7 @@ previously paired device and leading to the remote menu.
 
 From the remote menu you may choose to disconnect, control the shutter or activate the intervalometer.
 
-More details are on the wiki: [Usage Guide](https://github.com/gkoh/furble/wiki/Usage-Guide))
-
-### Navigation
-
-#### Hardware Buttons
-
-All supported controllers have three buttons designated:
-- previous
-- select
-- next
-
-For M5StickC format controllers:
-- previous == power button
-- select == big M5 button below screen
-- next == right side button
-
-For M5 Core controllers:
-- previous == left button
-- select == middle button
-- next == right button
-
-Basic navigation:
-* previous == highlight up/previous/right entry
-* next == highlight down/next/left entry
-* select == action
-
-For slider and roller elements (eg. brightness control, intervalometer numbers):
-* highlight the desired element with previous/next
-* press select to 'edit' the element
-* press next/previous to up/down increase/decrease
-* press select to 'confirm' the change
-
-#### Touch Screen
-
-At time of writing, only the M5Core2 has been tested. All user interface widgets are touch responsive:
-* in menus
-   * touch the desired entry
-   * drag up/down to scroll entries
-* in rollers (ie intervalometer configuration)
-   * drag up/down to adjust entry
-
-For M5Core2, the 'hardware' touch buttons are active and operate identically to the M5 Core.
-
-During shutter control:
-* press 'Shutter' button to release shutter
-* press and hold 'Shutter' button for continuous shooting
-* press and/or hold 'Focus' button to auto-focus
-* press and hold 'Shutter Lock' to lock shutter open
-   * press and hold 'Shutter Lock' again to release
-
-To activate screen lock:
-* double click the PWR button
-   * a message box will open
-* double click the PWR button to unlock
-
-### Menu Map
-
-* Connect (if connections are saved)
-   * list of connections
-      * Shutter
-         * Shutter
-         * Focus
-         * Shutter Lock
-      * Interval
-         * Start
-            * Stop
-         * Count
-         * Delay
-         * Shutter
-      * Disconnect
-* Scan
-   * list of matching targets
-      * <goes to active single connection>
-* Delete (if connections are saved)
-   * list of connections
-* Settings
-   * Backlight
-      * Backlight brightness
-      * Inactivity timeout
-   * Features
-      * Faux-NY
-      * Infinite-Reconnect
-      * Multi-Connect
-   * GPS
-      * GPS
-      * GPS Data (if GPS enabled)
-   * Intervalometer
-      * Count
-      * Delay
-      * Shutter
-   * Theme
-   * Transmit Power
-   * About
-* Power Off
+More details are on the wiki: [Usage Guide](https://github.com/gkoh/furble/wiki/Usage-Guide)
 
 ### Mobile Devices
 
@@ -250,7 +144,7 @@ The default baud rate for the GPS unit is 9600.
 The new v1.1 unit runs at a higher baud rate and must be configured under
 `Settings->GPS->GPS baud 115200` for correct operation.
 
-### Intervalometer
+### Intervalometer/Timer
 
 The intervalometer can be configured via three settings in `Settings->Intervalometer`:
 - Count (number of images to take)
@@ -263,37 +157,6 @@ Delay and shutter time can be figured with custom or preset values from 0 to 999
 ### Shutter Lock
 
 When in `Shutter` remote control, holding focus (button B) then release (button A) will engage shutter lock, holding the shutter open until a button is pressed.
-
-### Multi-Connect
-
-Multi-Connect enables simultaneous connection to multiple cameras to synchronise
-remote shutter control. Up to 9 (ESP32 hardware limit) cameras can be
-simultaneously controlled.
-
-To use:
-* Pair with one or more cameras
-* Enable `Settings->Features->Multi-Connect`
-* In `Connect` select one or more cameras
-* Select `Multi-Connect`
-   * Selected cameras will be connected in sequence
-* If all cameras are connected, the standard remote control is shown
-
-> [!CAUTION]
-> * mobile device connections are extremely finnicky
-> * multi-connect involving mobile devices is not well tested and can easily crash
->   * multi-connect involving mobile devices is not recommended
-
-### Infinite-ReConnect
-
-This is useful for using furble as a passive, always on GPS data source.
-With this, the camera will attempt to reconnect indefinitely.
-You don't need to turn on this setting if you are actively using the remote.
-
-To use:
-* Enable `Settings->Features->Infinite-ReConnect`
-
-> [!WARNING]
-> This will not be kind to battery life
 
 ### Themes
 
@@ -401,9 +264,9 @@ The M5StickC Plus(2) sells for US$19.95.
 
 The project is built with [PlatformIO](https://platformio.org) and depends on
 the following libraries:
+- [esp-nimble-cpp](https://github.com/h2zero/esp-nimble-cpp)
 - [LVGL](https://github.com/lvgl/lvgl)
 - [M5Unified](https://github.com/m5stack/M5Unified)
-- [NimBLE-Arduino](https://github.com/h2zero/NimBLE-Arduino)
 - [TinyGPSPlus](https://github.com/mikalhart/TinyGPSPlus)
 
 # Known Issues
@@ -418,10 +281,6 @@ the following libraries:
 
 # Things To Do
 
-- error handling is ~atrocious~improving (it might crash, then restart, which is OK,
-  the M5StickC boots quickly)
-- improve the device matching and connection abstractions
-  - especially if more cameras get supported
 - Support more camera makes and models
    - Get access to and support the following:
      - Nikon Z
@@ -436,6 +295,7 @@ Inspiration, references and related information for this project came from the f
    - https://github.com/RReverser/eos-remote-web
 - Fujifilm
   - https://github.com/hkr/fuji-cam-wifi-tool
+  - https://github.com/petabyt/fudge
 - Sony
    - https://gethypoxic.com/blogs/technical/sony-camera-ble-control-protocol-di-remote-control
    - https://gregleeds.com/reverse-engineering-sony-camera-bluetooth
