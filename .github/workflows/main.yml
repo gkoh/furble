@@ -17,9 +17,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run clang-format style check
-        uses: jidicula/clang-format-action@v4.13.0
+        uses: jidicula/clang-format-action@v4.16.0
         with:
-          clang-format-version: '18'
+          clang-format-version: '21'
           check-path: '.'
 
   # This workflow contains a matrix of build platforms

@@ -1,6 +1,7 @@
 #ifndef FURBLE_UI_H
 #define FURBLE_UI_H
 
+#include <initializer_list>
 #include <mutex>
 #include <unordered_map>
 
@@ -55,10 +56,16 @@ class UI {
 
  private:
   typedef struct {
+    int32_t column;
+    int32_t row;
+  } grid_position_t;
+
+  typedef struct {
     lv_obj_t *main;
     lv_group_t *group;
     lv_obj_t *page;
     lv_obj_t *button;
+    grid_position_t grid;
   } menu_t;
 
   typedef struct {
@@ -120,6 +127,10 @@ class UI {
 
   typedef struct {
     UI *ui;
+    lv_obj_t *messageBox;
+    lv_obj_t *label;
+    lv_obj_t *bar;
+    lv_obj_t *cancel;
     const char *menuName;
   } ConnectContext_t;
 
@@ -146,11 +157,13 @@ class UI {
   static constexpr const char *m_ScanStr = "Scan";
   static constexpr const char *m_DeleteStr = "Delete";
   static constexpr const char *m_SettingsStr = "Settings";
+  static constexpr const char *m_PowerOffStr = "Off";
 
   // connected
   static constexpr const char *m_ConnectedStr = "Connected";
-  static constexpr const char *m_RemoteShutter = "Shutter";
+  static constexpr const char *m_RemoteShutter = "Remote";
   static constexpr const char *m_RemoteInterval = "Interval";
+  static constexpr const char *m_RemoteDisconnect = "Disconnect";
   // dodgy hack, add a space so map key is unique
   static constexpr const char *m_IntervalometerRunStr = "Intervalometer ";
 
@@ -158,9 +171,9 @@ class UI {
   static constexpr const char *m_BacklightStr = "Backlight";
   static constexpr const char *m_FeaturesStr = "Features";
   static constexpr const char *m_GPSStr = "GPS";
-  static constexpr const char *m_IntervalometerStr = "Intervalometer";
+  static constexpr const char *m_IntervalometerStr = "Timer";
   static constexpr const char *m_ThemeStr = "Theme";
-  static constexpr const char *m_TransmitPowerStr = "Transmit Power";
+  static constexpr const char *m_TransmitPowerStr = "TX Power";
   static constexpr const char *m_AboutStr = "About";
 
   // settings->gps
@@ -174,17 +187,19 @@ class UI {
   static constexpr uint8_t BYTES_PER_PIXEL = (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_RGB565));
   static constexpr int32_t MAX_WIDTH = 320;
   static constexpr int32_t MAX_HEIGHT = 240;
+  static constexpr size_t BUFFER_SIZE = (UI::MAX_WIDTH * (MAX_HEIGHT / 15) * UI::BYTES_PER_PIXEL);
 
-  typedef std::array<uint8_t, UI::MAX_WIDTH *(MAX_HEIGHT / 10) * UI::BYTES_PER_PIXEL>
-      display_buffer_t;
+#if defined(FURBLE_M5COREX)
+  static constexpr int32_t ICON_MENU_SIZE = 48;
+#else
+  static constexpr int32_t ICON_MENU_SIZE = 24;
+#endif
 
-  static LV_ATTRIBUTE_MEM_ALIGN display_buffer_t m_Buffer1;
-  static LV_ATTRIBUTE_MEM_ALIGN display_buffer_t m_Buffer2;
+  static constexpr int32_t ICON_HEADER_SIZE = 24;
 
-  static lv_obj_t *m_ConnectMessageBox;
-  static lv_obj_t *m_ConnectLabel;
-  static lv_obj_t *m_ConnectBar;
-  static lv_obj_t *m_ConnectCancel;
+  static LV_ATTRIBUTE_MEM_ALIGN void *m_Buffer1;
+  static LV_ATTRIBUTE_MEM_ALIGN void *m_Buffer2;
+
   static lv_timer_t *m_ConnectTimer;
   static lv_timer_t *m_IntervalTimer;
   static lv_obj_t *m_IntervalStateLabel;
@@ -192,6 +207,11 @@ class UI {
   static lv_obj_t *m_IntervalRemainingLabel;
   static lv_timer_t *m_IntervalPageRefresh;
   static uint32_t m_IntervalNext;
+
+  const std::vector<int32_t> m_GridLayoutColDsc = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1),
+                                                   LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+  const std::vector<int32_t> m_GridLayoutRowDsc = {LV_GRID_FR(1), LV_GRID_FR(1),
+                                                   LV_GRID_TEMPLATE_LAST};
 
   GPS &m_GPS;
 
@@ -211,11 +231,12 @@ class UI {
   lv_obj_t *m_Root = nullptr;
   lv_obj_t *m_Header = nullptr;
   lv_obj_t *m_Content = nullptr;
-  static lv_obj_t *m_NavBar;
+  lv_obj_t *m_NavBar = nullptr;
 
   lv_obj_t *m_Left;
   lv_obj_t *m_OK;
   lv_obj_t *m_Right;
+  lv_obj_t *m_ShutterLockIcon;
   ControlMode m_ControlMode = ControlMode::MENU;
 
   lv_obj_t *m_IntervalStart = nullptr;
@@ -223,7 +244,6 @@ class UI {
 
   status_t m_Status;
   bool m_ShutterLock = false;
-  lv_obj_t *m_ShutterLockLabel = nullptr;
   uint32_t m_InactivityTimeout;
 
   static menu_t m_MainMenu;
@@ -256,16 +276,18 @@ class UI {
   void prepareShutterControl(void);
 
   /** Add icon to the root window header. */
-  lv_obj_t *addIcon(const char *symbol);
+  lv_obj_t *addIcon(const lv_image_dsc_t *symbol);
 
   /** Set the icon symbol in the root window header. */
-  void setIcon(lv_obj_t *icon, const char *symbol);
+  void setIcon(lv_obj_t *icon, const lv_image_dsc_t *symbol);
 
   /** Add a menu item. */
   static lv_obj_t *addMenuItem(const menu_t &menu,
-                               const char *icon,
+                               const lv_image_dsc_t *icon,
                                const char *text,
-                               bool checkbox = false);
+                               bool checkbox = false,
+                               const int32_t col_pos = 0,
+                               const int32_t row_pos = 0);
 
   /** Add a menu switch item. */
   void addSettingItem(lv_obj_t *page, const char *symbol, Settings::type_t setting);
@@ -275,7 +297,7 @@ class UI {
 
   /** Create a menu entry. */
   menu_t &addMenu(const char *entry,
-                  const char *symbol,
+                  const lv_image_dsc_t *symbol,
                   bool button = true,
                   const menu_t &parent = m_MainMenu);
 
@@ -363,7 +385,5 @@ class UI {
   void handleLockScreen(void);
 };
 }  // namespace Furble
-
-void vUITask(void *param);
 
 #endif

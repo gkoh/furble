@@ -11,6 +11,14 @@
 
 extern "C" {
 
+static void vUITask(void *param) {
+  using namespace Furble;
+  auto interval = Settings::load<interval_t>(Settings::INTERVAL);
+  auto ui = UI(interval);
+
+  ui.task();
+}
+
 void app_main() {
   BaseType_t xRet;
   TaskHandle_t xControlHandle = NULL;
@@ -18,7 +26,7 @@ void app_main() {
   ESP_LOGI(LOG_TAG, "furble version: '%s'", FURBLE_VERSION);
 
   esp_pm_config_t pm_config = {
-      .max_freq_mhz = 80,
+      .max_freq_mhz = 160,
       .min_freq_mhz = 40,
       .light_sleep_enable = true,
   };

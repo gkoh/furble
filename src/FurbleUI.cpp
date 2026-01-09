@@ -10,19 +10,30 @@
 #include <Device.h>
 #include <Scan.h>
 
+#include "icons.h"
+
 #include "FurbleControl.h"
 #include "FurbleGPS.h"
 #include "FurbleSettings.h"
 #include "FurbleUI.h"
 #include "interval.h"
 
-void vUITask(void *param) {
-  using namespace Furble;
-  auto interval = Settings::load<interval_t>(Settings::INTERVAL);
-  auto ui = UI(interval);
-
-  ui.task();
-}
+#if defined(FURBLE_M5STICKC) || defined(FURBLE_M5STICKC_PLUS)
+// Use 24x24 icons for StickC screens
+#define icon_add_a_photo icon_add_a_photo_24
+#define icon_delete icon_delete_24
+#define icon_info icon_info_24
+#define icon_linked_camera icon_linked_camera_24
+#define icon_location_searching icon_location_searching_24
+#define icon_no_photography icon_no_photography_24
+#define icon_palette icon_palette_24
+#define icon_power_settings_new icon_power_settings_new_24
+#define icon_settings icon_settings_24
+#define icon_settings_brightness icon_settings_brightness_24
+#define icon_settings_remote icon_settings_remote_24
+#define icon_timer icon_timer_24
+#define icon_wand_stars icon_wand_stars_24
+#endif
 
 namespace Furble {
 
@@ -30,32 +41,17 @@ std::mutex UI::m_Mutex;
 
 UI::ConnectContext_t UI::m_ConnectContext;
 
-constexpr const char *UI::m_ConnectStr;
-constexpr const char *UI::m_ConnectedStr;
-constexpr const char *UI::m_DeleteStr;
-constexpr const char *UI::m_ScanStr;
-constexpr const char *UI::m_SettingsStr;
-constexpr const char *UI::m_IntervalometerStr;
-constexpr const char *UI::m_RemoteShutter;
-constexpr const char *UI::m_IntervalometerRunStr;
-
 const uint32_t UI::m_KeyEnter;
 const uint32_t UI::m_KeyLeft;
 const uint32_t UI::m_KeyRight;
-
-lv_obj_t *UI::m_NavBar;
 
 uint8_t UI::m_PMICClickCount = 0;
 
 lv_timer_t *UI::m_IntervalTimer;
 
-UI::display_buffer_t UI::m_Buffer1;
-UI::display_buffer_t UI::m_Buffer2;
+void *UI::m_Buffer1;
+void *UI::m_Buffer2;
 
-lv_obj_t *UI::m_ConnectMessageBox;
-lv_obj_t *UI::m_ConnectLabel;
-lv_obj_t *UI::m_ConnectBar;
-lv_obj_t *UI::m_ConnectCancel;
 lv_timer_t *UI::m_ConnectTimer;
 
 lv_obj_t *UI::m_IntervalStateLabel;
@@ -67,25 +63,27 @@ uint32_t UI::m_IntervalNext;
 UI::menu_t UI::m_MainMenu;
 
 std::unordered_map<const char *, UI::menu_t> UI::m_Menu = {
-    {m_ConnectStr,           {}},
-    {m_ScanStr,              {}},
-    {m_DeleteStr,            {}},
-    {m_SettingsStr,          {}},
-    {m_ConnectedStr,         {}},
-    {m_FeaturesStr,          {}},
-    {m_GPSStr,               {}},
-    {m_GPSDataStr,           {}},
-    {m_IntervalometerStr,    {}},
-    {m_IntervalCountStr,     {}},
-    {m_IntervalDelayStr,     {}},
-    {m_IntervalShutterStr,   {}},
-    {m_BacklightStr,         {}},
-    {m_ThemeStr,             {}},
-    {m_TransmitPowerStr,     {}},
-    {m_AboutStr,             {}},
-    {m_RemoteShutter,        {}},
-    {m_RemoteInterval,       {}},
-    {m_IntervalometerRunStr, {}},
+    {m_ConnectStr,           {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
+    {m_ScanStr,              {nullptr, nullptr, nullptr, nullptr, {1, 0}}},
+    {m_DeleteStr,            {nullptr, nullptr, nullptr, nullptr, {2, 0}}},
+    {m_SettingsStr,          {nullptr, nullptr, nullptr, nullptr, {3, 0}}},
+    {m_PowerOffStr,          {nullptr, nullptr, nullptr, nullptr, {3, 1}}},
+    {m_ConnectedStr,         {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
+    {m_FeaturesStr,          {nullptr, nullptr, nullptr, nullptr, {1, 0}}},
+    {m_GPSStr,               {nullptr, nullptr, nullptr, nullptr, {2, 0}}},
+    {m_GPSDataStr,           {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
+    {m_IntervalometerStr,    {nullptr, nullptr, nullptr, nullptr, {3, 0}}},
+    {m_IntervalCountStr,     {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
+    {m_IntervalDelayStr,     {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
+    {m_IntervalShutterStr,   {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
+    {m_BacklightStr,         {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
+    {m_ThemeStr,             {nullptr, nullptr, nullptr, nullptr, {0, 1}}},
+    {m_TransmitPowerStr,     {nullptr, nullptr, nullptr, nullptr, {1, 1}}},
+    {m_AboutStr,             {nullptr, nullptr, nullptr, nullptr, {2, 1}}},
+    {m_RemoteShutter,        {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
+    {m_RemoteInterval,       {nullptr, nullptr, nullptr, nullptr, {1, 0}}},
+    {m_RemoteDisconnect,     {nullptr, nullptr, nullptr, nullptr, {2, 0}}},
+    {m_IntervalometerRunStr, {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
 };
 
 UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalometer(interval) {
@@ -131,7 +129,9 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
   lv_display_set_flush_cb(m_Display, displayFlush);
 
   // configure display buffers
-  lv_display_set_buffers(m_Display, m_Buffer1.data(), m_Buffer2.data(), m_Buffer1.size(),
+  m_Buffer1 = heap_caps_aligned_alloc(64, BUFFER_SIZE, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
+  m_Buffer2 = heap_caps_aligned_alloc(64, BUFFER_SIZE, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
+  lv_display_set_buffers(m_Display, m_Buffer1, m_Buffer2, BUFFER_SIZE,
                          LV_DISPLAY_RENDER_MODE_PARTIAL);
 
   initInputDevices();
@@ -148,12 +148,12 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
 
   m_GPS.init();
   m_Status.gps = &m_GPS;
-  m_Status.reconnectIcon = addIcon(LV_SYMBOL_REFRESH);
-  m_Status.gpsIcon = addIcon(LV_SYMBOL_GPS);
+  m_Status.reconnectIcon = addIcon(&icon_all_inclusive);
+  m_Status.gpsIcon = addIcon(&icon_location_disabled);
 #if FURBLE_BATTERY_DEBUG == 1
   m_Status.batteryIcon = lv_label_create(m_Header);
 #else
-  m_Status.batteryIcon = addIcon(LV_SYMBOL_BATTERY_3);
+  m_Status.batteryIcon = addIcon(&icon_battery_android_frame_4);
 #endif
   m_Status.screenLocked = false;
 
@@ -173,18 +173,18 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
 
         lv_label_set_text_fmt(status->batteryIcon, "%ld", mean);
 #else
-        const char *symbol = NULL;
+        const lv_image_dsc_t *symbol = NULL;
         int32_t level = M5.Power.getBatteryLevel();
         if (level >= 95) {
-          symbol = LV_SYMBOL_BATTERY_FULL;
+          symbol = &icon_battery_android_frame_full;
         } else if (level >= 66) {
-          symbol = LV_SYMBOL_BATTERY_3;
+          symbol = &icon_battery_android_frame_6;
         } else if (level >= 33) {
-          symbol = LV_SYMBOL_BATTERY_2;
+          symbol = &icon_battery_android_frame_4;
         } else if (level >= 5) {
-          symbol = LV_SYMBOL_BATTERY_1;
+          symbol = &icon_battery_android_frame_2;
         } else {
-          symbol = LV_SYMBOL_BATTERY_EMPTY;
+          symbol = &icon_battery_android_0;
         }
         lv_image_set_src(status->batteryIcon, symbol);
 #endif
@@ -233,11 +233,10 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
 
   // add navigation buttons
   if (!M5.Touch.isEnabled()) {
-    auto height = lv_font_get_line_height(LV_FONT_DEFAULT);
-
     m_NavBar = lv_obj_create(x);
+
     lv_obj_set_width(m_NavBar, LV_PCT(100));
-    lv_obj_set_height(m_NavBar, 1.2f * lv_font_get_line_height(LV_FONT_DEFAULT));
+    lv_obj_set_height(m_NavBar, ICON_HEADER_SIZE + 2);
     lv_obj_set_layout(m_NavBar, LV_LAYOUT_FLEX);
     lv_obj_set_flex_flow(m_NavBar, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(m_NavBar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER,
@@ -252,11 +251,17 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
         lv_obj_set_style_pad_right(m_Content, 0, LV_STATE_DEFAULT);
 
         m_Left = lv_button_create(m_Screen);
-        m_OK = lv_button_create(m_NavBar);
+        m_OK = lv_button_create(m_Screen);
         m_Right = lv_button_create(m_Screen);
+        lv_obj_set_style_radius(m_Left, 0, LV_PART_MAIN);
+        lv_obj_set_style_radius(m_OK, 0, LV_PART_MAIN);
+        lv_obj_set_style_radius(m_Right, 0, LV_PART_MAIN);
 
         lv_obj_add_flag(m_Left, LV_OBJ_FLAG_FLOATING);
-        lv_obj_align(m_Left, LV_ALIGN_BOTTOM_LEFT, 0, -1);
+        lv_obj_align(m_Left, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+
+        lv_obj_add_flag(m_OK, LV_OBJ_FLAG_FLOATING);
+        lv_obj_align(m_OK, LV_ALIGN_BOTTOM_MID, 0, 0);
 
         lv_obj_add_flag(m_Right, LV_OBJ_FLAG_FLOATING);
         lv_obj_align(m_Right, LV_ALIGN_RIGHT_MID, 0, 0);
@@ -284,15 +289,15 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
     lv_group_remove_obj(m_OK);
     lv_group_remove_obj(m_Right);
 
-    lv_obj_set_size(m_Left, height, height);
-    lv_obj_set_size(m_OK, height, height);
-    lv_obj_set_size(m_Right, height, height);
+    lv_obj_set_size(m_Left, ICON_HEADER_SIZE, ICON_HEADER_SIZE);
+    lv_obj_set_size(m_OK, ICON_HEADER_SIZE, ICON_HEADER_SIZE);
+    lv_obj_set_size(m_Right, ICON_HEADER_SIZE, ICON_HEADER_SIZE);
   }
 
   configureControl(ControlMode::MENU);
 
   // create connection timer
-  m_ConnectContext = {this, NULL};
+  m_ConnectContext = {this, NULL, NULL, NULL, NULL, NULL};
   m_ConnectTimer = lv_timer_create(connectTimerHandler, 125, &m_ConnectContext);
   lv_timer_pause(m_ConnectTimer);
 
@@ -438,24 +443,42 @@ void UI::setTheme(std::string name) {
   lv_color_t secondary = lv_color_black();
   bool dark = false;
   static lv_theme_t theme;
+  static lv_style_t style_img;
   static lv_style_t style_bg;
   static lv_style_t style_button;
+  static lv_style_t style_disable;
 
+  lv_style_init(&style_img);
   lv_style_init(&style_bg);
   lv_style_init(&style_button);
+  lv_style_init(&style_disable);
+
+  // fully recolor black pixels in images
+  lv_style_set_image_recolor_opa(&style_img, LV_OPA_COVER);
+
+  // add 40% opacity for disabled widgets
+  lv_style_set_text_opa(&style_disable, LV_OPA_40);
+  lv_style_set_image_opa(&style_disable, LV_OPA_40);
 
   if (name == "Dark") {
     dark = true;
+    lv_style_set_image_recolor(&style_img, lv_color_white());
     lv_style_set_bg_color(&style_bg, lv_color_black());
     lv_style_set_outline_color(&style_button, LV_COLOR_MAKE(127, 255, 0));
   } else if (name == "Mono Furble") {
     dark = true;
     primary = lv_palette_main(LV_PALETTE_ORANGE);
+    lv_style_set_image_recolor(&style_img, primary);
+    lv_style_set_image_recolor(&style_button, lv_color_white());
     lv_style_set_bg_color(&style_bg, lv_color_black());
     lv_style_set_outline_color(&style_button, lv_color_white());
   } else {
     // Default
     dark = false;
+
+    // lighten focused images
+    lv_style_set_image_recolor_opa(&style_button, LV_OPA_50);
+
     lv_style_set_outline_color(&style_button, lv_palette_main(LV_PALETTE_ORANGE));
   }
 
@@ -471,6 +494,10 @@ void UI::setTheme(std::string name) {
                && !lv_obj_check_type(obj, &lv_msgbox_footer_button_class)) {
       lv_obj_add_style(obj, &style_bg, LV_STATE_DEFAULT);
     }
+
+    lv_obj_add_style(obj, &style_img, LV_STATE_DEFAULT);
+    lv_obj_add_style(obj, &style_button, LV_STATE_FOCUSED);
+    lv_obj_add_style(obj, &style_disable, LV_STATE_DISABLED);
   });
   lv_display_set_theme(display, &theme);
 }
@@ -484,8 +511,10 @@ void UI::shutterLock(Control &control) {
     if (M5.Touch.isEnabled()) {
       lv_obj_add_state(m_OK, LV_STATE_DISABLED);
       lv_obj_add_state(m_Right, LV_STATE_DISABLED);
+      lv_obj_set_style_bg_image_src(m_ShutterLockIcon, &icon_lock, 0);
     } else {
-      lv_obj_clear_flag(m_ShutterLockLabel, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_set_style_bg_image_src(m_ShutterLockIcon, &icon_lock_24, 0);
+      lv_obj_set_style_radius(m_ShutterLockIcon, (ICON_HEADER_SIZE / 2), LV_PART_MAIN);
     }
   }
 }
@@ -499,8 +528,10 @@ void UI::shutterUnlock(Control &control) {
     if (M5.Touch.isEnabled()) {
       lv_obj_remove_state(m_OK, LV_STATE_DISABLED);
       lv_obj_remove_state(m_Right, LV_STATE_DISABLED);
+      lv_obj_set_style_bg_image_src(m_ShutterLockIcon, &icon_lock_open_right, 0);
     } else {
-      lv_obj_add_flag(m_ShutterLockLabel, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_set_style_bg_image_src(m_ShutterLockIcon, &icon_lock_open_right_24, 0);
+      lv_obj_set_style_radius(m_ShutterLockIcon, 0, LV_PART_MAIN);
     }
   }
 }
@@ -603,7 +634,7 @@ void UI::prepareShutterControl(void) {
   lv_obj_add_event_cb(m_Right, handleFocus, LV_EVENT_ALL, this);
 }
 
-lv_obj_t *UI::addIcon(const char *symbol) {
+lv_obj_t *UI::addIcon(const lv_image_dsc_t *symbol) {
   lv_obj_t *icon = lv_image_create(m_Header);
 
   setIcon(icon, symbol);
@@ -611,20 +642,39 @@ lv_obj_t *UI::addIcon(const char *symbol) {
   return icon;
 }
 
-void UI::setIcon(lv_obj_t *icon, const char *symbol) {
+void UI::setIcon(lv_obj_t *icon, const lv_image_dsc_t *symbol) {
+  lv_obj_set_size(icon, ICON_HEADER_SIZE, ICON_HEADER_SIZE);
   lv_image_set_src(icon, symbol);
 }
 
-lv_obj_t *UI::addMenuItem(const menu_t &menu, const char *symbol, const char *text, bool checkbox) {
+lv_obj_t *UI::addMenuItem(const menu_t &menu,
+                          const lv_image_dsc_t *icon,
+                          const char *text,
+                          bool checkbox,
+                          const int32_t col_pos,
+                          const int32_t row_pos) {
   lv_obj_t *cont = lv_menu_cont_create(menu.page);
+#if defined(FURBLE_M5COREX)
+  lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
+#else
+  lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW);
+#if defined(FURBLE_M5STICKC_PLUS)
+  lv_obj_set_style_pad_top(cont, 6, LV_STATE_DEFAULT);
+  lv_obj_set_style_pad_bottom(cont, 6, LV_STATE_DEFAULT);
+#endif
+#endif
   lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
 
 #if defined(FURBLE_M5STICKC)
   // screen is too small for icons
 #else
-  if (symbol) {
-    lv_obj_t *icon = lv_image_create(cont);
-    lv_image_set_src(icon, symbol);
+  if (icon) {
+    lv_obj_t *img = lv_image_create(cont);
+    lv_obj_set_size(img, ICON_MENU_SIZE, ICON_MENU_SIZE);
+    lv_image_set_inner_align(img, LV_IMAGE_ALIGN_STRETCH);
+    lv_image_set_src(img, icon);
+    lv_obj_set_grid_cell(cont, LV_GRID_ALIGN_STRETCH, col_pos, 1, LV_GRID_ALIGN_STRETCH, row_pos,
+                         1);
   }
 #endif
 
@@ -638,10 +688,17 @@ lv_obj_t *UI::addMenuItem(const menu_t &menu, const char *symbol, const char *te
   } else {
     lv_obj_t *label = lv_label_create(cont);
     lv_label_set_text(label, text);
+    if (icon) {
+#if defined(FURBLE_M5COREX)
+      lv_obj_set_style_text_font(label, &lv_font_montserrat_16, 0);
+#endif
+    } else {
+      lv_obj_set_width(label, LV_PCT(100));
+    }
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    lv_obj_set_width(label, LV_PCT(100));
     lv_obj_add_flag(cont, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_flag(cont, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+    lv_obj_add_flag(cont, LV_OBJ_FLAG_STATE_TRICKLE);
     lv_group_add_obj(menu.group, cont);
   }
 
@@ -758,14 +815,17 @@ lv_obj_t *UI::addCameraItem(Camera *camera, const menu_t &menu, const CameraList
   return item;
 }
 
-UI::menu_t &UI::addMenu(const char *name, const char *symbol, bool button, const menu_t &parent) {
+UI::menu_t &UI::addMenu(const char *name,
+                        const lv_image_dsc_t *icon,
+                        bool button,
+                        const menu_t &parent) {
   menu_t &menu = m_Menu.at(name);
   menu.main = m_MainMenu.main;
   menu.group = m_Group;
   menu.page = lv_menu_page_create(m_MainMenu.main, name);
 
   if (button) {
-    menu.button = addMenuItem(parent, symbol, name);
+    menu.button = addMenuItem(parent, icon, name, false, menu.grid.column, menu.grid.row);
   }
 
   return menu;
@@ -783,11 +843,16 @@ void UI::addMainMenu(void) {
   }
 
   lv_menu_set_mode_root_back_button(m_MainMenu.main, LV_MENU_ROOT_BACK_BUTTON_DISABLED);
-#if defined(FURBLE_M5COREX)
-  // M5StickC displays are too narrow
+#if defined(FURBLE_M5COREX) || defined(FURBLE_M5STICKC_PLUS)
+  // StickC display too narrow for icons
   lv_obj_t *back = lv_menu_get_main_header_back_button(m_MainMenu.main);
-  lv_obj_t *back_label = lv_label_create(back);
-  lv_label_set_text(back_label, "Back");
+  lv_obj_t *back_img = lv_obj_get_child(back, 0);
+  lv_image_set_src(back_img, &icon_undo);
+#if defined(FURBLE_M5COREX)
+  lv_obj_set_width(back_img, 48);
+#else
+  lv_obj_set_width(back_img, 24);
+#endif
 #endif
 
   lv_obj_set_size(m_MainMenu.main, LV_PCT(100), LV_PCT(100));
@@ -796,15 +861,24 @@ void UI::addMainMenu(void) {
   m_MainMenu.page = lv_menu_page_create(m_MainMenu.main, NULL);
   m_MainMenu.group = m_Group;
 
+#if defined(FURBLE_M5COREX)
+  lv_obj_set_grid_dsc_array(m_MainMenu.page, m_GridLayoutColDsc.data(), m_GridLayoutRowDsc.data());
+  lv_obj_set_layout(m_MainMenu.page, LV_LAYOUT_GRID);
+#else
+#endif
+  lv_obj_set_size(m_MainMenu.page, LV_PCT(100), LV_PCT(100));
+  lv_obj_center(m_MainMenu.page);
+
   addConnectMenu();
   addScanMenu();
   addDeleteMenu();
   addSettingsMenu();
   addConnectedMenu();
 
-  m_PowerOff = addMenuItem(m_MainMenu, LV_SYMBOL_POWER, "Power Off");
+  menu_t &off = addMenu(m_PowerOffStr, &icon_power_settings_new);
+
   lv_obj_add_event_cb(
-      m_PowerOff,
+      off.button,
       [](lv_event_t *e) {
 #if defined(FURBLE_M5STACK_CORE)
         esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER);
@@ -825,11 +899,12 @@ void UI::addMainMenu(void) {
         if (page == m_MainMenu.page) {
           // Hide connect & delete if there are zero saved
           if (CameraList::getSaveCount() == 0) {
-            lv_obj_add_flag(m_Menu.at(m_ConnectStr).button, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_add_flag(m_Menu.at(m_DeleteStr).button, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_state(m_Menu.at(m_ConnectStr).button, LV_STATE_DISABLED);
+            lv_obj_add_state(m_Menu.at(m_DeleteStr).button, LV_STATE_DISABLED);
+            lv_group_focus_obj(m_Menu.at(m_ScanStr).button);
           } else {
-            lv_obj_clear_flag(m_Menu.at(m_ConnectStr).button, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_clear_flag(m_Menu.at(m_DeleteStr).button, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_remove_state(m_Menu.at(m_ConnectStr).button, LV_STATE_DISABLED);
+            lv_obj_remove_state(m_Menu.at(m_DeleteStr).button, LV_STATE_DISABLED);
           }
 
           // Ensure no active scans
@@ -959,8 +1034,9 @@ void UI::configureControl(ControlMode mode, bool set) {
 
 void UI::configShutterControl(void) {
   if (!M5.Touch.isEnabled()) {
-    lv_obj_set_style_bg_image_src(m_Right, LV_SYMBOL_EYE_OPEN, 0);
-    lv_obj_set_style_bg_image_src(m_OK, LV_SYMBOL_IMAGE, 0);
+    lv_obj_set_style_bg_image_src(m_Left, &icon_arrow_back_24, 0);
+    lv_obj_set_style_bg_image_src(m_Right, &icon_center_focus_strong_24, 0);
+    lv_obj_set_style_bg_image_src(m_OK, &icon_camera_24, 0);
 
     lv_indev_set_type(m_ButtonL, LV_INDEV_TYPE_BUTTON);
     lv_indev_set_type(m_ButtonO, LV_INDEV_TYPE_BUTTON);
@@ -993,9 +1069,9 @@ void UI::configShutterControl(void) {
 
 void UI::configMenuControl(void) {
   if (!M5.Touch.isEnabled()) {
-    lv_obj_set_style_bg_image_src(m_Left, LV_SYMBOL_UP, 0);
-    lv_obj_set_style_bg_image_src(m_OK, LV_SYMBOL_OK, 0);
-    lv_obj_set_style_bg_image_src(m_Right, LV_SYMBOL_DOWN, 0);
+    lv_obj_set_style_bg_image_src(m_Left, &icon_arrow_upward_24, 0);
+    lv_obj_set_style_bg_image_src(m_OK, &icon_check_24, 0);
+    lv_obj_set_style_bg_image_src(m_Right, &icon_arrow_downward_24, 0);
 
     lv_indev_set_type(m_ButtonL, LV_INDEV_TYPE_ENCODER);
     lv_indev_set_type(m_ButtonO, LV_INDEV_TYPE_ENCODER);
@@ -1005,9 +1081,9 @@ void UI::configMenuControl(void) {
 
 void UI::configSliderControl(void) {
   if (!M5.Touch.isEnabled()) {
-    lv_obj_set_style_bg_image_src(m_Left, LV_SYMBOL_LEFT, 0);
-    lv_obj_set_style_bg_image_src(m_OK, LV_SYMBOL_OK, 0);
-    lv_obj_set_style_bg_image_src(m_Right, LV_SYMBOL_RIGHT, 0);
+    lv_obj_set_style_bg_image_src(m_Left, &icon_arrow_back_24, 0);
+    lv_obj_set_style_bg_image_src(m_OK, &icon_check_24, 0);
+    lv_obj_set_style_bg_image_src(m_Right, &icon_arrow_forward_24, 0);
   }
 }
 
@@ -1033,19 +1109,19 @@ void UI::connectTimerHandler(lv_timer_t *timer) {
     case Control::STATE_CONNECTING:
       camera = control.getConnectingCamera();
 
-      if (lv_obj_has_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN)) {
+      if (lv_obj_has_flag(ctx->messageBox, LV_OBJ_FLAG_HIDDEN)) {
         // hide menu, unhide message box
         lv_obj_add_flag(m_MainMenu.main, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(ctx->messageBox, LV_OBJ_FLAG_HIDDEN);
         ctx->ui->displayNavigationBar(false);
         ctx->ui->configureControl(ControlMode::MENU, false);
 
-        lv_group_focus_obj(m_ConnectCancel);
+        lv_group_focus_obj(ctx->cancel);
       }
 
       if (camera != nullptr) {
-        lv_label_set_text(m_ConnectLabel, camera->getName().c_str());
-        lv_bar_set_value(m_ConnectBar, camera->getConnectProgress(), LV_ANIM_ON);
+        lv_label_set_text(ctx->label, camera->getName().c_str());
+        lv_bar_set_value(ctx->bar, camera->getConnectProgress(), LV_ANIM_ON);
       }
       break;
 
@@ -1055,7 +1131,7 @@ void UI::connectTimerHandler(lv_timer_t *timer) {
       break;
 
     case Control::STATE_ACTIVE:
-      if (!lv_obj_has_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN)) {
+      if (!lv_obj_has_flag(ctx->messageBox, LV_OBJ_FLAG_HIDDEN)) {
         // if from scan, save the connection
         if (ctx->menuName == m_ScanStr) {
           for (const auto &target : control.getTargets()) {
@@ -1065,7 +1141,7 @@ void UI::connectTimerHandler(lv_timer_t *timer) {
         }
 
         // everything connected, display menu, hide connection message box
-        lv_obj_add_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ctx->messageBox, LV_OBJ_FLAG_HIDDEN);
         lv_obj_clear_flag(m_MainMenu.main, LV_OBJ_FLAG_HIDDEN);
         ctx->ui->displayNavigationBar(true);
         ctx->ui->configureControl(ControlMode::REVERT);
@@ -1146,7 +1222,7 @@ void UI::doConnect(lv_event_t *e) {
   }
 
   lv_obj_add_event_cb(
-      m_ConnectCancel, [](lv_event_t *e) { doDisconnect(); }, LV_EVENT_CLICKED, NULL);
+      m_ConnectContext.cancel, [](lv_event_t *e) { doDisconnect(); }, LV_EVENT_CLICKED, NULL);
 
   control.connectAll(Settings::load<bool>(Settings::RECONNECT));
   lv_timer_reset(m_ConnectTimer);
@@ -1161,7 +1237,7 @@ void UI::doDisconnect(void) {
   Scan::getInstance().stop();
   Control::getInstance().disconnect();
 
-  lv_obj_add_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(m_ConnectContext.messageBox, LV_OBJ_FLAG_HIDDEN);
   lv_obj_clear_flag(m_MainMenu.main, LV_OBJ_FLAG_HIDDEN);
 
   lv_menu_clear_history(m_MainMenu.main);
@@ -1172,25 +1248,41 @@ void UI::doDisconnect(void) {
 
 UI::menu_t &UI::addConnectedMenu(void) {
   menu_t &menuConnected = addMenu(m_ConnectedStr, NULL, false);
-  menu_t &menuShutter = addMenu(m_RemoteShutter, LV_SYMBOL_IMAGE, true, menuConnected);
-  menu_t &menuInterval = addMenu(m_RemoteInterval, LV_SYMBOL_LOOP, true, menuConnected);
-  lv_obj_t *disconnect = addMenuItem(menuConnected, LV_SYMBOL_CLOSE, "Disconnect");
+
+#if defined(FURBLE_M5COREX)
+  static int32_t column_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1),
+                                 LV_GRID_TEMPLATE_LAST};
+  static int32_t row_dsc[] = {LV_GRID_CONTENT, LV_GRID_TEMPLATE_LAST};
+  lv_obj_set_grid_dsc_array(menuConnected.page, column_dsc, row_dsc);
+  lv_obj_center(menuConnected.page);
+  lv_obj_set_layout(menuConnected.page, LV_LAYOUT_GRID);
+#endif
+
+  menu_t &menuShutter = addMenu(m_RemoteShutter, &icon_remote_gen, true, menuConnected);
+  menu_t &menuInterval = addMenu(m_RemoteInterval, &icon_timer, true, menuConnected);
+  menu_t &disconnect = addMenu(m_RemoteDisconnect, &icon_no_photography, true, menuConnected);
 
   if (M5.Touch.isEnabled()) {
     // add remote shutter control for touch screens
     lv_obj_t *cont = lv_menu_cont_create(menuShutter.page);
-    lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_SPACE_EVENLY,
-                          LV_FLEX_ALIGN_CENTER);
+
+    static int32_t remote_col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1),
+                                       LV_GRID_TEMPLATE_LAST};
+    static int32_t remote_row_dsc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+
+    lv_obj_set_grid_dsc_array(cont, remote_col_dsc, remote_row_dsc);
     lv_obj_set_size(cont, LV_PCT(100), LV_PCT(100));
     lv_obj_center(cont);
 
-    std::array<std::tuple<lv_obj_t *, lv_obj_t *, const char *, const char *>, 3> buttons = {
-        {
-         {nullptr, nullptr, "Shutter", LV_SYMBOL_IMAGE},
-         {nullptr, nullptr, "Focus", LV_SYMBOL_EYE_OPEN},
-         {nullptr, nullptr, "Shutter\nLock", LV_SYMBOL_NEXT},
-         }
+    static std::array<std::tuple<lv_obj_t *, lv_obj_t *, const char *, const lv_image_dsc_t *,
+                                 const int32_t, const int32_t>,
+                      3>
+        buttons = {
+            {
+             {nullptr, nullptr, "Shutter\n", &icon_camera, 0, 0},
+             {nullptr, nullptr, "Focus\n", &icon_center_focus_strong, 1, 0},
+             {nullptr, nullptr, "Shutter\nLock", &icon_lock_open_right, 2, 0},
+             }
     };
 
     for (auto &i : buttons) {
@@ -1203,6 +1295,8 @@ UI::menu_t &UI::addConnectedMenu(void) {
                             LV_FLEX_ALIGN_CENTER);
       lv_obj_clear_flag(buttonCont, LV_OBJ_FLAG_SCROLLABLE);
       lv_obj_set_size(buttonCont, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+      lv_obj_set_grid_cell(buttonCont, LV_GRID_ALIGN_STRETCH, std::get<4>(i), 1,
+                           LV_GRID_ALIGN_STRETCH, std::get<5>(i), 1);
 
       auto &button = std::get<1>(i);
       button = lv_button_create(buttonCont);
@@ -1211,30 +1305,73 @@ UI::menu_t &UI::addConnectedMenu(void) {
 
       lv_obj_t *label = lv_label_create(buttonCont);
       lv_label_set_text(label, std::get<2>(i));
+      lv_obj_set_style_text_font(label, &lv_font_montserrat_16, 0);
       lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     }
 
     m_OK = std::get<1>(buttons[0]);
     m_Right = std::get<1>(buttons[1]);
-    auto lockButton = std::get<1>(buttons[2]);
+    m_ShutterLockIcon = std::get<1>(buttons[2]);
 
     lv_obj_add_event_cb(m_OK, handleShutter, LV_EVENT_ALL, this);
-
     lv_obj_add_event_cb(m_Right, handleFocus, LV_EVENT_ALL, this);
-
-    lv_obj_add_event_cb(lockButton, handleShutterLock, LV_EVENT_ALL, this);
+    lv_obj_add_event_cb(m_ShutterLockIcon, handleShutterLock, LV_EVENT_ALL, this);
   } else {
     // add remote shutter text for buttons
-    lv_obj_t *txt = lv_label_create(menuShutter.page);
-    lv_label_set_text(txt, LV_SYMBOL_IMAGE ": Shutter\n" LV_SYMBOL_EYE_OPEN
-                                           ": Focus\n" LV_SYMBOL_EYE_OPEN "+" LV_SYMBOL_IMAGE
-                                           ": Shutter Lock\n\n" LV_SYMBOL_LEFT ": Back");
-    lv_obj_set_size(txt, LV_PCT(100), LV_SIZE_CONTENT);
-    lv_obj_center(txt);
+    lv_area_t a;
+    lv_obj_update_layout(menuShutter.page);
+    lv_obj_get_coords(menuShutter.page, &a);
 
-    m_ShutterLockLabel = lv_label_create(menuShutter.page);
-    lv_label_set_text(m_ShutterLockLabel, "LOCKED");
-    lv_obj_add_flag(m_ShutterLockLabel, LV_OBJ_FLAG_HIDDEN);
+    m_ShutterLockIcon = lv_button_create(menuShutter.page);
+    lv_obj_set_style_bg_image_src(m_ShutterLockIcon, &icon_lock_open_right_24, 0);
+    lv_obj_set_style_radius(m_ShutterLockIcon, 0, LV_PART_MAIN);
+    lv_obj_add_flag(m_ShutterLockIcon, LV_OBJ_FLAG_FLOATING);
+    lv_obj_set_size(m_ShutterLockIcon, ICON_HEADER_SIZE, ICON_HEADER_SIZE);
+
+    // @todo Clean up the plethora of hardcoded values here
+#if defined(FURBLE_M5STICKC)
+    const size_t n = 3;
+    int32_t x1 = lv_obj_get_x(m_OK) - 2;
+    int32_t y1 = lv_obj_get_y(m_Right) - a.y1 - 10;
+    static lv_point_precise_t points[] = {
+        {x1 + 40, y1 + 12},
+        {x1 + 6,  y1 + 12},
+        {x1 + 6,  y1 + 64}
+    };
+#elif defined(FURBLE_M5STACK_CORE)
+    const size_t n = 4;
+    const int32_t x1 = 188;
+    const int32_t y1 = 80;
+    static lv_point_precise_t points[] = {
+        {164, 153},
+        {164, 92 },
+        {82,  92 },
+        {82,  153}
+    };
+#else
+    const size_t n = 3;
+    int32_t x1 = lv_obj_get_x(m_OK) - 2;
+    int32_t y1 = lv_obj_get_y(m_Right) - a.y1 - 7;
+    static lv_point_precise_t points[] = {
+        {x1 + 50, y1 + 12 },
+        {x1 - 1,  y1 + 12 },
+        {x1 - 1,  y1 + 103}
+    };
+#endif
+
+    lv_obj_set_pos(m_ShutterLockIcon, x1, y1);
+
+    static lv_style_t style;
+    lv_style_init(&style);
+    lv_style_set_line_width(&style, 2);
+    lv_style_set_line_color(&style, lv_palette_main(LV_PALETTE_GREY));
+    lv_style_set_line_opa(&style, LV_OPA_50);
+
+    lv_obj_t *line = lv_line_create(menuShutter.page);
+    lv_line_set_points(line, points, n);
+    lv_obj_add_style(line, &style, 0);
+
+    lv_obj_move_foreground(m_ShutterLockIcon);
   }
 
   lv_obj_add_event_cb(
@@ -1260,7 +1397,7 @@ UI::menu_t &UI::addConnectedMenu(void) {
 
   // add disconnect control
   lv_obj_add_event_cb(
-      disconnect,
+      disconnect.button,
       [](lv_event_t *e) {
         auto *ui = static_cast<UI *>(lv_event_get_user_data(e));
         doDisconnect();
@@ -1274,7 +1411,7 @@ UI::menu_t &UI::addConnectedMenu(void) {
 }
 
 void UI::addConnectMenu(void) {
-  menu_t &menu = addMenu(m_ConnectStr, LV_SYMBOL_WIFI);
+  menu_t &menu = addMenu(m_ConnectStr, &icon_linked_camera);
 
   // refresh connection list every time
   lv_obj_add_event_cb(
@@ -1304,35 +1441,35 @@ void UI::addConnectMenu(void) {
       LV_EVENT_CLICKED, NULL);
 
   // create, but immediately hide the connect message box
-  m_ConnectMessageBox = lv_msgbox_create(m_Screen);
-  lv_msgbox_add_title(m_ConnectMessageBox, "Connecting");
-  lv_obj_set_width(m_ConnectMessageBox, LV_PCT(100));
-  lv_obj_update_layout(m_ConnectMessageBox);
-  lv_obj_t *c = lv_msgbox_get_content(m_ConnectMessageBox);
+  m_ConnectContext.messageBox = lv_msgbox_create(m_Screen);
+  lv_msgbox_add_title(m_ConnectContext.messageBox, "Connecting");
+  lv_obj_set_width(m_ConnectContext.messageBox, LV_PCT(100));
+  lv_obj_update_layout(m_ConnectContext.messageBox);
+  lv_obj_t *c = lv_msgbox_get_content(m_ConnectContext.messageBox);
   lv_obj_set_flex_align(c, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_clear_flag(c, LV_OBJ_FLAG_SCROLLABLE);
-  m_ConnectLabel = lv_label_create(c);
-  lv_label_set_long_mode(m_ConnectLabel, LV_LABEL_LONG_DOT);
-  lv_obj_set_width(m_ConnectLabel, LV_PCT(80));
+  m_ConnectContext.label = lv_label_create(c);
+  lv_label_set_long_mode(m_ConnectContext.label, LV_LABEL_LONG_DOT);
+  lv_obj_set_width(m_ConnectContext.label, LV_PCT(80));
 
-  m_ConnectBar = lv_bar_create(c);
-  lv_obj_set_width(m_ConnectBar, LV_PCT(80));
-  lv_bar_set_value(m_ConnectBar, 0, LV_ANIM_ON);
+  m_ConnectContext.bar = lv_bar_create(c);
+  lv_obj_set_width(m_ConnectContext.bar, LV_PCT(80));
+  lv_bar_set_value(m_ConnectContext.bar, 0, LV_ANIM_ON);
 
-  m_ConnectCancel = lv_msgbox_add_footer_button(m_ConnectMessageBox, "Cancel");
-  lv_obj_t *footer = lv_msgbox_get_footer(m_ConnectMessageBox);
+  m_ConnectContext.cancel = lv_msgbox_add_footer_button(m_ConnectContext.messageBox, "Cancel");
+  lv_obj_t *footer = lv_msgbox_get_footer(m_ConnectContext.messageBox);
   lv_obj_update_layout(footer);
   // @todo cancel button bottom is clipped, weird
-  // lv_obj_set_height(m_ConnectCancel, LV_SIZE_CONTENT);
-  // lv_obj_set_height(footer, lv_obj_get_height(m_ConnectCancel) * 1.2f);
+  // lv_obj_set_height(m_ConnectContext.cancel, LV_SIZE_CONTENT);
+  // lv_obj_set_height(footer, lv_obj_get_height(m_ConnectContext.cancel) * 1.2f);
 
-  lv_obj_add_flag(m_ConnectMessageBox, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(m_ConnectContext.messageBox, LV_OBJ_FLAG_HIDDEN);
 
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
 
 void UI::addScanMenu(void) {
-  menu_t &menu = addMenu(m_ScanStr, LV_SYMBOL_EYE_OPEN);
+  menu_t &menu = addMenu(m_ScanStr, &icon_add_a_photo);
 
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
@@ -1349,7 +1486,7 @@ void UI::refreshDelete(void) {
 }
 
 void UI::addDeleteMenu(void) {
-  menu_t &menu = addMenu(m_DeleteStr, LV_SYMBOL_TRASH);
+  menu_t &menu = addMenu(m_DeleteStr, &icon_delete);
 
   // refresh connection list every time
   lv_obj_add_event_cb(menu.button, [](lv_event_t *e) { refreshDelete(); }, LV_EVENT_CLICKED, NULL);
@@ -1358,7 +1495,8 @@ void UI::addDeleteMenu(void) {
 }
 
 void UI::addGPSMenu(const menu_t &parent) {
-  menu_t &menu = addMenu(m_GPSStr, NULL, true, parent);
+  menu_t &menu = addMenu(m_GPSStr, &icon_location_searching, true, parent);
+
   addSettingItem(menu.page, NULL, Settings::GPS);
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 
@@ -1456,7 +1594,7 @@ void UI::gpsDataStop(lv_event_t *e) {
 }
 
 void UI::addFeaturesMenu(const menu_t &parent) {
-  menu_t &menu = addMenu(m_FeaturesStr, NULL, true, parent);
+  menu_t &menu = addMenu(m_FeaturesStr, &icon_wand_stars, true, parent);
 
   addSettingItem(menu.page, NULL, Settings::FAUXNY);
   addSettingItem(menu.page, NULL, Settings::RECONNECT);
@@ -1612,7 +1750,7 @@ void UI::addSpinnerPage(const menu_t &parent, const char *item, Intervalometer::
 }
 
 void UI::addIntervalometerMenu(const menu_t &parent) {
-  menu_t &menu = addMenu(m_IntervalometerStr, NULL, true, parent);
+  menu_t &menu = addMenu(m_IntervalometerStr, &icon_timer, true, parent);
   menu_t &menuIntervalRun = addMenu(m_IntervalometerRunStr, NULL, false, menu);
 
   m_IntervalStart = lv_button_create(menu.page);
@@ -1688,7 +1826,7 @@ void UI::addIntervalometerMenu(const menu_t &parent) {
 }
 
 void UI::addBacklightMenu(const menu_t &parent) {
-  menu_t &menu = addMenu(m_BacklightStr, NULL, true, parent);
+  menu_t &menu = addMenu(m_BacklightStr, &icon_settings_brightness, true, parent);
   lv_obj_t *cont = lv_menu_cont_create(menu.page);
   lv_obj_set_height(cont, LV_PCT(100));
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
@@ -1775,7 +1913,7 @@ void UI::addBacklightMenu(const menu_t &parent) {
 }
 
 void UI::addThemeMenu(const menu_t &parent) {
-  menu_t &menu = addMenu(m_ThemeStr, NULL, true, parent);
+  menu_t &menu = addMenu(m_ThemeStr, &icon_palette, true, parent);
 
   static std::array<std::string, 3> themes = {"Dark", "Default", "Mono Furble"};
 
@@ -1820,7 +1958,7 @@ void UI::addThemeMenu(const menu_t &parent) {
 }
 
 void UI::addTransmitPowerMenu(const menu_t &parent) {
-  menu_t &menu = addMenu(m_TransmitPowerStr, NULL, true, parent);
+  menu_t &menu = addMenu(m_TransmitPowerStr, &icon_settings_remote, true, parent);
   lv_obj_t *cont = lv_menu_cont_create(menu.page);
   lv_obj_set_size(cont, LV_PCT(100), LV_PCT(100));
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
@@ -1865,7 +2003,7 @@ void UI::addTransmitPowerMenu(const menu_t &parent) {
 }
 
 void UI::addAboutMenu(const menu_t &parent) {
-  menu_t &menu = addMenu(m_AboutStr, NULL, true, parent);
+  menu_t &menu = addMenu(m_AboutStr, &icon_info, true, parent);
   lv_obj_t *cont = lv_menu_cont_create(menu.page);
   lv_obj_set_size(cont, LV_PCT(100), LV_PCT(100));
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
@@ -1885,7 +2023,15 @@ void UI::addAboutMenu(const menu_t &parent) {
 }
 
 void UI::addSettingsMenu(void) {
-  menu_t &menu = addMenu(m_SettingsStr, LV_SYMBOL_SETTINGS);
+  menu_t &menu = addMenu(m_SettingsStr, &icon_settings);
+
+#if defined(FURBLE_M5COREX)
+  lv_obj_set_grid_dsc_array(menu.page, m_GridLayoutColDsc.data(), m_GridLayoutRowDsc.data());
+  lv_obj_set_layout(menu.page, LV_LAYOUT_GRID);
+#else
+#endif
+  lv_obj_set_size(menu.page, LV_PCT(100), LV_PCT(100));
+  lv_obj_center(menu.page);
 
   addBacklightMenu(menu);
   addFeaturesMenu(menu);
