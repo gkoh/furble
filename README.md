@@ -16,11 +16,11 @@ furble is developed as a PlatformIO project.
 
 ## M5StickC Plus2 (Dark theme)
 
-![furble - Dark - M5StickC Plus2](https://github.com/user-attachments/assets/62a507cc-1c75-4d7a-a8de-b9e0bf78e0e1)
+![furble - Dark - M5StickC Plus2](https://github.com/user-attachments/assets/9888e348-1476-4d5e-bd47-3c03b87f062a)
 
 ## M5Core2 (Default theme)
 
-![furble - Default - M5Core2](https://github.com/user-attachments/assets/6c2d3293-201f-4330-a7c0-716c91807dca)
+![furble - Default - M5Core2](https://github.com/user-attachments/assets/0e60cff4-fc1b-4345-b0fc-5d85be0a705d)
 
 ## Supported Cameras
 
