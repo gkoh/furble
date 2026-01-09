@@ -44,6 +44,7 @@ The following devices have been tested and confirmed to work:
    - Canon EOS M6 ([@tardisx](https://github.com/tardisx))
    - Canon EOS RP ([@wolcano](https://github.com/wolcano))
    - Canon EOS R6 Mark II ([@hijae](https://github.com/hijae))
+   - Canon PowerShot G9 X Mark II ([@Mich2e](https://github.com/Mich2e))
 - Nikon
    - Nikon COOLPIX B600
    - Nikon Z6 III ([@herrfrei](https://github.com/herrfrei))
