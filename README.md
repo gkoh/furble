@@ -113,11 +113,11 @@ More details are on the wiki: [PlatformIO](https://github.com/gkoh/furble/wiki/L
 ## Usage
 
 The top level menu has the following entries:
-- `Connect` (if there are saved connections)
+- `Connect`
 - `Scan`
-- `Delete Saved` (if there are saved connections)
+- `Delete`
 - `Settings`
-- `Power Off`
+- `Off`
 
 On first use, put the target camera into pairing mode, then hit `Scan`. If the
 camera advertises a known, matching signature, it should appear in the list.
@@ -130,6 +130,8 @@ Upon subsequent use it should be enough to hit `Connect`, selecting the
 previously paired device and leading to the remote menu.
 
 From the remote menu you may choose to disconnect, control the shutter or activate the intervalometer.
+
+More details are on the wiki: [Usage Guide](https://github.com/gkoh/furble/wiki/Usage-Guide))
 
 ### Navigation
 
