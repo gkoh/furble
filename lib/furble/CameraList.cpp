@@ -6,7 +6,6 @@
 #include "FauxNY.h"
 #include "FujifilmBasic.h"
 #include "FujifilmSecure.h"
-#include "MobileDevice.h"
 #include "Nikon.h"
 #include "Sony.h"
 
@@ -163,8 +162,7 @@ void CameraList::load(void) {
             std::make_unique<Furble::CanonEOSRemote>(static_cast<const void *>(dbuffer), dbytes));
         break;
       case Camera::Type::MOBILE_DEVICE:
-        m_ConnectList.push_back(
-            std::make_unique<Furble::MobileDevice>(static_cast<const void *>(dbuffer), dbytes));
+        ESP_LOGW(FURBLE_STR, "MobileDevice support has been removed.");
         break;
       case Camera::Type::FAUXNY:
         m_ConnectList.push_back(
@@ -233,10 +231,6 @@ bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
   }
 
   return false;
-}
-
-void CameraList::add(const NimBLEAddress &address, const std::string &name) {
-  m_ConnectList.push_back(std::make_unique<Furble::MobileDevice>(address, name));
 }
 
 void CameraList::addFauxNY(void) {

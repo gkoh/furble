@@ -2057,10 +2057,6 @@ void UI::updateItems(const menu_t &menu) {
   auto *camera = CameraList::last();
 
   addCameraItem(camera, menu, MODE_SCAN);
-  if (camera->getType() == Camera::Type::MOBILE_DEVICE) {
-    // if we get here, mobile devices are already bonded
-    CameraList::save(camera);
-  }
 }
 
 void UI::setInactivityTimeout(uint8_t timeout) {
