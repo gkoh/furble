@@ -74,11 +74,15 @@ interval_t Settings::load<interval_t>(type_t type) {
 
   m_Prefs.begin(setting.nvs_namespace, true);
   size_t len = m_Prefs.get(setting.key, &interval, sizeof(interval_t));
-  if (len != sizeof(interval_t)) {
+  if (len == sizeof(interval_v1_t)) {
+    // migrate v1 interval settings
+    interval.wait = INTERVAL_DEFAULT_WAIT;
+  } else if (len != sizeof(interval_t)) {
     // default values
     interval.count = INTERVAL_DEFAULT_COUNT;
-    interval.shutter = INTERVAL_DEFAULT_SHUTTER;
     interval.delay = INTERVAL_DEFAULT_DELAY;
+    interval.shutter = INTERVAL_DEFAULT_SHUTTER;
+    interval.wait = INTERVAL_DEFAULT_WAIT;
   }
 
   m_Prefs.end();

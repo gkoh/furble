@@ -8,11 +8,12 @@ UI::Intervalometer::Intervalometer(const interval_t &interval)
     : m_State {STATE_IDLE},
       m_Count(this, interval.count, true),
       m_Delay(this, interval.delay),
-      m_Shutter(this, interval.shutter) {}
+      m_Shutter(this, interval.shutter),
+      m_Wait(this, interval.wait) {}
 
 void UI::Intervalometer::save(void) {
   interval_t interval = {m_Count.m_SpinValue.toNVS(), m_Delay.m_SpinValue.toNVS(),
-                         m_Shutter.m_SpinValue.toNVS()};
+                         m_Shutter.m_SpinValue.toNVS(), m_Wait.m_SpinValue.toNVS()};
   Settings::save<interval_t>(Settings::INTERVAL, interval);
 }
 

@@ -108,8 +108,9 @@ class UI {
 
     typedef enum {
       STATE_IDLE,
-      STATE_SHUTTER_OPEN,
       STATE_WAIT,
+      STATE_SHUTTER_OPEN,
+      STATE_DELAY,
       STATE_FINISHED,
     } state_t;
 
@@ -121,6 +122,7 @@ class UI {
     Spinner m_Count;
     Spinner m_Delay;
     Spinner m_Shutter;
+    Spinner m_Wait;
   };
 
   typedef enum { MODE_SCAN, MODE_DELETE, MODE_CONNECT, MODE_MULTICONNECT } CameraListMode_t;
@@ -183,6 +185,7 @@ class UI {
   static constexpr const char *m_IntervalCountStr = "Count";
   static constexpr const char *m_IntervalDelayStr = "Delay";
   static constexpr const char *m_IntervalShutterStr = "Shutter";
+  static constexpr const char *m_IntervalWaitStr = "Wait";
 
   static constexpr uint8_t BYTES_PER_PIXEL = (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_RGB565));
   static constexpr int32_t MAX_WIDTH = 320;
