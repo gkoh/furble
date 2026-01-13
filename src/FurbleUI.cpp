@@ -76,6 +76,7 @@ std::unordered_map<const char *, UI::menu_t> UI::m_Menu = {
     {m_IntervalCountStr,     {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
     {m_IntervalDelayStr,     {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
     {m_IntervalShutterStr,   {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
+    {m_IntervalWaitStr,      {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
     {m_BacklightStr,         {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
     {m_ThemeStr,             {nullptr, nullptr, nullptr, nullptr, {0, 1}}},
     {m_TransmitPowerStr,     {nullptr, nullptr, nullptr, nullptr, {1, 1}}},
@@ -1175,6 +1176,12 @@ void UI::intervalometer(lv_timer_t *timer) {
       count = 0;
       lv_label_set_text(m_IntervalStateLabel, "IDLE");
       lv_timer_ready(timer);
+      interval->m_State = Intervalometer::STATE_WAIT;
+      break;
+
+    case Intervalometer::STATE_WAIT:
+      lv_label_set_text(m_IntervalStateLabel, "WAIT");
+      next = interval->m_Wait.m_SpinValue.toMilliseconds();
       interval->m_State = Intervalometer::STATE_SHUTTER_OPEN;
       break;
 
@@ -1183,10 +1190,10 @@ void UI::intervalometer(lv_timer_t *timer) {
       lv_label_set_text(m_IntervalStateLabel, "SHUTTER");
       control.sendCommand(Control::CMD_SHUTTER_PRESS);
       next = interval->m_Shutter.m_SpinValue.toMilliseconds();
-      interval->m_State = Intervalometer::STATE_WAIT;
+      interval->m_State = Intervalometer::STATE_DELAY;
       break;
 
-    case Intervalometer::STATE_WAIT:
+    case Intervalometer::STATE_DELAY:
       lv_label_set_text(m_IntervalStateLabel, "DELAY");
       control.sendCommand(Control::CMD_SHUTTER_RELEASE);
       next = interval->m_Delay.m_SpinValue.toMilliseconds();
@@ -1761,7 +1768,9 @@ void UI::addIntervalometerMenu(const menu_t &parent) {
   addSpinnerPage(menu, m_IntervalCountStr, m_Intervalometer.m_Count);
   addSpinnerPage(menu, m_IntervalDelayStr, m_Intervalometer.m_Delay);
   addSpinnerPage(menu, m_IntervalShutterStr, m_Intervalometer.m_Shutter);
+  addSpinnerPage(menu, m_IntervalWaitStr, m_Intervalometer.m_Wait);
 
+  // Reflect count infinite or not
   m_Intervalometer.m_Count.update();
 
   lv_obj_add_flag(m_IntervalStart, LV_OBJ_FLAG_HIDDEN);
@@ -1817,7 +1826,7 @@ void UI::addIntervalometerMenu(const menu_t &parent) {
         lv_label_set_text_fmt(m_IntervalRemainingLabel, "%02lu:%02lu:%02lu", hms.hours, hms.minutes,
                               hms.seconds);
       },
-      500, NULL);
+      333, NULL);
   lv_timer_pause(m_IntervalPageRefresh);
 
   lv_menu_set_load_page_event(menuIntervalRun.main, m_IntervalStart, menuIntervalRun.page);
