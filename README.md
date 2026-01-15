@@ -57,16 +57,17 @@ The following devices have been tested and confirmed to work:
 
 ## Table of Features
 
-| Camera             | Scanning & Pairing | Shutter Release | Focus | GPS   |
-| :---:              | :---:              | :---:           | :---: | :---: |
-| Fujifilm X & GFX   | ✔️                  | ✔️               | ✔️[^1] | ✔️     |
-| Canon EOS (Remote) | ✔️                  | ✔️               | ✔️     | :x:   |
-| Canon EOS (Smart)  | ✔️                  | ✔️               | :x:   | ✔️     |
-| Nikon (Remote)     | ✔️                  | ✔️               | :x:   | :x:   |
-| Nikon (Smart)      | :x:                | :x:             | :x:   | :x:   |
-| Sony ZV            | ✔️                  | ✔️               | ✔️     | ✔️     |
+| Camera             | Scanning | Pairing | Shutter Release | Focus   | GPS     |
+| :---:              | :---:    | :---:   | :---:           | :---:   | :---:   |
+| Fujifilm X & GFX   | ✔️        | ✔️       | ✔️               | ✔️[^1]   | ✔️       |
+| Canon EOS (Remote) | ✔️        | ✔️       | ✔️               | ✔️       | :x:[^2] |
+| Canon EOS (Smart)  | ✔️        | ✔️       | ✔️               | :x:[^2] | ✔️       |
+| Nikon (Remote)     | ✔️        | ✔️       | ✔️               | :x:[^2] | :x:[^2] |
+| Nikon (Smart)      | ✔️        | :x:     | :x:             | :x:     | :x:     |
+| Sony ZV            | ✔️        | ✔️       | ✔️               | ✔️       | ✔️       |
 
 [^1]: see [#99](https://github.com/gkoh/furble/discussions/99)
+[^2]: Non-existent
 
 ## Supported Controllers
 
