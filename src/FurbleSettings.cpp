@@ -181,6 +181,7 @@ void Settings::init(void) {
               INTERVAL_DEFAULT_COUNT,
               INTERVAL_DEFAULT_DELAY,
               INTERVAL_DEFAULT_SHUTTER,
+              INTERVAL_DEFAULT_WAIT,
           };
           save<interval_t>(setting.type, interval);
         } break;
