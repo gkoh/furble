@@ -40,11 +40,6 @@ class CameraList {
   static bool match(const NimBLEAdvertisedDevice *pDevice);
 
   /**
-   * Add mobile device to the list.
-   */
-  static void add(const NimBLEAddress &address, const std::string &name);
-
-  /**
    * Add FauxNY device to the list.
    */
   static void addFauxNY(void);

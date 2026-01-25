@@ -7,7 +7,6 @@
 
 #include "CameraList.h"
 #include "FurbleTypes.h"
-#include "HIDServer.h"
 
 #ifndef FURBLE_VERSION
 #define FURBLE_VERSION "unknown"
@@ -19,7 +18,7 @@ namespace Furble {
  *
  * Works in conjunction with Furble::Device class.
  */
-class Scan: public HIDServerCallbacks, public NimBLEScanCallbacks {
+class Scan: public NimBLEScanCallbacks {
  public:
   static Scan &getInstance(void);
 
@@ -56,15 +55,12 @@ class Scan: public HIDServerCallbacks, public NimBLEScanCallbacks {
 
   void onResult(const NimBLEAdvertisedDevice *pDevice) override;
 
-  void onComplete(const NimBLEAddress &address, const std::string &name) override;
-
  private:
   Scan() {};
 
   NimBLEScan *m_Scan = nullptr;
   std::function<void(void *)> m_ScanResultCallback;
   void *m_ScanResultPrivateData = nullptr;
-  HIDServer *m_HIDServer = nullptr;
 };
 
 }  // namespace Furble
