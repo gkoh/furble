@@ -18,7 +18,7 @@
 #include "FurbleUI.h"
 #include "interval.h"
 
-#if defined(FURBLE_M5STICKC) || defined(FURBLE_M5STICKC_PLUS)
+#if defined(FURBLE_M5STICKC) || defined(FURBLE_M5STICKC_PLUS) || defined(FURBLE_M5STICKS3)
 // Use 24x24 icons for StickC screens
 #define icon_add_a_photo icon_add_a_photo_24
 #define icon_delete icon_delete_24
@@ -659,7 +659,7 @@ lv_obj_t *UI::addMenuItem(const menu_t &menu,
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
 #else
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW);
-#if defined(FURBLE_M5STICKC_PLUS)
+#if defined(FURBLE_M5STICKC_PLUS) || defined(FURBLE_M5STICKS3)
   lv_obj_set_style_pad_top(cont, 6, LV_STATE_DEFAULT);
   lv_obj_set_style_pad_bottom(cont, 6, LV_STATE_DEFAULT);
 #endif
@@ -844,7 +844,7 @@ void UI::addMainMenu(void) {
   }
 
   lv_menu_set_mode_root_back_button(m_MainMenu.main, LV_MENU_ROOT_BACK_BUTTON_DISABLED);
-#if defined(FURBLE_M5COREX) || defined(FURBLE_M5STICKC_PLUS)
+#if defined(FURBLE_M5COREX) || defined(FURBLE_M5STICKC_PLUS) || defined(FURBLE_M5STICKS3)
   // StickC display too narrow for icons
   lv_obj_t *back = lv_menu_get_main_header_back_button(m_MainMenu.main);
   lv_obj_t *back_img = lv_obj_get_child(back, 0);

@@ -39,9 +39,6 @@ void Device::init(esp_power_level_t power) {
 
   m_ID = std::string(m_StringID);
 
-  // Combine address and data for scan duplicate detection
-  NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DATA_DEVICE);
-
   NimBLEDevice::init(m_ID);
   NimBLEDevice::setPower(power);
 
