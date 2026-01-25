@@ -27,7 +27,11 @@ GPS &GPS::getInstance() {
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .rx_flow_ctrl_thresh = 0,
+#if defined(FURBLE_M5STICKS3)
+        .source_clk = UART_SCLK_APB,
+#else
         .source_clk = UART_SCLK_REF_TICK,
+#endif
         .flags = {},
     };
     uart_driver_install(instance.m_UART, BUFFER_SIZE, 0, QUEUE_SIZE, &instance.m_Queue,
