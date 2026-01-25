@@ -77,7 +77,7 @@ std::unordered_map<const char *, UI::menu_t> UI::m_Menu = {
     {m_IntervalDelayStr,     {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
     {m_IntervalShutterStr,   {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
     {m_IntervalWaitStr,      {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
-    {m_BacklightStr,         {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
+    {m_DisplayStr,           {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
     {m_ThemeStr,             {nullptr, nullptr, nullptr, nullptr, {0, 1}}},
     {m_TransmitPowerStr,     {nullptr, nullptr, nullptr, nullptr, {1, 1}}},
     {m_AboutStr,             {nullptr, nullptr, nullptr, nullptr, {2, 1}}},
@@ -1834,8 +1834,8 @@ void UI::addIntervalometerMenu(const menu_t &parent) {
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
 
-void UI::addBacklightMenu(const menu_t &parent) {
-  menu_t &menu = addMenu(m_BacklightStr, &icon_settings_brightness, true, parent);
+void UI::addDisplayMenu(const menu_t &parent) {
+  menu_t &menu = addMenu(m_DisplayStr, &icon_settings_brightness, true, parent);
   lv_obj_t *cont = lv_menu_cont_create(menu.page);
   lv_obj_set_height(cont, LV_PCT(100));
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
@@ -2042,7 +2042,7 @@ void UI::addSettingsMenu(void) {
   lv_obj_set_size(menu.page, LV_PCT(100), LV_PCT(100));
   lv_obj_center(menu.page);
 
-  addBacklightMenu(menu);
+  addDisplayMenu(menu);
   addFeaturesMenu(menu);
   addGPSMenu(menu);
   addIntervalometerMenu(menu);

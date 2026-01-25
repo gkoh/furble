@@ -170,7 +170,7 @@ class UI {
   static constexpr const char *m_IntervalometerRunStr = "Intervalometer ";
 
   // settings
-  static constexpr const char *m_BacklightStr = "Backlight";
+  static constexpr const char *m_DisplayStr = "Display";
   static constexpr const char *m_FeaturesStr = "Features";
   static constexpr const char *m_GPSStr = "GPS";
   static constexpr const char *m_IntervalometerStr = "Timer";
@@ -331,7 +331,7 @@ class UI {
   /** Add the spinner page menu entry. */
   void addSpinnerPage(const menu_t &parent, const char *item, Intervalometer::Spinner &spinner);
 
-  void addBacklightMenu(const menu_t &parent);
+  void addDisplayMenu(const menu_t &parent);
 
   void addThemeMenu(const menu_t &parent);
 
