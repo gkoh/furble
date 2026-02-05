@@ -19,6 +19,10 @@ GPS &GPS::getInstance() {
   static GPS instance;
 
   if (instance.m_Task == NULL) {
+    //  RX=33, TX=32 for Module GPS v2.1, currently unsupported
+    const int8_t tx = M5.getPin(m5::port_a_pin2);
+    const int8_t rx = M5.getPin(m5::port_a_pin1);
+
     const int baud = Settings::load<uint32_t>(Settings::GPS_BAUD);
     const uart_config_t uart_config = {
         .baud_rate = (int)baud,
@@ -28,7 +32,7 @@ GPS &GPS::getInstance() {
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .rx_flow_ctrl_thresh = 0,
 #if defined(FURBLE_M5STICKS3)
-        .source_clk = UART_SCLK_APB,
+        .source_clk = UART_SCLK_DEFAULT,
 #else
         .source_clk = UART_SCLK_REF_TICK,
 #endif
@@ -37,7 +41,7 @@ GPS &GPS::getInstance() {
     uart_driver_install(instance.m_UART, BUFFER_SIZE, 0, QUEUE_SIZE, &instance.m_Queue,
                         ESP_INTR_FLAG_IRAM);
     uart_param_config(instance.m_UART, &uart_config);
-    uart_set_pin(instance.m_UART, TX, RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    uart_set_pin(instance.m_UART, tx, rx, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     uart_enable_pattern_det_baud_intr(instance.m_UART, '\n', 1, 9, 0, 0);
     uart_pattern_queue_reset(instance.m_UART, QUEUE_SIZE);
     uart_flush(instance.m_UART);
