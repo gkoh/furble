@@ -33,6 +33,7 @@ void app_main() {
   ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
 
   auto cfg = M5.config();
+  cfg.clear_display = true;
   cfg.internal_imu = false;
   cfg.internal_spk = false;
   cfg.internal_mic = false;

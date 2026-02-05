@@ -102,9 +102,10 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
 
   // set minimum, ensure this is a multiple of m_BrightnessSteps so the slider steps work
   switch (M5.getBoard()) {
-    case m5::board_t::board_M5StickCPlus2:
-    case m5::board_t::board_M5StackCore2:
     case m5::board_t::board_M5Stack:
+    case m5::board_t::board_M5StackCore2:
+    case m5::board_t::board_M5StickCPlus2:
+    case m5::board_t::board_M5StickS3:
     case m5::board_t::board_M5Tough:
       m_MinimumBrightness = 32;
       break;
@@ -246,8 +247,9 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
 
     switch (M5.getBoard()) {
       case m5::board_t::board_M5StickC:
-      case m5::board_t::board_M5StickCPlus:
       case m5::board_t::board_M5StickCPlus2:
+      case m5::board_t::board_M5StickCPlus:
+      case m5::board_t::board_M5StickS3:
         lv_obj_set_style_pad_left(m_Content, 0, LV_STATE_DEFAULT);
         lv_obj_set_style_pad_right(m_Content, 0, LV_STATE_DEFAULT);
 
@@ -412,6 +414,7 @@ void UI::initInputDevices(void) {
       break;
 
     case m5::board_t::board_M5StickCPlus2:
+    case m5::board_t::board_M5StickS3:
       lv_indev_set_read_cb(m_ButtonL, buttonPWRRead);
       lv_indev_set_read_cb(m_ButtonO, buttonARead);
       lv_indev_set_read_cb(m_ButtonR, buttonBRead);
@@ -1679,8 +1682,9 @@ void UI::addSpinnerPage(const menu_t &parent, const char *item, Intervalometer::
 
   switch (M5.getBoard()) {
     case m5::board_t::board_M5StickC:
-    case m5::board_t::board_M5StickCPlus:
     case m5::board_t::board_M5StickCPlus2:
+    case m5::board_t::board_M5StickCPlus:
+    case m5::board_t::board_M5StickS3:
       lv_obj_set_flex_align(spinner.m_RowSpinners, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
                             LV_FLEX_ALIGN_CENTER);
       break;
@@ -1734,8 +1738,9 @@ void UI::addSpinnerPage(const menu_t &parent, const char *item, Intervalometer::
       lv_obj_set_scrollbar_mode(spinner.m_RowSpinners, LV_SCROLLBAR_MODE_OFF);
       lv_obj_set_scroll_dir(spinner.m_RowSpinners, LV_DIR_HOR);
       __attribute__((fallthrough));
-    case m5::board_t::board_M5StickCPlus:
     case m5::board_t::board_M5StickCPlus2:
+    case m5::board_t::board_M5StickCPlus:
+    case m5::board_t::board_M5StickS3:
       for (auto &r : spinner.m_Roller) {
         lv_obj_set_style_pad_left(r, 2, LV_STATE_DEFAULT);
         lv_obj_set_style_pad_right(r, 2, LV_STATE_DEFAULT);

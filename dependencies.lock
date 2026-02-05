@@ -7,12 +7,12 @@ dependencies:
       type: git
     version: 53a7184601f3667b030ba141c58b87ce2acfaa2a
   M5Unified:
-    component_hash: e3caef7699b9e68db968883cefff7308fe7ea6abc81bfaa13120855bdab90003
+    component_hash: 23da9450f64ed46f537a82ec302a1cfde0208f7c61be51754f405fcecc2b2657
     source:
       git: https://github.com/m5stack/M5Unified.git
       path: .
       type: git
-    version: 28c6a1f03d05f3ff3216adc89b09c9328448ad53
+    version: a6256725481f1bc366655fa48cf03b6095e30ad1
   h2zero/esp-nimble-cpp:
     component_hash: ecdcabe83333948495103f9d62e4ecb651bff866fce123d00bfc106baa383e54
     source:
@@ -30,6 +30,6 @@ dependencies:
       service_url: https://api.components.espressif.com/
       type: service
     version: 9.4.0
-manifest_hash: 5d1df899a183c62cee32d54f6fe9756ceabf32ddcc7fc7884db01c13659740a7
-target: esp32
+manifest_hash: 3779f9d923e1614be2a57e248b9a330299cca4bde7c444a38ce3594ff2d5baac
+target: esp32s3
 version: 1.0.0

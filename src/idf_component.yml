@@ -8,4 +8,4 @@ dependencies:
     version: "0.2.19"
   M5Unified:
     git: https://github.com/m5stack/M5Unified.git
-    version: "0.2.12"
+    version: "0.2.13"
