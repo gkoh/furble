@@ -1,4 +1,5 @@
 .pio
 .vscode
+dependencies.lock
 managed_components
 sdkconfig.*.old
