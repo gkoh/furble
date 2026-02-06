@@ -3,9 +3,3 @@ dependencies:
     version: "2.3.4"
   lvgl/lvgl:
     version: "9.4.0"
-  M5GFX:
-    git: https://github.com/m5stack/M5GFX.git
-    version: "0.2.19"
-  M5Unified:
-    git: https://github.com/m5stack/M5Unified.git
-    version: "0.2.13"

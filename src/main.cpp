@@ -37,6 +37,7 @@ void app_main() {
   cfg.internal_imu = false;
   cfg.internal_spk = false;
   cfg.internal_mic = false;
+  cfg.pmic_button = true;
   M5.begin(cfg);
 
   Furble::Settings::init();
