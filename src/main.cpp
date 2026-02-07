@@ -8,6 +8,7 @@
 #include "FurbleControl.h"
 #include "FurbleSettings.h"
 #include "FurbleUI.h"
+#include "powermgmt.h"
 
 extern "C" {
 
@@ -25,17 +26,14 @@ void app_main() {
 
   ESP_LOGI(LOG_TAG, "furble version: '%s'", FURBLE_VERSION);
 
-  esp_pm_config_t pm_config = {
-      .max_freq_mhz = 160,
-      .min_freq_mhz = 40,
-      .light_sleep_enable = true,
-  };
-  ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
+  powermgmt_sleep(true);
 
   auto cfg = M5.config();
+  cfg.clear_display = true;
   cfg.internal_imu = false;
   cfg.internal_spk = false;
   cfg.internal_mic = false;
+  cfg.pmic_button = true;
   M5.begin(cfg);
 
   Furble::Settings::init();

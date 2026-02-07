@@ -34,15 +34,6 @@ class GPS {
 
   static constexpr const size_t BUFFER_SIZE = 256;
   static constexpr const int QUEUE_SIZE = 32;
-
-#if FURBLE_GROVE_CORE
-  static constexpr const int8_t RX = 22;
-  static constexpr const int8_t TX = 21;
-#else
-  static constexpr const int8_t RX = 33;
-  static constexpr const int8_t TX = 32;
-  //  RX=33, TX=32 for Module GPS v2.1, currently unsupported
-#endif
   static constexpr const uint16_t SERVICE_MS = 1000;
   static constexpr const uint32_t MAX_AGE_MS = 30 * 1000;
 

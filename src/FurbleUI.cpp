@@ -18,7 +18,7 @@
 #include "FurbleUI.h"
 #include "interval.h"
 
-#if defined(FURBLE_M5STICKC) || defined(FURBLE_M5STICKC_PLUS)
+#if defined(FURBLE_M5STICKC) || defined(FURBLE_M5STICKC_PLUS) || defined(FURBLE_M5STICKS3)
 // Use 24x24 icons for StickC screens
 #define icon_add_a_photo icon_add_a_photo_24
 #define icon_delete icon_delete_24
@@ -77,7 +77,7 @@ std::unordered_map<const char *, UI::menu_t> UI::m_Menu = {
     {m_IntervalDelayStr,     {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
     {m_IntervalShutterStr,   {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
     {m_IntervalWaitStr,      {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
-    {m_BacklightStr,         {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
+    {m_DisplayStr,           {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
     {m_ThemeStr,             {nullptr, nullptr, nullptr, nullptr, {0, 1}}},
     {m_TransmitPowerStr,     {nullptr, nullptr, nullptr, nullptr, {1, 1}}},
     {m_AboutStr,             {nullptr, nullptr, nullptr, nullptr, {2, 1}}},
@@ -102,9 +102,10 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
 
   // set minimum, ensure this is a multiple of m_BrightnessSteps so the slider steps work
   switch (M5.getBoard()) {
-    case m5::board_t::board_M5StickCPlus2:
-    case m5::board_t::board_M5StackCore2:
     case m5::board_t::board_M5Stack:
+    case m5::board_t::board_M5StackCore2:
+    case m5::board_t::board_M5StickCPlus2:
+    case m5::board_t::board_M5StickS3:
     case m5::board_t::board_M5Tough:
       m_MinimumBrightness = 32;
       break;
@@ -246,8 +247,9 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
 
     switch (M5.getBoard()) {
       case m5::board_t::board_M5StickC:
-      case m5::board_t::board_M5StickCPlus:
       case m5::board_t::board_M5StickCPlus2:
+      case m5::board_t::board_M5StickCPlus:
+      case m5::board_t::board_M5StickS3:
         lv_obj_set_style_pad_left(m_Content, 0, LV_STATE_DEFAULT);
         lv_obj_set_style_pad_right(m_Content, 0, LV_STATE_DEFAULT);
 
@@ -412,6 +414,7 @@ void UI::initInputDevices(void) {
       break;
 
     case m5::board_t::board_M5StickCPlus2:
+    case m5::board_t::board_M5StickS3:
       lv_indev_set_read_cb(m_ButtonL, buttonPWRRead);
       lv_indev_set_read_cb(m_ButtonO, buttonARead);
       lv_indev_set_read_cb(m_ButtonR, buttonBRead);
@@ -659,7 +662,7 @@ lv_obj_t *UI::addMenuItem(const menu_t &menu,
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
 #else
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW);
-#if defined(FURBLE_M5STICKC_PLUS)
+#if defined(FURBLE_M5STICKC_PLUS) || defined(FURBLE_M5STICKS3)
   lv_obj_set_style_pad_top(cont, 6, LV_STATE_DEFAULT);
   lv_obj_set_style_pad_bottom(cont, 6, LV_STATE_DEFAULT);
 #endif
@@ -844,7 +847,7 @@ void UI::addMainMenu(void) {
   }
 
   lv_menu_set_mode_root_back_button(m_MainMenu.main, LV_MENU_ROOT_BACK_BUTTON_DISABLED);
-#if defined(FURBLE_M5COREX) || defined(FURBLE_M5STICKC_PLUS)
+#if defined(FURBLE_M5COREX) || defined(FURBLE_M5STICKC_PLUS) || defined(FURBLE_M5STICKS3)
   // StickC display too narrow for icons
   lv_obj_t *back = lv_menu_get_main_header_back_button(m_MainMenu.main);
   lv_obj_t *back_img = lv_obj_get_child(back, 0);
@@ -1679,8 +1682,9 @@ void UI::addSpinnerPage(const menu_t &parent, const char *item, Intervalometer::
 
   switch (M5.getBoard()) {
     case m5::board_t::board_M5StickC:
-    case m5::board_t::board_M5StickCPlus:
     case m5::board_t::board_M5StickCPlus2:
+    case m5::board_t::board_M5StickCPlus:
+    case m5::board_t::board_M5StickS3:
       lv_obj_set_flex_align(spinner.m_RowSpinners, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
                             LV_FLEX_ALIGN_CENTER);
       break;
@@ -1734,8 +1738,9 @@ void UI::addSpinnerPage(const menu_t &parent, const char *item, Intervalometer::
       lv_obj_set_scrollbar_mode(spinner.m_RowSpinners, LV_SCROLLBAR_MODE_OFF);
       lv_obj_set_scroll_dir(spinner.m_RowSpinners, LV_DIR_HOR);
       __attribute__((fallthrough));
-    case m5::board_t::board_M5StickCPlus:
     case m5::board_t::board_M5StickCPlus2:
+    case m5::board_t::board_M5StickCPlus:
+    case m5::board_t::board_M5StickS3:
       for (auto &r : spinner.m_Roller) {
         lv_obj_set_style_pad_left(r, 2, LV_STATE_DEFAULT);
         lv_obj_set_style_pad_right(r, 2, LV_STATE_DEFAULT);
@@ -1834,8 +1839,8 @@ void UI::addIntervalometerMenu(const menu_t &parent) {
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
 
-void UI::addBacklightMenu(const menu_t &parent) {
-  menu_t &menu = addMenu(m_BacklightStr, &icon_settings_brightness, true, parent);
+void UI::addDisplayMenu(const menu_t &parent) {
+  menu_t &menu = addMenu(m_DisplayStr, &icon_settings_brightness, true, parent);
   lv_obj_t *cont = lv_menu_cont_create(menu.page);
   lv_obj_set_height(cont, LV_PCT(100));
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
@@ -2042,7 +2047,7 @@ void UI::addSettingsMenu(void) {
   lv_obj_set_size(menu.page, LV_PCT(100), LV_PCT(100));
   lv_obj_center(menu.page);
 
-  addBacklightMenu(menu);
+  addDisplayMenu(menu);
   addFeaturesMenu(menu);
   addGPSMenu(menu);
   addIntervalometerMenu(menu);
