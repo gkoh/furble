@@ -7,6 +7,7 @@
 #include "FurbleControl.h"
 #include "FurbleGPS.h"
 #include "FurbleSettings.h"
+#include "powermgmt.h"
 
 void gps_task(void *param) {
   Furble::GPS *gps = static_cast<Furble::GPS *>(param);
@@ -115,11 +116,20 @@ void GPS::enable(void) {
 
   // power on
   M5.Power.setExtOutput(true, m5::ext_PA);
+
+#if defined(FURBLE_M5STICKS3)
+  // ESP32S3 UART does not function with light sleep
+  powermgmt_sleep(false);
+#endif
 }
 
 void GPS::disable(void) {
   // power off
   M5.Power.setExtOutput(false, m5::ext_PA);
+
+#if defined(FURBLE_M5STICKS3)
+  powermgmt_sleep(true);
+#endif
 }
 
 /** Refresh the setting from NVS. */
