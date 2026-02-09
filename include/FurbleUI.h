@@ -7,6 +7,7 @@
 
 #include <lvgl.h>
 
+#include "FurbleCalibrate.h"
 #include "FurbleControl.h"
 #include "FurbleGPS.h"
 #include "FurbleSettings.h"
@@ -204,12 +205,15 @@ class UI {
   static LV_ATTRIBUTE_MEM_ALIGN void *m_Buffer2;
 
   static lv_timer_t *m_ConnectTimer;
-  static lv_timer_t *m_IntervalTimer;
   static lv_obj_t *m_IntervalStateLabel;
   static lv_obj_t *m_IntervalCountLabel;
   static lv_obj_t *m_IntervalRemainingLabel;
   static lv_timer_t *m_IntervalPageRefresh;
   static uint32_t m_IntervalNext;
+
+  lv_timer_t *m_IntervalTimer;
+  lv_timer_t *m_InactivityTimer;
+  lv_timer_t *m_IconTimer;
 
   const std::vector<int32_t> m_GridLayoutColDsc = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1),
                                                    LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
@@ -254,6 +258,8 @@ class UI {
   static std::unordered_map<const char *, menu_t> m_Menu;
 
   lv_obj_t *m_PowerOff = nullptr;
+
+  CalibrationUI m_CalibrationUI;
 
   static uint8_t m_PMICClickCount;
   bool m_PMICHack = false;
