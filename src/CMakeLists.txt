@@ -27,6 +27,7 @@
 #    icons/icon_wand_stars.c)
 
 set(furble_sources
+    FurbleCalibrate.cpp
     FurbleControl.cpp
     FurbleGPS.cpp
     FurbleSettings.cpp
