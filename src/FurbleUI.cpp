@@ -1918,6 +1918,19 @@ void UI::addBacklightMenu(const menu_t &parent) {
       },
       LV_EVENT_VALUE_CHANGED, this);
 
+  lv_obj_t *calibrate_button = lv_button_create(cont);
+  lv_obj_t *calibrate_label = lv_label_create(calibrate_button);
+  lv_label_set_text(calibrate_label, "Calibrate");
+
+  lv_obj_add_event_cb(
+      calibrate_button,
+      [](lv_event_t *e) {
+        uint16_t calibration_data[8] = {};
+        M5.Display.calibrateTouch(calibration_data, BLACK, YELLOW, 20);
+        M5.Display.setTouchCalibrate(calibration_data);
+      },
+      LV_EVENT_CLICKED, NULL);
+
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
 

@@ -1,10 +1,10 @@
 dependencies:
   h2zero/esp-nimble-cpp:
-    component_hash: b018d62032c3ba6386ea2aa6d4a1638408a9210b1d0529b1eb194a52f3a3fc2c
+    component_hash: null
     source:
-      service_url: https://api.components.espressif.com/
-      type: service
-    version: 2.3.2
+      path: /home/gkoh/projects/personal/gkoh/furble/components/h2zero__esp-nimble-cpp
+      type: local
+    version: 2.3.4
   idf:
     component_hash: null
     source:
@@ -28,6 +28,6 @@ dependencies:
       service_url: https://api.components.espressif.com/
       type: service
     version: 0.2.11
-manifest_hash: b0dd9a4b368904151ac5df29e50b2459b704f530aa9f8a205610cafa565bea09
+manifest_hash: 7f5554e545613be63dcc5ddd86cda60940c6435607d9075946e808f37e0de0ee
 target: esp32
 version: 1.0.0
