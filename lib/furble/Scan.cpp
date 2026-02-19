@@ -13,6 +13,12 @@ Scan &Scan::getInstance(void) {
   static Scan instance;
 
   if (instance.m_Scan == nullptr) {
+    instance.m_Server = NimBLEDevice::createServer();
+    instance.m_Advertising = instance.m_Server->getAdvertising();
+    instance.m_Advertising->setName(FURBLE_STR);
+    instance.m_Advertising->setAppearance(HID_GENERIC_REMOTE);
+    instance.m_Advertising->enableScanResponse(true);
+
     instance.m_Scan = NimBLEDevice::getScan();
     instance.m_Scan->setActiveScan(true);
     instance.m_Scan->setInterval(6553);
@@ -35,6 +41,7 @@ void Scan::onResult(const NimBLEAdvertisedDevice *pDevice) {
 };
 
 void Scan::start(std::function<void(void *)> scanCallback, void *scanPrivateData) {
+  m_Advertising->start(0, nullptr);
   m_Scan->setScanCallbacks(this);
 
   m_ScanResultCallback = scanCallback;
@@ -48,6 +55,7 @@ void Scan::start(NimBLEScanCallbacks *pScanCallbacks, uint32_t duration) {
 }
 
 void Scan::stop(void) {
+  m_Advertising->stop();
   m_Scan->stop();
   m_ScanResultPrivateData = nullptr;
   m_ScanResultCallback = nullptr;
