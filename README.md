@@ -27,11 +27,13 @@ furble is developed on ESP32 devices as a PlatformIO project.
 The following devices have been tested and confirmed to work:
 - Fujifilm
    - Fujifilm GFX100 II ([@matthudsonau](https://github.com/matthudsonau))
+   - Fujifilm GFX100RF ([@GFXUser101](https://github.com/GFXUser101))
    - Fujifilm GFX100S ([@adrianuseless](https://github.com/adrianuseless))
+   - Fujifilm GFX100S II ([@GFXUser101](https://github.com/GFXUser101))
    - Fujifilm GFX50S II ([@TomaszLojewski](https://github.com/TomaszLojewski))
    - Fujifilm X-E4 ([@Rediwed](https://github.com/Rediwed))
    - Fujifilm X-E5 ([@daniel-ch73](https://github.com/daniel-ch73))
-   - Fujifiml X-H1
+   - Fujifilm X-H1
    - Fujifilm X-H2S ([@val123456](https://github.com/val123456))
    - Fujifilm X-S10 ([@dimitrij2k](https://github.com/dimitrij2k))
    - Fujifilm X-S20 ([@kelvincabaldo07](https://github.com/kelvincabaldo07))
@@ -43,17 +45,14 @@ The following devices have been tested and confirmed to work:
    - Fujifilm X100V
 - Canon
    - Canon EOS M6 ([@tardisx](https://github.com/tardisx))
-   - Canon EOS RP ([@wolcano](https://github.com/wolcano))
    - Canon EOS R6 Mark II ([@hijae](https://github.com/hijae))
+   - Canon EOS RP ([@wolcano](https://github.com/wolcano))
    - Canon PowerShot G9 X Mark II ([@Mich2e](https://github.com/Mich2e))
 - Nikon
    - Nikon COOLPIX B600
    - Nikon Z6 III ([@herrfrei](https://github.com/herrfrei))
 - Sony
    - Sony ZV-1F
-- Mobile Devices (beta)
-   - Android
-   - iOS
 
 ## Table of Features
 
@@ -121,16 +120,6 @@ previously paired device and leading to the remote menu.
 From the remote menu you may choose to disconnect, control the shutter or activate the intervalometer.
 
 More details are on the wiki: [Usage Guide](https://github.com/gkoh/furble/wiki/Usage-Guide)
-
-### Mobile Devices
-
-Android and iOS devices are supported. `furble` connects as a Bluetooth HID keyboard and sends the _Volume Up_ key stroke to trigger the shutter.
-Connection to mobile devices is a little iffy:
-- hit `Scan`
-- on the mobile device:
-   - pair with `furble`
-- on `furble` the mobile device should appear as a connectable target if the pairing was successful
-- forget `furble` on the mobile device to remove such a pair
 
 ### GPS Location Tagging
 
