@@ -16,6 +16,7 @@ set(COMPONENT_SRCS
     icon_center_focus_strong.c
     icon_center_focus_strong_24.c
     icon_check_24.c
+    icon_clear_all_24.c
     icon_delete.c
     icon_delete_24.c
     icon_info.c
@@ -32,18 +33,24 @@ set(COMPONENT_SRCS
     icon_my_location.c
     icon_no_photography.c
     icon_no_photography_24.c
+    icon_north_east_20.c
+    icon_north_west_20.c
     icon_palette.c
     icon_palette_24.c
     icon_power_settings_new.c
     icon_power_settings_new_24.c
     icon_remote_gen.c
     icon_remote_gen_24.c
+    icon_restart_alt_24.c
+    icon_save_24.c
     icon_settings.c
     icon_settings_24.c
     icon_settings_brightness.c
     icon_settings_brightness_24.c
     icon_settings_remote.c
     icon_settings_remote_24.c
+    icon_south_east_20.c
+    icon_south_west_20.c
     icon_timer.c
     icon_timer_24.c
     icon_undo.c

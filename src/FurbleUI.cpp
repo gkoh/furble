@@ -12,6 +12,7 @@
 
 #include "icons.h"
 
+#include "FurbleCalibrate.h"
 #include "FurbleControl.h"
 #include "FurbleGPS.h"
 #include "FurbleSettings.h"
@@ -46,8 +47,6 @@ const uint32_t UI::m_KeyLeft;
 const uint32_t UI::m_KeyRight;
 
 uint8_t UI::m_PMICClickCount = 0;
-
-lv_timer_t *UI::m_IntervalTimer;
 
 void *UI::m_Buffer1;
 void *UI::m_Buffer2;
@@ -87,7 +86,10 @@ std::unordered_map<const char *, UI::menu_t> UI::m_Menu = {
     {m_IntervalometerRunStr, {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
 };
 
-UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalometer(interval) {
+UI::UI(const interval_t &interval)
+    : m_GPS {GPS::getInstance()},
+      m_Intervalometer(interval),
+      m_CalibrationUI(M5.Display.width(), M5.Display.height()) {
   lv_init();
   lv_tick_set_cb(tick);
 
@@ -117,7 +119,7 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
   }
 
   // start inactivity timer
-  lv_timer_create(
+  m_InactivityTimer = lv_timer_create(
       [](lv_timer_t *t) {
         auto *ui = static_cast<Furble::UI *>(lv_timer_get_user_data(t));
         ui->processInactivity();
@@ -161,7 +163,7 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
   m_GPS.setIcon(m_Status.gpsIcon);
 
   // refresh icons every 250ms
-  lv_timer_create(
+  m_IconTimer = lv_timer_create(
       [](lv_timer_t *timer) {
         status_t *status = static_cast<status_t *>(lv_timer_get_user_data(timer));
 
@@ -232,8 +234,15 @@ UI::UI(const interval_t &interval) : m_GPS {GPS::getInstance()}, m_Intervalomete
   lv_obj_set_style_pad_left(x, 0, LV_STATE_DEFAULT);
   lv_obj_set_style_pad_right(x, 0, LV_STATE_DEFAULT);
 
-  // add navigation buttons
-  if (!M5.Touch.isEnabled()) {
+  if (M5.Touch.isEnabled()) {
+    // load calibration
+    Settings::calibration_t calibration =
+        Settings::load<Settings::calibration_t>(Settings::TOUCH_CALIBRATION);
+    if (calibration.calibrated) {
+      M5.Display.setTouchCalibrate(calibration.points);
+    }
+  } else {
+    // add navigation buttons
     m_NavBar = lv_obj_create(x);
 
     lv_obj_set_width(m_NavBar, LV_PCT(100));
@@ -1805,10 +1814,11 @@ void UI::addIntervalometerMenu(const menu_t &parent) {
   lv_obj_add_event_cb(
       stop,
       [](lv_event_t *e) {
+        auto *timer = static_cast<lv_timer_t *>(lv_event_get_user_data(e));
         auto &control = Control::getInstance();
 
         // pause all interval timers
-        lv_timer_pause(m_IntervalTimer);
+        lv_timer_pause(timer);
         lv_timer_pause(m_IntervalPageRefresh);
 
         // release shutter and exit
@@ -1816,7 +1826,7 @@ void UI::addIntervalometerMenu(const menu_t &parent) {
         lv_obj_t *back = lv_menu_get_main_header_back_button(m_MainMenu.main);
         lv_obj_send_event(back, LV_EVENT_CLICKED, m_MainMenu.main);
       },
-      LV_EVENT_CLICKED, NULL);
+      LV_EVENT_CLICKED, m_IntervalTimer);
 
   m_IntervalPageRefresh = lv_timer_create(
       [](lv_timer_t *timer) {
@@ -1917,6 +1927,20 @@ void UI::addBacklightMenu(const menu_t &parent) {
         ui->setInactivityTimeout(inactivity);
       },
       LV_EVENT_VALUE_CHANGED, this);
+
+  if (M5.Touch.isEnabled()) {
+    lv_obj_t *calibrate_button = lv_button_create(cont);
+    lv_obj_t *calibrate_label = lv_label_create(calibrate_button);
+    lv_label_set_text(calibrate_label, "Calibrate");
+
+    lv_obj_add_event_cb(
+        calibrate_button,
+        [](lv_event_t *e) {
+          auto *calibrationUI = static_cast<CalibrationUI *>(lv_event_get_user_data(e));
+          calibrationUI->calibrate();
+        },
+        LV_EVENT_CLICKED, &m_CalibrationUI);
+  }
 
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }

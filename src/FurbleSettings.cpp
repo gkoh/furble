@@ -11,16 +11,17 @@ Preferences Settings::m_Prefs;
 const uint32_t Settings::BAUD_9600;
 
 const std::unordered_map<Settings::type_t, Settings::setting_t> Settings::m_Setting = {
-    {BRIGHTNESS,   {BRIGHTNESS, "Brightness", "brightness", "M5ez"}           },
-    {INACTIVITY,   {INACTIVITY, "Inactivity", "inactivity", "M5ez"}           },
-    {THEME,        {THEME, "Theme", "theme", "M5ez"}                          },
-    {TX_POWER,     {TX_POWER, "TX Power", "tx_power", FURBLE_STR}             },
-    {GPS,          {GPS, "GPS", "gps", FURBLE_STR}                            },
-    {GPS_BAUD,     {GPS_BAUD, "GPS Baud", "gps_baud", FURBLE_STR}             },
-    {INTERVAL,     {INTERVAL, "Interval", "interval", FURBLE_STR}             },
-    {MULTICONNECT, {MULTICONNECT, "Multi-Connect", "multiconnect", FURBLE_STR}},
-    {RECONNECT,    {RECONNECT, "Infinite-ReConnect", "reconnect", FURBLE_STR} },
-    {FAUXNY,       {FAUXNY, "FauxNY", "fauxNY", FURBLE_STR}                   }
+    {BRIGHTNESS,        {BRIGHTNESS, "Brightness", "brightness", "M5ez"}               },
+    {INACTIVITY,        {INACTIVITY, "Inactivity", "inactivity", "M5ez"}               },
+    {THEME,             {THEME, "Theme", "theme", "M5ez"}                              },
+    {TX_POWER,          {TX_POWER, "TX Power", "tx_power", FURBLE_STR}                 },
+    {GPS,               {GPS, "GPS", "gps", FURBLE_STR}                                },
+    {GPS_BAUD,          {GPS_BAUD, "GPS Baud", "gps_baud", FURBLE_STR}                 },
+    {INTERVAL,          {INTERVAL, "Interval", "interval", FURBLE_STR}                 },
+    {MULTICONNECT,      {MULTICONNECT, "Multi-Connect", "multiconnect", FURBLE_STR}    },
+    {RECONNECT,         {RECONNECT, "Infinite-ReConnect", "reconnect", FURBLE_STR}     },
+    {FAUXNY,            {FAUXNY, "FauxNY", "fauxNY", FURBLE_STR}                       },
+    {TOUCH_CALIBRATION, {TOUCH_CALIBRATION, "Touch Calibration", "t_calib", FURBLE_STR}},
 };
 
 const Settings::setting_t &Settings::get(type_t type) {
@@ -109,6 +110,31 @@ esp_power_level_t Settings::load<esp_power_level_t>(type_t type) {
 }
 
 template <>
+Settings::calibration_t Settings::load<Settings::calibration_t>(type_t type) {
+  const auto &setting = get(type);
+  calibration_t calibration;
+
+  m_Prefs.begin(setting.nvs_namespace, true);
+  size_t len = m_Prefs.get(setting.key, &calibration, sizeof(calibration_t));
+  if (len != sizeof(calibration_t)) {
+    // default values
+    calibration.points[0] = 0;
+    calibration.points[1] = 0;
+    calibration.points[2] = 0;
+    calibration.points[3] = 0;
+    calibration.points[4] = 0;
+    calibration.points[5] = 0;
+    calibration.points[6] = 0;
+    calibration.points[7] = 0;
+    calibration.calibrated = false;
+  }
+
+  m_Prefs.end();
+
+  return calibration;
+}
+
+template <>
 void Settings::save<bool>(const type_t type, const bool &value) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, false);
@@ -145,6 +171,14 @@ void Settings::save<std::string>(const type_t type, const std::string &value) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, false);
   m_Prefs.put(setting.key, value);
+  m_Prefs.end();
+}
+
+template <>
+void Settings::save<Settings::calibration_t>(const type_t type, const calibration_t &value) {
+  const auto &setting = get(type);
+  m_Prefs.begin(setting.nvs_namespace, false);
+  m_Prefs.put(setting.key, &value, sizeof(value));
   m_Prefs.end();
 }
 
@@ -194,6 +228,14 @@ void Settings::init(void) {
         case GPS_BAUD:
           save<uint32_t>(setting.type, BAUD_9600);
           break;
+        case TOUCH_CALIBRATION:
+        {
+          calibration_t calibration = {
+              .points = {0x00},
+              .calibrated = false,
+          };
+          save<calibration_t>(setting.type, calibration);
+        } break;
       }
     }
     m_Prefs.end();

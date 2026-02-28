@@ -24,7 +24,32 @@ class Settings {
     MULTICONNECT,
     RECONNECT,
     FAUXNY,
+    TOUCH_CALIBRATION,
   } type_t;
+
+  typedef struct {
+    union {
+      struct {
+        uint16_t x;
+        uint16_t y;
+      };
+      uint16_t coords[2];
+    };
+  } calibration_point_t;
+
+  typedef struct {
+    union {
+      struct {
+        calibration_point_t top_left;
+        calibration_point_t bottom_left;
+        calibration_point_t top_right;
+        calibration_point_t bottom_right;
+      };
+      calibration_point_t pairs[4];
+      uint16_t points[8];
+    };
+    bool calibrated;
+  } calibration_t;
 
   typedef struct {
     type_t type;
