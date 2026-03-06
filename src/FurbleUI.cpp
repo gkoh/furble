@@ -41,6 +41,7 @@ namespace Furble {
 std::mutex UI::m_Mutex;
 
 UI::ConnectContext_t UI::m_ConnectContext;
+bool UI::m_ForceReconnect = false;
 
 const uint32_t UI::m_KeyEnter;
 const uint32_t UI::m_KeyLeft;
@@ -158,6 +159,7 @@ UI::UI(const interval_t &interval)
 #else
   m_Status.batteryIcon = addIcon(&icon_battery_android_frame_4);
 #endif
+  m_Status.reconnectSwitch = nullptr;
   m_Status.screenLocked = false;
 
   m_GPS.setIcon(m_Status.gpsIcon);
@@ -318,6 +320,8 @@ UI::UI(const interval_t &interval)
   addMainMenu();
 
   m_GPS.startService();
+
+  autoConnectLastFujifilm();
 }
 
 void UI::buttonPWRRead(lv_indev_t *drv, lv_indev_data_t *data) {
@@ -761,6 +765,7 @@ void UI::addSettingItem(lv_obj_t *page, const char *symbol, Settings::type_t set
   }
 
   if (setting == Settings::RECONNECT) {
+    m_Status.reconnectSwitch = sw;
     if (!enable) {
       lv_obj_add_flag(m_Status.reconnectIcon, LV_OBJ_FLAG_HIDDEN);
     }
@@ -1240,7 +1245,9 @@ void UI::doConnect(lv_event_t *e) {
   lv_obj_add_event_cb(
       m_ConnectContext.cancel, [](lv_event_t *e) { doDisconnect(); }, LV_EVENT_CLICKED, NULL);
 
-  control.connectAll(Settings::load<bool>(Settings::RECONNECT));
+  bool infiniteReconnect = m_ForceReconnect || Settings::load<bool>(Settings::RECONNECT);
+  m_ForceReconnect = false;
+  control.connectAll(infiniteReconnect);
   lv_timer_reset(m_ConnectTimer);
   lv_timer_resume(m_ConnectTimer);
 
@@ -2081,6 +2088,48 @@ void UI::updateItems(const menu_t &menu) {
   auto *camera = CameraList::last();
 
   addCameraItem(camera, menu, MODE_SCAN);
+}
+
+void UI::autoConnectLastFujifilm(void) {
+  CameraList::load();
+  if (CameraList::size() == 0) {
+    ESP_LOGI("ui", "Auto-connect skipped: no saved cameras");
+    return;
+  }
+
+  Camera *target = nullptr;
+  for (size_t i = CameraList::size(); i-- > 0;) {
+    auto *camera = CameraList::get(i);
+    auto type = camera->getType();
+    if (type == Camera::Type::FUJIFILM_BASIC || type == Camera::Type::FUJIFILM_SECURE) {
+      target = camera;
+      break;
+    }
+  }
+
+  if (target == nullptr) {
+    ESP_LOGI("ui", "Auto-connect skipped: no Fujifilm camera found");
+    return;
+  }
+
+  for (size_t i = 0; i < CameraList::size(); i++) {
+    CameraList::get(i)->setActive(false);
+  }
+  target->setActive(true);
+
+  // Keep trying to reconnect so power-on order doesn't matter.
+  if (!Settings::load<bool>(Settings::RECONNECT)) {
+    Settings::save<bool>(Settings::RECONNECT, true);
+  }
+  m_ForceReconnect = true;
+  lv_obj_clear_flag(m_Status.reconnectIcon, LV_OBJ_FLAG_HIDDEN);
+  if (m_Status.reconnectSwitch) {
+    lv_obj_add_state(m_Status.reconnectSwitch, LV_STATE_CHECKED);
+  }
+
+  ESP_LOGI("ui", "Auto-connecting to %s", target->getName().c_str());
+
+  doConnect(nullptr);
 }
 
 void UI::setInactivityTimeout(uint8_t timeout) {

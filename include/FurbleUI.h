@@ -53,6 +53,9 @@ class UI {
   /** Is shutter locked? */
   bool isShutterLocked(void);
 
+  /** Automatically connect to the last paired Fujifilm camera. */
+  void autoConnectLastFujifilm(void);
+
   bool m_FocusPressed = false;
 
  private:
@@ -74,6 +77,7 @@ class UI {
     lv_obj_t *gpsIcon;
     lv_obj_t *batteryIcon;
     lv_obj_t *reconnectIcon;
+    lv_obj_t *reconnectSwitch;
     lv_obj_t *gpsBaud;
     lv_obj_t *gpsData;
     bool screenLocked;
@@ -140,6 +144,7 @@ class UI {
   static std::mutex m_Mutex;
 
   static ConnectContext_t m_ConnectContext;
+  static bool m_ForceReconnect;
 
   // Click streak latency threshold in milliseconds
   static const uint8_t m_ClickThreshold = 20;
