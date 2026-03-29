@@ -1,5 +1,5 @@
 dependencies:
   h2zero/esp-nimble-cpp:
-    version: "2.3.4"
+    version: "2.5.0"
   lvgl/lvgl:
     version: "9.4.0"

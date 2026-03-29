@@ -15,6 +15,7 @@
 #include "FurbleCalibrate.h"
 #include "FurbleControl.h"
 #include "FurbleGPS.h"
+#include "FurblePlatform.h"
 #include "FurbleSettings.h"
 #include "FurbleUI.h"
 #include "interval.h"
@@ -45,8 +46,6 @@ UI::ConnectContext_t UI::m_ConnectContext;
 const uint32_t UI::m_KeyEnter;
 const uint32_t UI::m_KeyLeft;
 const uint32_t UI::m_KeyRight;
-
-uint8_t UI::m_PMICClickCount = 0;
 
 void *UI::m_Buffer1;
 void *UI::m_Buffer2;
@@ -334,9 +333,8 @@ void UI::buttonPWRRead(lv_indev_t *drv, lv_indev_data_t *data) {
 // read power button for M5StickC and M5StickCPlus
 void UI::buttonPEKRead(lv_indev_t *drv, lv_indev_data_t *data) {
   data->key = *(static_cast<uint32_t *>(lv_indev_get_user_data(drv)));
-  if (m_PMICClickCount > 0) {
+  if (Platform::getInstance().getPWRClickCount() > 0) {
     data->state = LV_INDEV_STATE_PRESSED;
-    m_PMICClickCount = 0;
   } else {
     data->state = LV_INDEV_STATE_RELEASED;
   }
@@ -391,7 +389,7 @@ void UI::displayFlush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map
 }
 
 uint32_t UI::tick(void) {
-  return (esp_timer_get_time() / 1000LL);
+  return Platform::getInstance().tick();
 }
 
 void UI::initInputDevices(void) {
@@ -416,7 +414,6 @@ void UI::initInputDevices(void) {
   switch (M5.getBoard()) {
     case m5::board_t::board_M5StickC:
     case m5::board_t::board_M5StickCPlus:
-      m_PMICHack = true;
       lv_indev_set_read_cb(m_ButtonL, buttonPEKRead);
       lv_indev_set_read_cb(m_ButtonO, buttonARead);
       lv_indev_set_read_cb(m_ButtonR, buttonBRead);
@@ -430,9 +427,6 @@ void UI::initInputDevices(void) {
       break;
 
     case m5::board_t::board_M5Tough:
-      m_PMICHack = true;
-      __attribute__((fallthrough));
-
     case m5::board_t::board_M5StackCore2:
       m_Touch = lv_indev_create();
       lv_indev_set_type(m_Touch, LV_INDEV_TYPE_POINTER);
@@ -896,7 +890,7 @@ void UI::addMainMenu(void) {
 #if defined(FURBLE_M5STACK_CORE)
         esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER);
 #endif
-        M5.Power.powerOff();
+        Platform::getInstance().powerOff();
       },
       LV_EVENT_CLICKED, NULL);
 
@@ -2115,27 +2109,15 @@ void UI::processInactivity(void) {
 void UI::handleLockScreen(void) {
   // toggle screen lock on power button double click for touch screens
   if (M5.Touch.isEnabled()) {
-    if (m_PMICClickCount > 1 || M5.BtnPWR.wasDoubleClicked()) {
+    if (M5.BtnPWR.wasDoubleClicked()) {
       m_Status.screenLocked = !m_Status.screenLocked;
-      // collides with buttonPEKRead() for non-touch, this is brittle
-      m_PMICClickCount = 0;
     }
   }
 }
 
 void UI::task(void) {
   while (true) {
-    M5.update();
-    if (m_PMICHack && M5.BtnPWR.wasClicked()) {
-      // fake PMIC button as actual button, record the click streak
-      uint32_t now = tick();
-      if (now - m_PMICClickTime < m_ClickThreshold) {
-        m_PMICClickCount++;
-      } else {
-        m_PMICClickCount = 1;
-      }
-      m_PMICClickTime = now;
-    }
+    Platform::getInstance().update();
 
     handleLockScreen();
 
