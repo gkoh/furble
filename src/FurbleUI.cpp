@@ -15,11 +15,12 @@
 #include "FurbleCalibrate.h"
 #include "FurbleControl.h"
 #include "FurbleGPS.h"
+#include "FurblePlatform.h"
 #include "FurbleSettings.h"
 #include "FurbleUI.h"
 #include "interval.h"
 
-#if defined(FURBLE_M5STICKC) || defined(FURBLE_M5STICKC_PLUS)
+#if defined(FURBLE_M5STICKC) || defined(FURBLE_M5STICKC_PLUS) || defined(FURBLE_M5STICKS3)
 // Use 24x24 icons for StickC screens
 #define icon_add_a_photo icon_add_a_photo_24
 #define icon_delete icon_delete_24
@@ -45,8 +46,6 @@ UI::ConnectContext_t UI::m_ConnectContext;
 const uint32_t UI::m_KeyEnter;
 const uint32_t UI::m_KeyLeft;
 const uint32_t UI::m_KeyRight;
-
-uint8_t UI::m_PMICClickCount = 0;
 
 void *UI::m_Buffer1;
 void *UI::m_Buffer2;
@@ -76,7 +75,7 @@ std::unordered_map<const char *, UI::menu_t> UI::m_Menu = {
     {m_IntervalDelayStr,     {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
     {m_IntervalShutterStr,   {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
     {m_IntervalWaitStr,      {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
-    {m_BacklightStr,         {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
+    {m_DisplayStr,           {nullptr, nullptr, nullptr, nullptr, {0, 0}}},
     {m_ThemeStr,             {nullptr, nullptr, nullptr, nullptr, {0, 1}}},
     {m_TransmitPowerStr,     {nullptr, nullptr, nullptr, nullptr, {1, 1}}},
     {m_AboutStr,             {nullptr, nullptr, nullptr, nullptr, {2, 1}}},
@@ -104,9 +103,10 @@ UI::UI(const interval_t &interval)
 
   // set minimum, ensure this is a multiple of m_BrightnessSteps so the slider steps work
   switch (M5.getBoard()) {
-    case m5::board_t::board_M5StickCPlus2:
-    case m5::board_t::board_M5StackCore2:
     case m5::board_t::board_M5Stack:
+    case m5::board_t::board_M5StackCore2:
+    case m5::board_t::board_M5StickCPlus2:
+    case m5::board_t::board_M5StickS3:
     case m5::board_t::board_M5Tough:
       m_MinimumBrightness = 32;
       break;
@@ -255,8 +255,9 @@ UI::UI(const interval_t &interval)
 
     switch (M5.getBoard()) {
       case m5::board_t::board_M5StickC:
-      case m5::board_t::board_M5StickCPlus:
       case m5::board_t::board_M5StickCPlus2:
+      case m5::board_t::board_M5StickCPlus:
+      case m5::board_t::board_M5StickS3:
         lv_obj_set_style_pad_left(m_Content, 0, LV_STATE_DEFAULT);
         lv_obj_set_style_pad_right(m_Content, 0, LV_STATE_DEFAULT);
 
@@ -332,9 +333,8 @@ void UI::buttonPWRRead(lv_indev_t *drv, lv_indev_data_t *data) {
 // read power button for M5StickC and M5StickCPlus
 void UI::buttonPEKRead(lv_indev_t *drv, lv_indev_data_t *data) {
   data->key = *(static_cast<uint32_t *>(lv_indev_get_user_data(drv)));
-  if (m_PMICClickCount > 0) {
+  if (Platform::getInstance().getPWRClickCount() > 0) {
     data->state = LV_INDEV_STATE_PRESSED;
-    m_PMICClickCount = 0;
   } else {
     data->state = LV_INDEV_STATE_RELEASED;
   }
@@ -389,7 +389,7 @@ void UI::displayFlush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map
 }
 
 uint32_t UI::tick(void) {
-  return (esp_timer_get_time() / 1000LL);
+  return Platform::getInstance().tick();
 }
 
 void UI::initInputDevices(void) {
@@ -414,22 +414,19 @@ void UI::initInputDevices(void) {
   switch (M5.getBoard()) {
     case m5::board_t::board_M5StickC:
     case m5::board_t::board_M5StickCPlus:
-      m_PMICHack = true;
       lv_indev_set_read_cb(m_ButtonL, buttonPEKRead);
       lv_indev_set_read_cb(m_ButtonO, buttonARead);
       lv_indev_set_read_cb(m_ButtonR, buttonBRead);
       break;
 
     case m5::board_t::board_M5StickCPlus2:
+    case m5::board_t::board_M5StickS3:
       lv_indev_set_read_cb(m_ButtonL, buttonPWRRead);
       lv_indev_set_read_cb(m_ButtonO, buttonARead);
       lv_indev_set_read_cb(m_ButtonR, buttonBRead);
       break;
 
     case m5::board_t::board_M5Tough:
-      m_PMICHack = true;
-      __attribute__((fallthrough));
-
     case m5::board_t::board_M5StackCore2:
       m_Touch = lv_indev_create();
       lv_indev_set_type(m_Touch, LV_INDEV_TYPE_POINTER);
@@ -668,7 +665,7 @@ lv_obj_t *UI::addMenuItem(const menu_t &menu,
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
 #else
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW);
-#if defined(FURBLE_M5STICKC_PLUS)
+#if defined(FURBLE_M5STICKC_PLUS) || defined(FURBLE_M5STICKS3)
   lv_obj_set_style_pad_top(cont, 6, LV_STATE_DEFAULT);
   lv_obj_set_style_pad_bottom(cont, 6, LV_STATE_DEFAULT);
 #endif
@@ -853,7 +850,7 @@ void UI::addMainMenu(void) {
   }
 
   lv_menu_set_mode_root_back_button(m_MainMenu.main, LV_MENU_ROOT_BACK_BUTTON_DISABLED);
-#if defined(FURBLE_M5COREX) || defined(FURBLE_M5STICKC_PLUS)
+#if defined(FURBLE_M5COREX) || defined(FURBLE_M5STICKC_PLUS) || defined(FURBLE_M5STICKS3)
   // StickC display too narrow for icons
   lv_obj_t *back = lv_menu_get_main_header_back_button(m_MainMenu.main);
   lv_obj_t *back_img = lv_obj_get_child(back, 0);
@@ -893,7 +890,7 @@ void UI::addMainMenu(void) {
 #if defined(FURBLE_M5STACK_CORE)
         esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER);
 #endif
-        M5.Power.powerOff();
+        Platform::getInstance().powerOff();
       },
       LV_EVENT_CLICKED, NULL);
 
@@ -1688,8 +1685,9 @@ void UI::addSpinnerPage(const menu_t &parent, const char *item, Intervalometer::
 
   switch (M5.getBoard()) {
     case m5::board_t::board_M5StickC:
-    case m5::board_t::board_M5StickCPlus:
     case m5::board_t::board_M5StickCPlus2:
+    case m5::board_t::board_M5StickCPlus:
+    case m5::board_t::board_M5StickS3:
       lv_obj_set_flex_align(spinner.m_RowSpinners, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
                             LV_FLEX_ALIGN_CENTER);
       break;
@@ -1743,8 +1741,9 @@ void UI::addSpinnerPage(const menu_t &parent, const char *item, Intervalometer::
       lv_obj_set_scrollbar_mode(spinner.m_RowSpinners, LV_SCROLLBAR_MODE_OFF);
       lv_obj_set_scroll_dir(spinner.m_RowSpinners, LV_DIR_HOR);
       __attribute__((fallthrough));
-    case m5::board_t::board_M5StickCPlus:
     case m5::board_t::board_M5StickCPlus2:
+    case m5::board_t::board_M5StickCPlus:
+    case m5::board_t::board_M5StickS3:
       for (auto &r : spinner.m_Roller) {
         lv_obj_set_style_pad_left(r, 2, LV_STATE_DEFAULT);
         lv_obj_set_style_pad_right(r, 2, LV_STATE_DEFAULT);
@@ -1844,8 +1843,8 @@ void UI::addIntervalometerMenu(const menu_t &parent) {
   lv_menu_set_load_page_event(menu.main, menu.button, menu.page);
 }
 
-void UI::addBacklightMenu(const menu_t &parent) {
-  menu_t &menu = addMenu(m_BacklightStr, &icon_settings_brightness, true, parent);
+void UI::addDisplayMenu(const menu_t &parent) {
+  menu_t &menu = addMenu(m_DisplayStr, &icon_settings_brightness, true, parent);
   lv_obj_t *cont = lv_menu_cont_create(menu.page);
   lv_obj_set_height(cont, LV_PCT(100));
   lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
@@ -2066,7 +2065,7 @@ void UI::addSettingsMenu(void) {
   lv_obj_set_size(menu.page, LV_PCT(100), LV_PCT(100));
   lv_obj_center(menu.page);
 
-  addBacklightMenu(menu);
+  addDisplayMenu(menu);
   addFeaturesMenu(menu);
   addGPSMenu(menu);
   addIntervalometerMenu(menu);
@@ -2110,27 +2109,15 @@ void UI::processInactivity(void) {
 void UI::handleLockScreen(void) {
   // toggle screen lock on power button double click for touch screens
   if (M5.Touch.isEnabled()) {
-    if (m_PMICClickCount > 1 || M5.BtnPWR.wasDoubleClicked()) {
+    if (M5.BtnPWR.wasDoubleClicked()) {
       m_Status.screenLocked = !m_Status.screenLocked;
-      // collides with buttonPEKRead() for non-touch, this is brittle
-      m_PMICClickCount = 0;
     }
   }
 }
 
 void UI::task(void) {
   while (true) {
-    M5.update();
-    if (m_PMICHack && M5.BtnPWR.wasClicked()) {
-      // fake PMIC button as actual button, record the click streak
-      uint32_t now = tick();
-      if (now - m_PMICClickTime < m_ClickThreshold) {
-        m_PMICClickCount++;
-      } else {
-        m_PMICClickCount = 1;
-      }
-      m_PMICClickTime = now;
-    }
+    Platform::getInstance().update();
 
     handleLockScreen();
 

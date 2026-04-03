@@ -141,9 +141,6 @@ class UI {
 
   static ConnectContext_t m_ConnectContext;
 
-  // Click streak latency threshold in milliseconds
-  static const uint8_t m_ClickThreshold = 20;
-
   static const uint32_t m_KeyLeft = LV_KEY_LEFT;
   static const uint32_t m_KeyEnter = LV_KEY_ENTER;
   static const uint32_t m_KeyRight = LV_KEY_RIGHT;
@@ -171,7 +168,7 @@ class UI {
   static constexpr const char *m_IntervalometerRunStr = "Intervalometer ";
 
   // settings
-  static constexpr const char *m_BacklightStr = "Backlight";
+  static constexpr const char *m_DisplayStr = "Display";
   static constexpr const char *m_FeaturesStr = "Features";
   static constexpr const char *m_GPSStr = "GPS";
   static constexpr const char *m_IntervalometerStr = "Timer";
@@ -261,10 +258,6 @@ class UI {
 
   CalibrationUI m_CalibrationUI;
 
-  static uint8_t m_PMICClickCount;
-  bool m_PMICHack = false;
-  uint32_t m_PMICClickTime = 0;
-
   static void buttonPWRRead(lv_indev_t *drv, lv_indev_data_t *data);
   static void buttonPEKRead(lv_indev_t *drv, lv_indev_data_t *data);
   static void buttonARead(lv_indev_t *drv, lv_indev_data_t *data);
@@ -337,7 +330,7 @@ class UI {
   /** Add the spinner page menu entry. */
   void addSpinnerPage(const menu_t &parent, const char *item, Intervalometer::Spinner &spinner);
 
-  void addBacklightMenu(const menu_t &parent);
+  void addDisplayMenu(const menu_t &parent);
 
   void addThemeMenu(const menu_t &parent);
 

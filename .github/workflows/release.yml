@@ -13,10 +13,11 @@ jobs:
     strategy:
       matrix:
         platform:
-          - m5stick-c
-          - m5stick-c-plus
           - m5stack-core
           - m5stack-core2
+          - m5stick-c
+          - m5stick-c-plus
+          - m5stick-s3
 
     runs-on: ubuntu-latest
     permissions:

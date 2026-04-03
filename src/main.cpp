@@ -1,11 +1,10 @@
-#include <M5Unified.h>
 #include <freertos/FreeRTOS.h>
-#include <lvgl.h>
 
 #include "Device.h"
 #include "Scan.h"
 
 #include "FurbleControl.h"
+#include "FurblePlatform.h"
 #include "FurbleSettings.h"
 #include "FurbleUI.h"
 
@@ -25,19 +24,7 @@ void app_main() {
 
   ESP_LOGI(LOG_TAG, "furble version: '%s'", FURBLE_VERSION);
 
-  esp_pm_config_t pm_config = {
-      .max_freq_mhz = 160,
-      .min_freq_mhz = 40,
-      .light_sleep_enable = true,
-  };
-  ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
-
-  auto cfg = M5.config();
-  cfg.internal_imu = false;
-  cfg.internal_spk = false;
-  cfg.internal_mic = false;
-  M5.begin(cfg);
-
+  Furble::Platform::init();
   Furble::Settings::init();
   Furble::Device::init(Furble::Settings::load<esp_power_level_t>(Furble::Settings::TX_POWER));
 
