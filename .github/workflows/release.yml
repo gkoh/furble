@@ -29,12 +29,12 @@ jobs:
       PARTITIONS_NAME: furble-partitions-${{ matrix.platform }}-${{ github.ref_name }}+${{ github.run_attempt }}.bin
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: '3.13'
           cache: 'pip'
 
       - name: Install Dependencies
@@ -107,7 +107,7 @@ jobs:
     name: Deploy to Cloudflare Pages
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
