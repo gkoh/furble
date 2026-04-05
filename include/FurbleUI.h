@@ -124,6 +124,10 @@ class UI {
     Spinner m_Delay;
     Spinner m_Shutter;
     Spinner m_Wait;
+
+    lv_obj_t *m_StateLabel;
+    lv_obj_t *m_CountLabel;
+    lv_obj_t *m_RemainingLabel;
   };
 
   typedef enum { MODE_SCAN, MODE_DELETE, MODE_CONNECT, MODE_MULTICONNECT } CameraListMode_t;
@@ -141,9 +145,15 @@ class UI {
 
   static ConnectContext_t m_ConnectContext;
 
-  static const uint32_t m_KeyLeft = LV_KEY_LEFT;
-  static const uint32_t m_KeyEnter = LV_KEY_ENTER;
-  static const uint32_t m_KeyRight = LV_KEY_RIGHT;
+  const uint32_t m_KeyLeft = LV_KEY_LEFT;
+  const uint32_t m_KeyEnter = LV_KEY_ENTER;
+  const uint32_t m_KeyRight = LV_KEY_RIGHT;
+
+#if defined(FURBLE_M5STICKS3)
+  const uint32_t m_RightYOffset = 65;
+#else
+  const uint32_t m_RightYOffset = 0;
+#endif
 
 #if (FURBLE_TEST_VERSION + 0)
   static constexpr const char *m_Title = FURBLE_VERSION;
@@ -198,13 +208,10 @@ class UI {
 
   static constexpr int32_t ICON_HEADER_SIZE = 24;
 
-  static LV_ATTRIBUTE_MEM_ALIGN void *m_Buffer1;
-  static LV_ATTRIBUTE_MEM_ALIGN void *m_Buffer2;
+  LV_ATTRIBUTE_MEM_ALIGN void *m_Buffer1;
+  LV_ATTRIBUTE_MEM_ALIGN void *m_Buffer2;
 
   static lv_timer_t *m_ConnectTimer;
-  static lv_obj_t *m_IntervalStateLabel;
-  static lv_obj_t *m_IntervalCountLabel;
-  static lv_obj_t *m_IntervalRemainingLabel;
   static lv_timer_t *m_IntervalPageRefresh;
   static uint32_t m_IntervalNext;
 
