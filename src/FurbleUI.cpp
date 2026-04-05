@@ -43,18 +43,8 @@ std::mutex UI::m_Mutex;
 
 UI::ConnectContext_t UI::m_ConnectContext;
 
-const uint32_t UI::m_KeyEnter;
-const uint32_t UI::m_KeyLeft;
-const uint32_t UI::m_KeyRight;
-
-void *UI::m_Buffer1;
-void *UI::m_Buffer2;
-
 lv_timer_t *UI::m_ConnectTimer;
 
-lv_obj_t *UI::m_IntervalStateLabel;
-lv_obj_t *UI::m_IntervalCountLabel;
-lv_obj_t *UI::m_IntervalRemainingLabel;
 lv_timer_t *UI::m_IntervalPageRefresh;
 uint32_t UI::m_IntervalNext;
 
@@ -275,7 +265,7 @@ UI::UI(const interval_t &interval)
         lv_obj_align(m_OK, LV_ALIGN_BOTTOM_MID, 0, 0);
 
         lv_obj_add_flag(m_Right, LV_OBJ_FLAG_FLOATING);
-        lv_obj_align(m_Right, LV_ALIGN_RIGHT_MID, 0, 0);
+        lv_obj_align(m_Right, LV_ALIGN_RIGHT_MID, 0, m_RightYOffset);
         break;
 
       default:
@@ -1171,36 +1161,36 @@ void UI::intervalometer(lv_timer_t *timer) {
   static uint32_t count = 0;
 
   if (interval->m_Count.m_SpinValue.m_Unit == SpinValue::UNIT_INF) {
-    lv_label_set_text_fmt(m_IntervalCountLabel, "%09lu", count);
+    lv_label_set_text_fmt(interval->m_CountLabel, "%09lu", count);
   } else {
-    lv_label_set_text_fmt(m_IntervalCountLabel, "%03lu/%03u", count,
+    lv_label_set_text_fmt(interval->m_CountLabel, "%03lu/%03u", count,
                           interval->m_Count.m_SpinValue.m_Value);
   }
 
   switch (interval->m_State) {
     case Intervalometer::STATE_IDLE:
       count = 0;
-      lv_label_set_text(m_IntervalStateLabel, "IDLE");
+      lv_label_set_text(interval->m_StateLabel, "IDLE");
       lv_timer_ready(timer);
       interval->m_State = Intervalometer::STATE_WAIT;
       break;
 
     case Intervalometer::STATE_WAIT:
-      lv_label_set_text(m_IntervalStateLabel, "WAIT");
+      lv_label_set_text(interval->m_StateLabel, "WAIT");
       next = interval->m_Wait.m_SpinValue.toMilliseconds();
       interval->m_State = Intervalometer::STATE_SHUTTER_OPEN;
       break;
 
     case Intervalometer::STATE_SHUTTER_OPEN:
       count++;
-      lv_label_set_text(m_IntervalStateLabel, "SHUTTER");
+      lv_label_set_text(interval->m_StateLabel, "SHUTTER");
       control.sendCommand(Control::CMD_SHUTTER_PRESS);
       next = interval->m_Shutter.m_SpinValue.toMilliseconds();
       interval->m_State = Intervalometer::STATE_DELAY;
       break;
 
     case Intervalometer::STATE_DELAY:
-      lv_label_set_text(m_IntervalStateLabel, "DELAY");
+      lv_label_set_text(interval->m_StateLabel, "DELAY");
       control.sendCommand(Control::CMD_SHUTTER_RELEASE);
       next = interval->m_Delay.m_SpinValue.toMilliseconds();
       if (count >= interval->m_Count.m_SpinValue.m_Value) {
@@ -1211,7 +1201,7 @@ void UI::intervalometer(lv_timer_t *timer) {
       break;
 
     case Intervalometer::STATE_FINISHED:
-      lv_label_set_text(m_IntervalStateLabel, "FINISHED");
+      lv_label_set_text(interval->m_StateLabel, "FINISHED");
       next = 0;
       lv_timer_pause(timer);
       break;
@@ -1334,6 +1324,7 @@ UI::menu_t &UI::addConnectedMenu(void) {
     lv_area_t a;
     lv_obj_update_layout(menuShutter.page);
     lv_obj_get_coords(menuShutter.page, &a);
+    lv_obj_clear_flag(menuShutter.page, LV_OBJ_FLAG_SCROLLABLE);
 
     m_ShutterLockIcon = lv_button_create(menuShutter.page);
     lv_obj_set_style_bg_image_src(m_ShutterLockIcon, &icon_lock_open_right_24, 0);
@@ -1803,9 +1794,9 @@ void UI::addIntervalometerMenu(const menu_t &parent) {
   lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER,
                         LV_FLEX_ALIGN_CENTER);
 
-  m_IntervalStateLabel = lv_label_create(cont);
-  m_IntervalCountLabel = lv_label_create(cont);
-  m_IntervalRemainingLabel = lv_label_create(cont);
+  m_Intervalometer.m_StateLabel = lv_label_create(cont);
+  m_Intervalometer.m_CountLabel = lv_label_create(cont);
+  m_Intervalometer.m_RemainingLabel = lv_label_create(cont);
 
   lv_obj_t *stop = lv_button_create(cont);
   lv_obj_t *stopLabel = lv_label_create(stop);
@@ -1829,13 +1820,13 @@ void UI::addIntervalometerMenu(const menu_t &parent) {
 
   m_IntervalPageRefresh = lv_timer_create(
       [](lv_timer_t *timer) {
+        auto *label = static_cast<lv_obj_t *>(lv_timer_get_user_data(timer));
         uint32_t now = tick();
         uint32_t remaining = m_IntervalNext > now ? m_IntervalNext - now : 0;
         SpinValue::hms_t hms = SpinValue::toHMS(remaining);
-        lv_label_set_text_fmt(m_IntervalRemainingLabel, "%02lu:%02lu:%02lu", hms.hours, hms.minutes,
-                              hms.seconds);
+        lv_label_set_text_fmt(label, "%02lu:%02lu:%02lu", hms.hours, hms.minutes, hms.seconds);
       },
-      333, NULL);
+      333, m_Intervalometer.m_RemainingLabel);
   lv_timer_pause(m_IntervalPageRefresh);
 
   lv_menu_set_load_page_event(menuIntervalRun.main, m_IntervalStart, menuIntervalRun.page);
