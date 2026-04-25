@@ -22,6 +22,7 @@ const std::unordered_map<Settings::type_t, Settings::setting_t> Settings::m_Sett
     {RECONNECT,         {RECONNECT, "Infinite-ReConnect", "reconnect", FURBLE_STR}     },
     {FAUXNY,            {FAUXNY, "FauxNY", "fauxNY", FURBLE_STR}                       },
     {TOUCH_CALIBRATION, {TOUCH_CALIBRATION, "Touch Calibration", "t_calib", FURBLE_STR}},
+    {AUTOCONNECT,       {AUTOCONNECT, "Auto-Connect", "autoconnect", FURBLE_STR}       },
 };
 
 const Settings::setting_t &Settings::get(type_t type) {
@@ -223,6 +224,7 @@ void Settings::init(void) {
         case MULTICONNECT:
         case RECONNECT:
         case FAUXNY:
+        case AUTOCONNECT:
           save<bool>(setting.type, false);
           break;
         case GPS_BAUD:

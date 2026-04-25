@@ -533,10 +533,6 @@ void UI::shutterUnlock(Control &control) {
   }
 }
 
-bool UI::isShutterLocked(void) {
-  return m_ShutterLock;
-}
-
 void UI::handleShutter(lv_event_t *e) {
   auto *ui = static_cast<UI *>(lv_event_get_user_data(e));
   auto &control = Control::getInstance();
@@ -545,12 +541,12 @@ void UI::handleShutter(lv_event_t *e) {
     case LV_EVENT_PRESSED:
       if (ui->m_FocusPressed) {
         ui->shutterLock(control);
-      } else if (!ui->isShutterLocked()) {
+      } else if (!ui->m_ShutterLock) {
         control.sendCommand(Control::CMD_SHUTTER_PRESS);
       }
       break;
     case LV_EVENT_RELEASED:
-      if (ui->isShutterLocked()) {
+      if (ui->m_ShutterLock) {
         if (!ui->m_FocusPressed) {
           ui->shutterUnlock(control);
         }
@@ -570,7 +566,7 @@ void UI::handleFocus(lv_event_t *e) {
   switch (code) {
     case LV_EVENT_PRESSED:
       ui->m_FocusPressed = true;
-      if (ui->isShutterLocked()) {
+      if (ui->m_ShutterLock) {
         ui->shutterUnlock(control);
       } else {
         control.sendCommand(Control::CMD_FOCUS_PRESS);
@@ -578,7 +574,7 @@ void UI::handleFocus(lv_event_t *e) {
       break;
     case LV_EVENT_RELEASED:
       ui->m_FocusPressed = false;
-      if (!ui->isShutterLocked()) {
+      if (!ui->m_ShutterLock) {
         control.sendCommand(Control::CMD_FOCUS_RELEASE);
       }
       break;
@@ -599,7 +595,7 @@ void UI::handleShutterLock(lv_event_t *e) {
   switch (code) {
     case LV_EVENT_LONG_PRESSED:
       if (released) {
-        if (ui->isShutterLocked()) {
+        if (ui->m_ShutterLock) {
           ui->shutterUnlock(control);
         } else {
           ui->shutterLock(control);
@@ -894,8 +890,11 @@ void UI::addMainMenu(void) {
         auto &scan = Scan::getInstance();
 
         if (page == m_MainMenu.page) {
+          size_t saveCount = CameraList::getSaveCount();
+          ui->m_MainCount++;
+
           // Hide connect & delete if there are zero saved
-          if (CameraList::getSaveCount() == 0) {
+          if (saveCount == 0) {
             lv_obj_add_state(m_Menu.at(m_ConnectStr).button, LV_STATE_DISABLED);
             lv_obj_add_state(m_Menu.at(m_DeleteStr).button, LV_STATE_DISABLED);
             lv_group_focus_obj(m_Menu.at(m_ScanStr).button);
@@ -910,6 +909,16 @@ void UI::addMainMenu(void) {
           // Enable Back button
           if (lv_obj_has_state(back, LV_STATE_DISABLED)) {
             lv_obj_remove_state(back, LV_STATE_DISABLED);
+          }
+
+          // If enabled and connections exist, auto connect to first camera on first display of main
+          // menu
+          if ((saveCount > 0) && (ui->m_MainCount == 1)
+              && Settings::load<bool>(Settings::AUTOCONNECT)) {
+            CameraList::load();
+            auto *camera = CameraList::get(0);
+            camera->setActive(true);
+            doConnect(e);
           }
         } else if (page == m_Menu.at(m_DeleteStr).page) {
         } else if (page == m_Menu.at(m_ScanStr).page) {
@@ -1600,6 +1609,7 @@ void UI::gpsDataStop(lv_event_t *e) {
 void UI::addFeaturesMenu(const menu_t &parent) {
   menu_t &menu = addMenu(m_FeaturesStr, &icon_wand_stars, true, parent);
 
+  addSettingItem(menu.page, NULL, Settings::AUTOCONNECT);
   addSettingItem(menu.page, NULL, Settings::FAUXNY);
   addSettingItem(menu.page, NULL, Settings::RECONNECT);
   addSettingItem(menu.page, NULL, Settings::MULTICONNECT);
