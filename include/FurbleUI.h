@@ -50,11 +50,6 @@ class UI {
   /** Unlock shutter. */
   void shutterUnlock(Control &control);
 
-  /** Is shutter locked? */
-  bool isShutterLocked(void);
-
-  bool m_FocusPressed = false;
-
  private:
   typedef struct {
     int32_t column;
@@ -254,8 +249,10 @@ class UI {
   Intervalometer m_Intervalometer;
 
   status_t m_Status;
+  bool m_FocusPressed = false;
   bool m_ShutterLock = false;
   uint32_t m_InactivityTimeout;
+  uint32_t m_MainCount = 0;
 
   static menu_t m_MainMenu;
 

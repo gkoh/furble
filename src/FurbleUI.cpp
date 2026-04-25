@@ -533,10 +533,6 @@ void UI::shutterUnlock(Control &control) {
   }
 }
 
-bool UI::isShutterLocked(void) {
-  return m_ShutterLock;
-}
-
 void UI::handleShutter(lv_event_t *e) {
   auto *ui = static_cast<UI *>(lv_event_get_user_data(e));
   auto &control = Control::getInstance();
@@ -545,12 +541,12 @@ void UI::handleShutter(lv_event_t *e) {
     case LV_EVENT_PRESSED:
       if (ui->m_FocusPressed) {
         ui->shutterLock(control);
-      } else if (!ui->isShutterLocked()) {
+      } else if (!ui->m_ShutterLock) {
         control.sendCommand(Control::CMD_SHUTTER_PRESS);
       }
       break;
     case LV_EVENT_RELEASED:
-      if (ui->isShutterLocked()) {
+      if (ui->m_ShutterLock) {
         if (!ui->m_FocusPressed) {
           ui->shutterUnlock(control);
         }
@@ -570,7 +566,7 @@ void UI::handleFocus(lv_event_t *e) {
   switch (code) {
     case LV_EVENT_PRESSED:
       ui->m_FocusPressed = true;
-      if (ui->isShutterLocked()) {
+      if (ui->m_ShutterLock) {
         ui->shutterUnlock(control);
       } else {
         control.sendCommand(Control::CMD_FOCUS_PRESS);
@@ -578,7 +574,7 @@ void UI::handleFocus(lv_event_t *e) {
       break;
     case LV_EVENT_RELEASED:
       ui->m_FocusPressed = false;
-      if (!ui->isShutterLocked()) {
+      if (!ui->m_ShutterLock) {
         control.sendCommand(Control::CMD_FOCUS_RELEASE);
       }
       break;
@@ -599,7 +595,7 @@ void UI::handleShutterLock(lv_event_t *e) {
   switch (code) {
     case LV_EVENT_LONG_PRESSED:
       if (released) {
-        if (ui->isShutterLocked()) {
+        if (ui->m_ShutterLock) {
           ui->shutterUnlock(control);
         } else {
           ui->shutterLock(control);
