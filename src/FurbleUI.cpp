@@ -890,8 +890,11 @@ void UI::addMainMenu(void) {
         auto &scan = Scan::getInstance();
 
         if (page == m_MainMenu.page) {
+          size_t saveCount = CameraList::getSaveCount();
+          ui->m_MainCount++;
+
           // Hide connect & delete if there are zero saved
-          if (CameraList::getSaveCount() == 0) {
+          if (saveCount == 0) {
             lv_obj_add_state(m_Menu.at(m_ConnectStr).button, LV_STATE_DISABLED);
             lv_obj_add_state(m_Menu.at(m_DeleteStr).button, LV_STATE_DISABLED);
             lv_group_focus_obj(m_Menu.at(m_ScanStr).button);
@@ -906,6 +909,16 @@ void UI::addMainMenu(void) {
           // Enable Back button
           if (lv_obj_has_state(back, LV_STATE_DISABLED)) {
             lv_obj_remove_state(back, LV_STATE_DISABLED);
+          }
+
+          // If enabled and connections exist, auto connect to first camera on first display of main
+          // menu
+          if ((saveCount > 0) && (ui->m_MainCount == 1)
+              && Settings::load<bool>(Settings::AUTOCONNECT)) {
+            CameraList::load();
+            auto *camera = CameraList::get(0);
+            camera->setActive(true);
+            doConnect(e);
           }
         } else if (page == m_Menu.at(m_DeleteStr).page) {
         } else if (page == m_Menu.at(m_ScanStr).page) {
@@ -1596,6 +1609,7 @@ void UI::gpsDataStop(lv_event_t *e) {
 void UI::addFeaturesMenu(const menu_t &parent) {
   menu_t &menu = addMenu(m_FeaturesStr, &icon_wand_stars, true, parent);
 
+  addSettingItem(menu.page, NULL, Settings::AUTOCONNECT);
   addSettingItem(menu.page, NULL, Settings::FAUXNY);
   addSettingItem(menu.page, NULL, Settings::RECONNECT);
   addSettingItem(menu.page, NULL, Settings::MULTICONNECT);

@@ -25,6 +25,7 @@ class Settings {
     RECONNECT,
     FAUXNY,
     TOUCH_CALIBRATION,
+    AUTOCONNECT,
   } type_t;
 
   typedef struct {
