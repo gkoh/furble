@@ -74,6 +74,7 @@ Initially targeted at the M5StickC, the following controllers from [M5Stack](htt
 * M5StickC (EOL)
 * M5StickC Plus
 * M5StickC Plus2
+* M5StickS3
 * M5Core Basic
 * M5Core2
 
@@ -137,7 +138,7 @@ The new v1.1 unit runs at a higher baud rate and must be configured under
 
 ### Intervalometer/Timer
 
-The intervalometer can be configured via three settings in `Settings->Intervalometer`:
+The intervalometer can be configured via three settings in `Settings->Timer`:
 - Count (number of images to take)
 - Delay (time between images)
 - Shutter (time to keep shutter open)
