@@ -21,16 +21,12 @@ const NimBLEUUID Ricoh::MODEL_CHR_UUID {0x35FE6272, 0x6AA5, 0x44D9, 0x88E1F09427
 
 const NimBLEUUID Ricoh::CAMERA_SVC_UUID {0x4B445988, 0xCAA0, 0x4DD3, 0x941D37B4F52ACA86};
 const NimBLEUUID Ricoh::POWER_CHR_UUID {0xB58CE84C, 0x0666, 0x4DE9, 0xBEC82D27B27B3211};
-const NimBLEUUID Ricoh::OPERATION_MODE_CHR_UUID {0x1452335A, 0xEC7F, 0x4877,
-                                                 0xB8AB0F72E18BB295};
+const NimBLEUUID Ricoh::OPERATION_MODE_CHR_UUID {0x1452335A, 0xEC7F, 0x4877, 0xB8AB0F72E18BB295};
 
 const NimBLEUUID Ricoh::SHOOTING_SVC_UUID {0x9F00F387, 0x8345, 0x4BBC, 0x8B92B87B52E3091A};
-const NimBLEUUID Ricoh::SHOOTING_FLAVOR_CHR_UUID {0xB29E6DE3, 0x1AEC, 0x48C1,
-                                                  0x9D0502CEA57CE664};
-const NimBLEUUID Ricoh::OPERATION_REQUEST_CHR_UUID {0x559644B8, 0xE0BC, 0x4011,
-                                                    0x929B5CF9199851E7};
-const NimBLEUUID Ricoh::CAPTURE_STATUS_CHR_UUID {0xB5589C08, 0xB5FD, 0x46F5,
-                                                 0xBE7DAB1B8C074CAA};
+const NimBLEUUID Ricoh::SHOOTING_FLAVOR_CHR_UUID {0xB29E6DE3, 0x1AEC, 0x48C1, 0x9D0502CEA57CE664};
+const NimBLEUUID Ricoh::OPERATION_REQUEST_CHR_UUID {0x559644B8, 0xE0BC, 0x4011, 0x929B5CF9199851E7};
+const NimBLEUUID Ricoh::CAPTURE_STATUS_CHR_UUID {0xB5589C08, 0xB5FD, 0x46F5, 0xBE7DAB1B8C074CAA};
 const NimBLEUUID Ricoh::SELF_TIMER_CHR_UUID {0x009A8E70, 0xB306, 0x4451, 0xB9437F54392EB971};
 
 const NimBLEUUID Ricoh::BT_CONTROL_SVC_UUID {0x0F291746, 0x0C80, 0x4726, 0x87A73C501FD3B4B6};
@@ -38,21 +34,17 @@ const NimBLEUUID Ricoh::PAIRED_DEVICE_NAME_CHR_UUID {0xFE3A32F8, 0xA189, 0x42DE,
                                                      0xA391BC81AE4DAA76};
 
 const NimBLEUUID Ricoh::GPS_SVC_UUID {0x84A0DD62, 0xE8AA, 0x4D0F, 0x91DB819B6724C69E};
-const NimBLEUUID Ricoh::GPS_INFO_CHR_UUID {0x28F59D60, 0x8B8E, 0x4FCD,
-                                           0xA81F61BDB46595A9};
+const NimBLEUUID Ricoh::GPS_INFO_CHR_UUID {0x28F59D60, 0x8B8E, 0x4FCD, 0xA81F61BDB46595A9};
 
-const NimBLEUUID Ricoh::LOCATION_CONTROL_SVC_UUID {0xF37F568F, 0x9071, 0x445D,
-                                                   0xA9385441F2E82399};
-const NimBLEUUID Ricoh::LOCATION_CONTROL_CHR_UUID {0x9111CDD0, 0x9F01, 0x45C4,
-                                                   0xA2D4E09E8FB0424D};
+const NimBLEUUID Ricoh::LOCATION_CONTROL_SVC_UUID {0xF37F568F, 0x9071, 0x445D, 0xA9385441F2E82399};
+const NimBLEUUID Ricoh::LOCATION_CONTROL_CHR_UUID {0x9111CDD0, 0x9F01, 0x45C4, 0xA2D4E09E8FB0424D};
 
 namespace {
 
 bool validTimesync(const Camera::timesync_t &timesync) {
   return timesync.year >= 2000 && timesync.year <= 2099 && timesync.month >= 1
-         && timesync.month <= 12 && timesync.day >= 1 && timesync.day <= 31
-         && timesync.hour <= 23 && timesync.minute <= 59 && timesync.second <= 60
-         && timesync.centisecond <= 99;
+         && timesync.month <= 12 && timesync.day >= 1 && timesync.day <= 31 && timesync.hour <= 23
+         && timesync.minute <= 59 && timesync.second <= 60 && timesync.centisecond <= 99;
 }
 
 const char *powerName(uint8_t value) {
@@ -98,14 +90,15 @@ std::string bytesToHex(const uint8_t *data, size_t len) {
   return hex;
 }
 
-void logChr(NimBLERemoteCharacteristic *pChr, const char *label,
+void logChr(NimBLERemoteCharacteristic *pChr,
+            const char *label,
             const char *(*decode)(uint8_t) = nullptr) {
   if (pChr == nullptr) {
     ESP_LOGI(LOG_TAG, "Ricoh %s: missing", label);
     return;
   }
-  ESP_LOGI(LOG_TAG, "Ricoh %s uuid=%s read=%d write=%d writeNoRsp=%d notify=%d indicate=%d",
-           label, pChr->getUUID().toString().c_str(), pChr->canRead(), pChr->canWrite(),
+  ESP_LOGI(LOG_TAG, "Ricoh %s uuid=%s read=%d write=%d writeNoRsp=%d notify=%d indicate=%d", label,
+           pChr->getUUID().toString().c_str(), pChr->canRead(), pChr->canWrite(),
            pChr->canWriteNoResponse(), pChr->canNotify(), pChr->canIndicate());
   if (!pChr->canRead())
     return;
@@ -118,8 +111,7 @@ void logChr(NimBLERemoteCharacteristic *pChr, const char *label,
     ESP_LOGI(LOG_TAG, "Ricoh %s value=0x%02X decoded=%s", label, value.data()[0],
              decode(value.data()[0]));
   else
-    ESP_LOGI(LOG_TAG, "Ricoh %s value=%s", label,
-             bytesToHex(value.data(), value.length()).c_str());
+    ESP_LOGI(LOG_TAG, "Ricoh %s value=%s", label, bytesToHex(value.data(), value.length()).c_str());
 }
 
 }  // namespace
@@ -334,11 +326,10 @@ bool Ricoh::writeOperation(OperationCode code, OperationParameter parameter) {
     ESP_LOGW(LOG_TAG, "Ricoh OperationRequest unavailable");
     return false;
   }
-  const std::array<uint8_t, 2> cmd = {static_cast<uint8_t>(code),
-                                       static_cast<uint8_t>(parameter)};
+  const std::array<uint8_t, 2> cmd = {static_cast<uint8_t>(code), static_cast<uint8_t>(parameter)};
   bool rc = m_OperationRequest->writeValue(cmd.data(), cmd.size(), true);
-  ESP_LOGI(LOG_TAG, "Ricoh OperationRequest code=%u param=%u => %s",
-           static_cast<unsigned>(code), static_cast<unsigned>(parameter), rc ? "ok" : "failed");
+  ESP_LOGI(LOG_TAG, "Ricoh OperationRequest code=%u param=%u => %s", static_cast<unsigned>(code),
+           static_cast<unsigned>(parameter), rc ? "ok" : "failed");
   return rc;
 }
 
@@ -387,13 +378,13 @@ void Ricoh::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
     ESP_LOGW(LOG_TAG, "Ricoh GPS skipped: not connected");
     return;
   }
-  if (!std::isfinite(gps.latitude) || !std::isfinite(gps.longitude)
-      || !std::isfinite(gps.altitude) || !validTimesync(timesync)) {
+  if (!std::isfinite(gps.latitude) || !std::isfinite(gps.longitude) || !std::isfinite(gps.altitude)
+      || !validTimesync(timesync)) {
     ESP_LOGW(LOG_TAG,
              "Ricoh GPS invalid: lat=%.7f lon=%.7f alt=%.1f "
              "utc=%04u-%02u-%02u %02u:%02u:%02u.%02u",
-             gps.latitude, gps.longitude, gps.altitude, timesync.year, timesync.month,
-             timesync.day, timesync.hour, timesync.minute, timesync.second, timesync.centisecond);
+             gps.latitude, gps.longitude, gps.altitude, timesync.year, timesync.month, timesync.day,
+             timesync.hour, timesync.minute, timesync.second, timesync.centisecond);
     return;
   }
   ESP_LOGD(LOG_TAG,
