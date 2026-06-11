@@ -77,21 +77,7 @@ const char *opModeName(uint8_t value) {
   }
 }
 
-std::string bytesToHex(const uint8_t *data, size_t len) {
-  std::string hex;
-  hex.reserve(len * 3);
-  for (size_t i = 0; i < len; ++i) {
-    char buf[4];
-    snprintf(buf, sizeof(buf), "%02X", data[i]);
-    if (!hex.empty())
-      hex.push_back(' ');
-    hex += buf;
-  }
-  return hex;
-}
-
-void logChr(NimBLERemoteCharacteristic *pChr,
-            const char *label,
+void logChr(NimBLERemoteCharacteristic *pChr, const char *label,
             const char *(*decode)(uint8_t) = nullptr) {
   if (pChr == nullptr) {
     ESP_LOGI(LOG_TAG, "Ricoh %s: missing", label);
@@ -111,7 +97,9 @@ void logChr(NimBLERemoteCharacteristic *pChr,
     ESP_LOGI(LOG_TAG, "Ricoh %s value=0x%02X decoded=%s", label, value.data()[0],
              decode(value.data()[0]));
   else
-    ESP_LOGI(LOG_TAG, "Ricoh %s value=%s", label, bytesToHex(value.data(), value.length()).c_str());
+    ESP_LOGI(LOG_TAG, "Ricoh %s value=%s", label,
+             NimBLEUtils::dataToHexString(value.data(), static_cast<uint8_t>(value.length()))
+                 .c_str());
 }
 
 }  // namespace
@@ -142,9 +130,10 @@ bool Ricoh::nameMatches(const std::string &name) {
   std::transform(upper.begin(), upper.end(), upper.begin(),
                  [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
 
-  return upper.find("RICOH") != std::string::npos || upper.find("PENTAX") != std::string::npos
-         || upper == "GR" || upper.find("GR ") != std::string::npos
-         || upper.find("GRIII") != std::string::npos || upper.find("GR III") != std::string::npos;
+  const std::array<const char *, 5> matches = {"RICOH", "PENTAX", "GR ", "GRIII", "GR III"};
+  return upper == "GR" || std::any_of(matches.begin(), matches.end(), [&upper](const char *match) {
+           return upper.find(match) != std::string::npos;
+         });
 }
 
 bool Ricoh::matches(const NimBLEAdvertisedDevice *pDevice) {
@@ -342,7 +331,8 @@ bool Ricoh::subscribeCharacteristic(NimBLERemoteCharacteristic *pChr, const char
       true,
       [](NimBLERemoteCharacteristic *chr, uint8_t *data, size_t len, bool isNotify) {
         ESP_LOGI(LOG_TAG, "Ricoh notify %s (%s): %s", chr->getUUID().toString().c_str(),
-                 isNotify ? "notify" : "indicate", bytesToHex(data, len).c_str());
+                 isNotify ? "notify" : "indicate",
+                 NimBLEUtils::dataToHexString(data, static_cast<uint8_t>(len)).c_str());
       },
       true);
   ESP_LOGI(LOG_TAG, "Ricoh subscribe %s => %s", label, rc ? "ok" : "failed");

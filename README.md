@@ -146,6 +146,8 @@ The intervalometer can be configured via three settings in `Settings->Timer`:
 Count can be configured up to 999 or infinite.
 Delay and shutter time can be figured with custom or preset values from 0 to 999 in milliseconds, seconds or minutes.
 
+Some camera protocols such as Ricoh GR trigger capture with a single operation request and do not expose separate exposure start/stop control. For those cameras the intervalometer still controls the wait, count, and delay between captures, but the camera ignores the configured shutter-open duration.
+
 ### Shutter Lock
 
 When in `Shutter` remote control, holding focus (button B) then release (button A) will engage shutter lock, holding the shutter open until a button is pressed.
