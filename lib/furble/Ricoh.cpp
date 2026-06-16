@@ -77,7 +77,8 @@ const char *opModeName(uint8_t value) {
   }
 }
 
-void logChr(NimBLERemoteCharacteristic *pChr, const char *label,
+void logChr(NimBLERemoteCharacteristic *pChr,
+            const char *label,
             const char *(*decode)(uint8_t) = nullptr) {
   if (pChr == nullptr) {
     ESP_LOGI(LOG_TAG, "Ricoh %s: missing", label);
@@ -97,9 +98,9 @@ void logChr(NimBLERemoteCharacteristic *pChr, const char *label,
     ESP_LOGI(LOG_TAG, "Ricoh %s value=0x%02X decoded=%s", label, value.data()[0],
              decode(value.data()[0]));
   else
-    ESP_LOGI(LOG_TAG, "Ricoh %s value=%s", label,
-             NimBLEUtils::dataToHexString(value.data(), static_cast<uint8_t>(value.length()))
-                 .c_str());
+    ESP_LOGI(
+        LOG_TAG, "Ricoh %s value=%s", label,
+        NimBLEUtils::dataToHexString(value.data(), static_cast<uint8_t>(value.length())).c_str());
 }
 
 }  // namespace
