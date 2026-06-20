@@ -455,14 +455,15 @@ void Nikon::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
       .latitude_direction = gps.latitude < 0.0 ? 'S' : 'N',
       .latitude_degrees = 0,
       .latitude_minutes = 0,
-      .latitude_seconds = 0,
-      .latitude_fraction = 0,
+      .latitude_submin1 = 0,
+      .latitude_submin2 = 0,
       .longitude_direction = gps.longitude < 0.0 ? 'W' : 'E',
       .longitude_degrees = 0,
       .longitude_minutes = 0,
-      .longitude_seconds = 0,
-      .longitude_fraction = 0,
-      .extras = (uint16_t)gps.satellites,
+      .longitude_submin1 = 0,
+      .longitude_submin2 = 0,
+      .satellites = static_cast<uint8_t>(gps.satellites),
+      .altitude_ref = gps.altitude < 0.0 ? 'M' : 'P',
       .altitude = (uint16_t)gps.altitude,
       .time = ntime,
       .subseconds = (uint8_t)timesync.centisecond,
@@ -471,10 +472,10 @@ void Nikon::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
       .pad = {0x00},
   };
 
-  degreesToDMS(gps.latitude, geo.latitude_degrees, geo.latitude_minutes, geo.latitude_seconds,
-               geo.latitude_fraction);
-  degreesToDMS(gps.longitude, geo.longitude_degrees, geo.longitude_minutes, geo.longitude_seconds,
-               geo.longitude_fraction);
+  degreesToDMSubMin(gps.latitude, geo.latitude_degrees, geo.latitude_minutes, geo.latitude_submin1,
+                    geo.latitude_submin2);
+  degreesToDMSubMin(gps.longitude, geo.longitude_degrees, geo.longitude_minutes,
+                    geo.longitude_submin1, geo.longitude_submin2);
 
   ESP_LOGI(LOG_TAG, "sending GPS = %s",
            NimBLEUtils::dataToHexString((const uint8_t *)&geo, sizeof(geo)).c_str());
@@ -490,23 +491,37 @@ void Nikon::_disconnect(void) {
   m_Client->disconnect();
 }
 
-void Nikon::degreesToDMS(double value,
-                         uint8_t &degrees,
-                         uint8_t &minutes,
-                         uint8_t &seconds,
-                         uint8_t &fraction) {
+// Converts a decimal-degree value into the Nikon encoding:
+// degrees, whole minutes, and two "sub-minute" bytes that
+// together represent the fractional minutes as a 4-digit number
+// (submin1 = hundredths of a minute, submin2 = hundredths of the
+// remainder).
+void Nikon::degreesToDMSubMin(double value,
+                              uint8_t &degrees,
+                              uint8_t &minutes,
+                              uint8_t &submin1,
+                              uint8_t &submin2) {
   double integral;
-  double fractional = std::modf(std::fabs(value), &integral);
+  double absValue = std::fabs(value);
+
+  // Whole degrees (truncated, matching Math.floor on a non-negative value).
+  std::modf(absValue, &integral);
   degrees = (uint8_t)integral;
-  fractional *= 60;
-  fractional = std::modf(fractional, &integral);
+
+  // Remaining fractional degrees, converted to minutes.
+  double minutesFull = (absValue - degrees) * 60.0;
+  std::modf(minutesFull, &integral);
   minutes = (uint8_t)integral;
-  fractional *= 60;
-  fractional = std::modf(fractional, &integral);
-  seconds = (uint8_t)integral;
-  fractional *= 10;
-  fractional = std::modf(fractional, &integral);
-  fraction = (uint8_t)integral;
+
+  // Remaining fractional minutes, scaled by 100
+  double subMinFull = (minutesFull - minutes) * 100.0;
+  std::modf(subMinFull, &integral);
+  submin1 = (uint8_t)integral;
+
+  // Remaining fractional hundredths-of-a-minute, scaled by 100 again.
+  double subMin2Full = (subMinFull - submin1) * 100.0;
+  std::modf(subMin2Full, &integral);
+  submin2 = (uint8_t)integral;
 }
 
 size_t Nikon::getSerialisedBytes(void) const {
