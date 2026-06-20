@@ -137,14 +137,15 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
     uint8_t latitude_direction;  // {N|S}
     uint8_t latitude_degrees;
     uint8_t latitude_minutes;
-    uint8_t latitude_seconds;
-    uint8_t latitude_fraction;
+    uint8_t latitude_submin1;     // Remaining fractional minutes(hundredths of a minute)
+    uint8_t latitude_submin2;     // Remaining fractional hundredths-of-a-minute
     uint8_t longitude_direction;  // {E|W}
     uint8_t longitude_degrees;
     uint8_t longitude_minutes;
-    uint8_t longitude_seconds;
-    uint8_t longitude_fraction;
-    uint16_t extras;  // always 0x0050? no. of satellites
+    uint8_t longitude_submin1;  // Remaining fractional minutes(hundredths of a minute)
+    uint8_t longitude_submin2;  // Remaining fractional hundredths-of-a-minute
+    uint8_t satellites;         // no. of satellites
+    uint8_t altitude_ref;       // P=0x50 for positive, M=0x4D for negative altitude
     uint16_t altitude;
     nikon_time_t time;
     uint8_t subseconds;
@@ -227,13 +228,13 @@ class Nikon: public Camera, public NimBLEScanCallbacks {
   QueueHandle_t m_Queue;
 
   /**
-   * Convert decimal degrees to degrees, minutes, seconds and fraction.
+   * Convert decimal degrees to degrees, minutes and sub-minute parts.
    */
-  void degreesToDMS(double value,
-                    uint8_t &degrees,
-                    uint8_t &minutes,
-                    uint8_t &seconds,
-                    uint8_t &fraction);
+  void degreesToDMSubMin(double value,
+                         uint8_t &degrees,
+                         uint8_t &minutes,
+                         uint8_t &submin1,
+                         uint8_t &submin2);
 
   /** Advertised device has requisite service UUID. */
   static bool matchesServiceUUID(const NimBLEAdvertisedDevice *pDevice);
