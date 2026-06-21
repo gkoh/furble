@@ -7,6 +7,7 @@
 #include "FujifilmBasic.h"
 #include "FujifilmSecure.h"
 #include "Nikon.h"
+#include "Ricoh.h"
 #include "Sony.h"
 
 #include "CameraList.h"
@@ -176,6 +177,10 @@ void CameraList::load(void) {
         m_ConnectList.push_back(
             std::make_unique<Furble::Sony>(static_cast<const void *>(dbuffer), dbytes));
         break;
+      case Camera::Type::RICOH:
+        m_ConnectList.push_back(
+            std::make_unique<Furble::Ricoh>(static_cast<const void *>(dbuffer), dbytes));
+        break;
       case Camera::Type::FUJIFILM_SECURE:
         m_ConnectList.push_back(
             std::make_unique<Furble::FujifilmSecure>(static_cast<const void *>(dbuffer), dbytes));
@@ -221,6 +226,9 @@ bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
     return true;
   } else if (Nikon::matches(pDevice)) {
     m_ConnectList.push_back(std::make_unique<Furble::Nikon>(pDevice));
+    return true;
+  } else if (Ricoh::matches(pDevice)) {
+    m_ConnectList.push_back(std::make_unique<Furble::Ricoh>(pDevice));
     return true;
   } else if (Sony::matches(pDevice)) {
     m_ConnectList.push_back(std::make_unique<Furble::Sony>(pDevice));
