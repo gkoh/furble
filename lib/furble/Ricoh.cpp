@@ -11,6 +11,7 @@
 #include <NimBLERemoteCharacteristic.h>
 #include <NimBLERemoteService.h>
 #include <NimBLEUtils.h>
+#include <esp_timer.h>
 
 #include "Ricoh.h"
 
@@ -40,6 +41,17 @@ const NimBLEUUID Ricoh::LOCATION_CONTROL_SVC_UUID {0xF37F568F, 0x9071, 0x445D, 0
 const NimBLEUUID Ricoh::LOCATION_CONTROL_CHR_UUID {0x9111CDD0, 0x9F01, 0x45C4, 0xA2D4E09E8FB0424D};
 
 namespace {
+
+constexpr uint32_t GPS_MIN_INTERVAL_MS = 10 * 1000;
+constexpr double GPS_MIN_DELTA_DEG = 0.00001;
+constexpr double GPS_MIN_DELTA_ALT_M = 1.0;
+
+void putDoubleBE(std::array<uint8_t, 32> &buffer, size_t offset, double value) {
+  uint64_t bits = 0;
+  memcpy(&bits, &value, sizeof(bits));
+  for (size_t i = 0; i < sizeof(bits); ++i)
+    buffer[offset + i] = static_cast<uint8_t>(bits >> ((sizeof(bits) - 1 - i) * 8));
+}
 
 bool validTimesync(const Camera::timesync_t &timesync) {
   return timesync.year >= 2000 && timesync.year <= 2099 && timesync.month >= 1
@@ -228,6 +240,9 @@ bool Ricoh::_connect(void) {
   }
   m_Progress = 75;
 
+  if (!enableRemoteMode())
+    ESP_LOGW(LOG_TAG, "Ricoh remote mode enable failed; continuing");
+
   pSvc = m_Client->getService(GPS_SVC_UUID);
   if (pSvc != nullptr) {
     m_GpsInfo = pSvc->getCharacteristic(GPS_INFO_CHR_UUID);
@@ -291,6 +306,8 @@ void Ricoh::clearRemoteState(void) {
   m_PairedDeviceName = nullptr;
   m_GpsInfo = nullptr;
   m_LocationControl = nullptr;
+  m_LastGpsWriteMs = 0;
+  m_HasGpsWrite = false;
 }
 
 bool Ricoh::writeByte(NimBLERemoteCharacteristic *pChr, uint8_t value, const char *label) {
@@ -305,6 +322,34 @@ bool Ricoh::writeByte(NimBLERemoteCharacteristic *pChr, uint8_t value, const cha
   bool rc = pChr->writeValue(&value, sizeof(value), true);
   ESP_LOGD(LOG_TAG, "Ricoh %s = %s", label, rc ? "ok" : "failed");
   return rc;
+}
+
+bool Ricoh::enableRemoteMode(void) {
+  if (!isConnected()) {
+    ESP_LOGW(LOG_TAG, "Ricoh RemoteMode skipped: not connected");
+    return false;
+  }
+  if (m_SelfTimer == nullptr || (!m_SelfTimer->canWrite() && !m_SelfTimer->canWriteNoResponse())) {
+    ESP_LOGW(LOG_TAG, "Ricoh SelfTimer unavailable");
+    return false;
+  }
+
+  const std::array<uint8_t, 2> cmd = {0x00, 0x01};
+
+  if (m_SelfTimer->canWrite()) {
+    bool rc = m_SelfTimer->writeValue(cmd.data(), cmd.size(), true);
+    ESP_LOGI(LOG_TAG, "Ricoh SelfTimer remote mode write-rsp => %s", rc ? "ok" : "failed");
+    if (rc)
+      return true;
+  }
+
+  if (m_SelfTimer->canWriteNoResponse()) {
+    bool rc = m_SelfTimer->writeValue(cmd.data(), cmd.size(), false);
+    ESP_LOGI(LOG_TAG, "Ricoh SelfTimer remote mode write-no-rsp => %s", rc ? "ok" : "failed");
+    return rc;
+  }
+
+  return false;
 }
 
 bool Ricoh::writeOperation(OperationCode code, OperationParameter parameter) {
@@ -344,6 +389,10 @@ bool Ricoh::setShootingFlavor(ShootingFlavor flavor) {
   return writeByte(m_ShootingFlavor, static_cast<uint8_t>(flavor), "ShootingFlavor");
 }
 
+bool Ricoh::setLocationControl(bool enabled) {
+  return writeByte(m_LocationControl, enabled ? 0x01 : 0x00, "LocationControl");
+}
+
 void Ricoh::shutterPress(void) {
   if (!setShootingFlavor(ShootingFlavor::IMMEDIATE))
     return;
@@ -369,6 +418,10 @@ void Ricoh::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
     ESP_LOGW(LOG_TAG, "Ricoh GPS skipped: not connected");
     return;
   }
+  if (m_GpsInfo == nullptr || !m_GpsInfo->canWrite()) {
+    ESP_LOGW(LOG_TAG, "Ricoh GPS characteristic unavailable");
+    return;
+  }
   if (!std::isfinite(gps.latitude) || !std::isfinite(gps.longitude) || !std::isfinite(gps.altitude)
       || !validTimesync(timesync)) {
     ESP_LOGW(LOG_TAG,
@@ -378,11 +431,46 @@ void Ricoh::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
              timesync.hour, timesync.minute, timesync.second, timesync.centisecond);
     return;
   }
-  ESP_LOGD(LOG_TAG,
-           "Ricoh GPS valid (stub): lat=%.7f lon=%.7f alt=%.1f "
-           "utc=%04u-%02u-%02u %02u:%02u:%02u.%02u",
-           gps.latitude, gps.longitude, gps.altitude, timesync.year, timesync.month, timesync.day,
-           timesync.hour, timesync.minute, timesync.second, timesync.centisecond);
+
+  const uint32_t nowMs = static_cast<uint32_t>(esp_timer_get_time() / 1000ULL);
+  const bool moved = !m_HasGpsWrite
+                     || std::fabs(gps.latitude - m_LastGps.latitude) >= GPS_MIN_DELTA_DEG
+                     || std::fabs(gps.longitude - m_LastGps.longitude) >= GPS_MIN_DELTA_DEG
+                     || std::fabs(gps.altitude - m_LastGps.altitude) >= GPS_MIN_DELTA_ALT_M;
+  const bool intervalElapsed =
+      !m_HasGpsWrite || static_cast<uint32_t>(nowMs - m_LastGpsWriteMs) >= GPS_MIN_INTERVAL_MS;
+
+  if (!moved && !intervalElapsed)
+    return;
+
+  if (!m_HasGpsWrite)
+    setLocationControl(true);
+
+  std::array<uint8_t, 32> payload = {};
+  putDoubleBE(payload, 0, gps.latitude);
+  putDoubleBE(payload, 8, gps.longitude);
+  putDoubleBE(payload, 16, gps.altitude);
+  payload[24] = static_cast<uint8_t>(timesync.year & 0xff);
+  payload[25] = static_cast<uint8_t>((timesync.year >> 8) & 0xff);
+  payload[26] = static_cast<uint8_t>(std::min(timesync.month, 255u));
+  payload[27] = static_cast<uint8_t>(std::min(timesync.day, 255u));
+  payload[28] = static_cast<uint8_t>(std::min(timesync.hour, 255u));
+  payload[29] = static_cast<uint8_t>(std::min(timesync.minute, 255u));
+  payload[30] = static_cast<uint8_t>(std::min(timesync.second, 255u));
+  payload[31] = static_cast<uint8_t>(std::min(timesync.centisecond, 99u));
+
+  bool rc = m_GpsInfo->writeValue(payload.data(), payload.size(), true);
+  ESP_LOGI(
+      LOG_TAG, "Ricoh GPS lat=%.7f lon=%.7f alt=%.1f utc=%04u-%02u-%02u %02u:%02u:%02u.%02u => %s",
+      gps.latitude, gps.longitude, gps.altitude, timesync.year, timesync.month, timesync.day,
+      timesync.hour, timesync.minute, timesync.second, timesync.centisecond, rc ? "ok" : "failed");
+
+  if (rc) {
+    m_LastGpsWriteMs = nowMs;
+    m_HasGpsWrite = true;
+    m_LastGps = gps;
+    m_LastTimesync = timesync;
+  }
 }
 
 size_t Ricoh::getSerialisedBytes(void) const {

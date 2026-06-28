@@ -93,6 +93,11 @@ class Ricoh: public Camera {
   NimBLERemoteCharacteristic *m_GpsInfo = nullptr;
   NimBLERemoteCharacteristic *m_LocationControl = nullptr;
 
+  uint32_t m_LastGpsWriteMs = 0;
+  bool m_HasGpsWrite = false;
+  gps_t m_LastGps = {};
+  timesync_t m_LastTimesync = {};
+
   bool _connect(void) override final;
   void _disconnect(void) override final;
 
@@ -106,7 +111,9 @@ class Ricoh: public Camera {
   bool writeByte(NimBLERemoteCharacteristic *pChr, uint8_t value, const char *label);
   bool writeOperation(OperationCode code, OperationParameter parameter);
   bool subscribeCharacteristic(NimBLERemoteCharacteristic *pChr, const char *label);
+  bool enableRemoteMode(void);
   bool setShootingFlavor(ShootingFlavor flavor);
+  bool setLocationControl(bool enabled);
 };
 
 }  // namespace Furble
