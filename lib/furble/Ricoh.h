@@ -55,6 +55,21 @@ class Ricoh: public Camera {
     TIMER_2S = 2,
   };
 
+  // GPS Information payload
+  typedef struct __attribute__((packed)) _ricoh_geo_t {
+    double latitude;
+    double longitude;
+    double altitude;
+    uint8_t year_lsb;
+    uint8_t year_msb;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t minute;
+    uint8_t second;
+    uint8_t centisecond;
+  } ricoh_geo_t;
+
   // Camera Information Service
   static const NimBLEUUID INFO_SVC_UUID;
   static const NimBLEUUID MODEL_CHR_UUID;

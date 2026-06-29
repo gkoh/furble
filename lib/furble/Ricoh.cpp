@@ -46,11 +46,14 @@ constexpr uint32_t GPS_MIN_INTERVAL_MS = 10 * 1000;
 constexpr double GPS_MIN_DELTA_DEG = 0.00001;
 constexpr double GPS_MIN_DELTA_ALT_M = 1.0;
 
-void putDoubleBE(std::array<uint8_t, 32> &buffer, size_t offset, double value) {
-  uint64_t bits = 0;
-  memcpy(&bits, &value, sizeof(bits));
-  for (size_t i = 0; i < sizeof(bits); ++i)
-    buffer[offset + i] = static_cast<uint8_t>(bits >> ((sizeof(bits) - 1 - i) * 8));
+double bswapd64(double x) {
+  uint64_t t;
+  std::memcpy(&t, &x, sizeof(x));
+  t = __builtin_bswap64(t);
+
+  double val;
+  std::memcpy(&val, &t, sizeof(t));
+  return val;
 }
 
 bool validTimesync(const Camera::timesync_t &timesync) {
@@ -446,20 +449,21 @@ void Ricoh::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
   if (!m_HasGpsWrite)
     setLocationControl(true);
 
-  std::array<uint8_t, 32> payload = {};
-  putDoubleBE(payload, 0, gps.latitude);
-  putDoubleBE(payload, 8, gps.longitude);
-  putDoubleBE(payload, 16, gps.altitude);
-  payload[24] = static_cast<uint8_t>(timesync.year & 0xff);
-  payload[25] = static_cast<uint8_t>((timesync.year >> 8) & 0xff);
-  payload[26] = static_cast<uint8_t>(std::min(timesync.month, 255u));
-  payload[27] = static_cast<uint8_t>(std::min(timesync.day, 255u));
-  payload[28] = static_cast<uint8_t>(std::min(timesync.hour, 255u));
-  payload[29] = static_cast<uint8_t>(std::min(timesync.minute, 255u));
-  payload[30] = static_cast<uint8_t>(std::min(timesync.second, 255u));
-  payload[31] = static_cast<uint8_t>(std::min(timesync.centisecond, 99u));
+  ricoh_geo_t geo = {
+      .latitude = bswapd64(gps.latitude),
+      .longitude = bswapd64(gps.longitude),
+      .altitude = bswapd64(gps.altitude),
+      .year_lsb = static_cast<uint8_t>(timesync.year & 0xff),
+      .year_msb = static_cast<uint8_t>((timesync.year >> 8) & 0xff),
+      .month = static_cast<uint8_t>(std::min(timesync.month, 255u)),
+      .day = static_cast<uint8_t>(std::min(timesync.day, 255u)),
+      .hour = static_cast<uint8_t>(std::min(timesync.hour, 255u)),
+      .minute = static_cast<uint8_t>(std::min(timesync.minute, 255u)),
+      .second = static_cast<uint8_t>(std::min(timesync.second, 255u)),
+      .centisecond = static_cast<uint8_t>(std::min(timesync.centisecond, 99u)),
+  };
 
-  bool rc = m_GpsInfo->writeValue(payload.data(), payload.size(), true);
+  bool rc = m_GpsInfo->writeValue(reinterpret_cast<const uint8_t *>(&geo), sizeof(geo), true);
   ESP_LOGI(
       LOG_TAG, "Ricoh GPS lat=%.7f lon=%.7f alt=%.1f utc=%04u-%02u-%02u %02u:%02u:%02u.%02u => %s",
       gps.latitude, gps.longitude, gps.altitude, timesync.year, timesync.month, timesync.day,
