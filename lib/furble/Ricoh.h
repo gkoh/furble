@@ -126,7 +126,6 @@ class Ricoh: public Camera {
   bool writeByte(NimBLERemoteCharacteristic *pChr, uint8_t value, const char *label);
   bool writeOperation(OperationCode code, OperationParameter parameter);
   bool subscribeCharacteristic(NimBLERemoteCharacteristic *pChr, const char *label);
-  bool enableRemoteMode(void);
   bool setShootingFlavor(ShootingFlavor flavor);
   bool setLocationControl(bool enabled);
 };

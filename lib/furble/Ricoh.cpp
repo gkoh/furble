@@ -243,9 +243,6 @@ bool Ricoh::_connect(void) {
   }
   m_Progress = 75;
 
-  if (!enableRemoteMode())
-    ESP_LOGW(LOG_TAG, "Ricoh remote mode enable failed; continuing");
-
   pSvc = m_Client->getService(GPS_SVC_UUID);
   if (pSvc != nullptr) {
     m_GpsInfo = pSvc->getCharacteristic(GPS_INFO_CHR_UUID);
@@ -325,34 +322,6 @@ bool Ricoh::writeByte(NimBLERemoteCharacteristic *pChr, uint8_t value, const cha
   bool rc = pChr->writeValue(&value, sizeof(value), true);
   ESP_LOGD(LOG_TAG, "Ricoh %s = %s", label, rc ? "ok" : "failed");
   return rc;
-}
-
-bool Ricoh::enableRemoteMode(void) {
-  if (!isConnected()) {
-    ESP_LOGW(LOG_TAG, "Ricoh RemoteMode skipped: not connected");
-    return false;
-  }
-  if (m_SelfTimer == nullptr || (!m_SelfTimer->canWrite() && !m_SelfTimer->canWriteNoResponse())) {
-    ESP_LOGW(LOG_TAG, "Ricoh SelfTimer unavailable");
-    return false;
-  }
-
-  const std::array<uint8_t, 2> cmd = {0x00, 0x01};
-
-  if (m_SelfTimer->canWrite()) {
-    bool rc = m_SelfTimer->writeValue(cmd.data(), cmd.size(), true);
-    ESP_LOGI(LOG_TAG, "Ricoh SelfTimer remote mode write-rsp => %s", rc ? "ok" : "failed");
-    if (rc)
-      return true;
-  }
-
-  if (m_SelfTimer->canWriteNoResponse()) {
-    bool rc = m_SelfTimer->writeValue(cmd.data(), cmd.size(), false);
-    ESP_LOGI(LOG_TAG, "Ricoh SelfTimer remote mode write-no-rsp => %s", rc ? "ok" : "failed");
-    return rc;
-  }
-
-  return false;
 }
 
 bool Ricoh::writeOperation(OperationCode code, OperationParameter parameter) {
