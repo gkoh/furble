@@ -11,6 +11,7 @@
 #include <NimBLERemoteCharacteristic.h>
 #include <NimBLERemoteService.h>
 #include <NimBLEUtils.h>
+#include <esp_timer.h>
 
 #include "Ricoh.h"
 
@@ -40,6 +41,20 @@ const NimBLEUUID Ricoh::LOCATION_CONTROL_SVC_UUID {0xF37F568F, 0x9071, 0x445D, 0
 const NimBLEUUID Ricoh::LOCATION_CONTROL_CHR_UUID {0x9111CDD0, 0x9F01, 0x45C4, 0xA2D4E09E8FB0424D};
 
 namespace {
+
+constexpr uint32_t GPS_MIN_INTERVAL_MS = 10 * 1000;
+constexpr double GPS_MIN_DELTA_DEG = 0.00001;
+constexpr double GPS_MIN_DELTA_ALT_M = 1.0;
+
+double bswapd64(double x) {
+  uint64_t t;
+  std::memcpy(&t, &x, sizeof(x));
+  t = __builtin_bswap64(t);
+
+  double val;
+  std::memcpy(&val, &t, sizeof(t));
+  return val;
+}
 
 bool validTimesync(const Camera::timesync_t &timesync) {
   return timesync.year >= 2000 && timesync.year <= 2099 && timesync.month >= 1
@@ -291,6 +306,8 @@ void Ricoh::clearRemoteState(void) {
   m_PairedDeviceName = nullptr;
   m_GpsInfo = nullptr;
   m_LocationControl = nullptr;
+  m_LastGpsWriteMs = 0;
+  m_HasGpsWrite = false;
 }
 
 bool Ricoh::writeByte(NimBLERemoteCharacteristic *pChr, uint8_t value, const char *label) {
@@ -344,6 +361,10 @@ bool Ricoh::setShootingFlavor(ShootingFlavor flavor) {
   return writeByte(m_ShootingFlavor, static_cast<uint8_t>(flavor), "ShootingFlavor");
 }
 
+bool Ricoh::setLocationControl(bool enabled) {
+  return writeByte(m_LocationControl, enabled ? 0x01 : 0x00, "LocationControl");
+}
+
 void Ricoh::shutterPress(void) {
   if (!setShootingFlavor(ShootingFlavor::IMMEDIATE))
     return;
@@ -369,6 +390,10 @@ void Ricoh::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
     ESP_LOGW(LOG_TAG, "Ricoh GPS skipped: not connected");
     return;
   }
+  if (m_GpsInfo == nullptr || !m_GpsInfo->canWrite()) {
+    ESP_LOGW(LOG_TAG, "Ricoh GPS characteristic unavailable");
+    return;
+  }
   if (!std::isfinite(gps.latitude) || !std::isfinite(gps.longitude) || !std::isfinite(gps.altitude)
       || !validTimesync(timesync)) {
     ESP_LOGW(LOG_TAG,
@@ -378,11 +403,47 @@ void Ricoh::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
              timesync.hour, timesync.minute, timesync.second, timesync.centisecond);
     return;
   }
-  ESP_LOGD(LOG_TAG,
-           "Ricoh GPS valid (stub): lat=%.7f lon=%.7f alt=%.1f "
-           "utc=%04u-%02u-%02u %02u:%02u:%02u.%02u",
-           gps.latitude, gps.longitude, gps.altitude, timesync.year, timesync.month, timesync.day,
-           timesync.hour, timesync.minute, timesync.second, timesync.centisecond);
+
+  const uint32_t nowMs = static_cast<uint32_t>(esp_timer_get_time() / 1000ULL);
+  const bool moved = !m_HasGpsWrite
+                     || std::fabs(gps.latitude - m_LastGps.latitude) >= GPS_MIN_DELTA_DEG
+                     || std::fabs(gps.longitude - m_LastGps.longitude) >= GPS_MIN_DELTA_DEG
+                     || std::fabs(gps.altitude - m_LastGps.altitude) >= GPS_MIN_DELTA_ALT_M;
+  const bool intervalElapsed =
+      !m_HasGpsWrite || static_cast<uint32_t>(nowMs - m_LastGpsWriteMs) >= GPS_MIN_INTERVAL_MS;
+
+  if (!moved && !intervalElapsed)
+    return;
+
+  if (!m_HasGpsWrite)
+    setLocationControl(true);
+
+  ricoh_geo_t geo = {
+      .latitude = bswapd64(gps.latitude),
+      .longitude = bswapd64(gps.longitude),
+      .altitude = bswapd64(gps.altitude),
+      .year_lsb = static_cast<uint8_t>(timesync.year & 0xff),
+      .year_msb = static_cast<uint8_t>((timesync.year >> 8) & 0xff),
+      .month = static_cast<uint8_t>(std::min(timesync.month, 255u)),
+      .day = static_cast<uint8_t>(std::min(timesync.day, 255u)),
+      .hour = static_cast<uint8_t>(std::min(timesync.hour, 255u)),
+      .minute = static_cast<uint8_t>(std::min(timesync.minute, 255u)),
+      .second = static_cast<uint8_t>(std::min(timesync.second, 255u)),
+      .centisecond = static_cast<uint8_t>(std::min(timesync.centisecond, 99u)),
+  };
+
+  bool rc = m_GpsInfo->writeValue(reinterpret_cast<const uint8_t *>(&geo), sizeof(geo), true);
+  ESP_LOGI(
+      LOG_TAG, "Ricoh GPS lat=%.7f lon=%.7f alt=%.1f utc=%04u-%02u-%02u %02u:%02u:%02u.%02u => %s",
+      gps.latitude, gps.longitude, gps.altitude, timesync.year, timesync.month, timesync.day,
+      timesync.hour, timesync.minute, timesync.second, timesync.centisecond, rc ? "ok" : "failed");
+
+  if (rc) {
+    m_LastGpsWriteMs = nowMs;
+    m_HasGpsWrite = true;
+    m_LastGps = gps;
+    m_LastTimesync = timesync;
+  }
 }
 
 size_t Ricoh::getSerialisedBytes(void) const {
