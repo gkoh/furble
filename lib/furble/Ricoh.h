@@ -31,6 +31,8 @@ class Ricoh: public Camera {
   size_t getSerialisedBytes(void) const override final;
   bool serialise(void *buffer, size_t bytes) const override final;
 
+  SecurityMode securityMode() const override final;
+
  private:
   typedef struct _ricoh_t {
     char name[MAX_NAME];

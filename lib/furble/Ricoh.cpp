@@ -159,12 +159,12 @@ bool Ricoh::matches(const NimBLEAdvertisedDevice *pDevice) {
          || pDevice->isAdvertisingService(BT_CONTROL_SVC_UUID) || nameMatches(pDevice->getName());
 }
 
+Ricoh::SecurityMode Ricoh::securityMode() const {
+  return SecurityMode::SECURE_KEYBOARD_DISPLAY;
+}
+
 bool Ricoh::_connect(void) {
   m_Progress = 0;
-
-  constexpr uint8_t kDefaultIOCap = BLE_HS_IO_DISPLAY_YESNO;
-  NimBLEDevice::setSecurityIOCap(BLE_HS_IO_KEYBOARD_DISPLAY);
-  NimBLEDevice::setSecurityAuth(true, true, true);
 
   bool bondedBefore = NimBLEDevice::isBonded(m_Address);
   ESP_LOGI(LOG_TAG, "Ricoh bonded(before)=%s pairType=%s", bondedBefore ? "yes" : "no",
@@ -173,7 +173,6 @@ bool Ricoh::_connect(void) {
   ESP_LOGI(LOG_TAG, "Ricoh connecting");
   if (!m_Client->connect(m_Address)) {
     ESP_LOGI(LOG_TAG, "Ricoh connection failed");
-    NimBLEDevice::setSecurityIOCap(kDefaultIOCap);
     return false;
   }
   m_Progress = 15;
@@ -182,7 +181,6 @@ bool Ricoh::_connect(void) {
   if (!m_Client->secureConnection()) {
     ESP_LOGW(LOG_TAG, "Ricoh secure connection failed (bonded before=%s)",
              bondedBefore ? "yes" : "no");
-    NimBLEDevice::setSecurityIOCap(kDefaultIOCap);
     return false;
   }
   {
@@ -192,7 +190,6 @@ bool Ricoh::_connect(void) {
              connInfo.getSecKeySize());
     if (!connInfo.isEncrypted() || !connInfo.isAuthenticated() || !connInfo.isBonded()) {
       ESP_LOGW(LOG_TAG, "Ricoh secure link incomplete");
-      NimBLEDevice::setSecurityIOCap(kDefaultIOCap);
       return false;
     }
   }
@@ -223,7 +220,6 @@ bool Ricoh::_connect(void) {
   pSvc = m_Client->getService(SHOOTING_SVC_UUID);
   if (pSvc == nullptr) {
     ESP_LOGW(LOG_TAG, "Ricoh Shooting service unavailable");
-    NimBLEDevice::setSecurityIOCap(kDefaultIOCap);
     return false;
   }
 
@@ -233,12 +229,10 @@ bool Ricoh::_connect(void) {
   m_SelfTimer = pSvc->getCharacteristic(SELF_TIMER_CHR_UUID);
   if (m_OperationRequest == nullptr || !m_OperationRequest->canWrite()) {
     ESP_LOGW(LOG_TAG, "Ricoh OperationRequest unavailable");
-    NimBLEDevice::setSecurityIOCap(kDefaultIOCap);
     return false;
   }
   if (m_ShootingFlavor == nullptr || !m_ShootingFlavor->canWrite()) {
     ESP_LOGW(LOG_TAG, "Ricoh ShootingFlavor unavailable");
-    NimBLEDevice::setSecurityIOCap(kDefaultIOCap);
     return false;
   }
   m_Progress = 75;
@@ -282,8 +276,6 @@ bool Ricoh::_connect(void) {
   subscribeCharacteristic(m_SelfTimer, "SelfTimer");
   subscribeCharacteristic(m_Power, "CameraPower");
   subscribeCharacteristic(m_OperationMode, "OperationMode");
-
-  NimBLEDevice::setSecurityIOCap(kDefaultIOCap);
 
   m_Progress = 100;
   ESP_LOGI(LOG_TAG, "Ricoh connected");
