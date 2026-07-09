@@ -43,12 +43,17 @@ bool Camera::connect(esp_power_level_t power, uint32_t timeout) {
   // try extending range by adjusting connection parameters
   m_Client->setConnectionParams(m_MinInterval, m_MaxInterval, m_Latency, m_Timeout);
 
+  // set per-camera BLE security before connecting
+  NimBLEDevice::setSecurityAuth(true, true, true);
+  NimBLEDevice::setSecurityIOCap(static_cast<uint8_t>(securityMode()));
+
   bool connected = this->_connect();
   if (connected) {
     m_Paired = true;
   } else {
     this->_disconnect();
   }
+  NimBLEDevice::setSecurityIOCap(static_cast<uint8_t>(m_SecurityModeDefault));
 
   return m_Connected;
 }

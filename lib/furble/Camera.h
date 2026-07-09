@@ -39,6 +39,11 @@ class Camera: public NimBLEClientCallbacks {
     SAVED = 2,
   };
 
+  enum class SecurityMode : uint8_t {
+    SECURE_DISPLAY_YESNO = BLE_HS_IO_DISPLAY_YESNO,
+    SECURE_KEYBOARD_DISPLAY = BLE_HS_IO_KEYBOARD_DISPLAY,
+  };
+
   /**
    * GPS data type.
    */
@@ -151,6 +156,15 @@ class Camera: public NimBLEClientCallbacks {
    */
   virtual void _disconnect(void) = 0;
 
+  /**
+   * BLE security IO capability for this camera type.
+   *
+   * @return the IO capability to advertise during pairing.
+   */
+  virtual SecurityMode securityMode() const {
+    return m_SecurityModeDefault;
+  }
+
   const PairType m_PairType;
   NimBLEAddress m_Address = NimBLEAddress {};
   NimBLEClient *m_Client = nullptr;
@@ -172,6 +186,8 @@ class Camera: public NimBLEClientCallbacks {
   // double the disconnect timeout
   const uint16_t m_Timeout = (2 * BLE_GAP_INITIAL_SUPERVISION_TIMEOUT);
   const Type m_Type;
+
+  static constexpr SecurityMode m_SecurityModeDefault = SecurityMode::SECURE_DISPLAY_YESNO;
 
   mutable std::mutex m_Mutex;
 
