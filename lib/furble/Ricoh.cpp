@@ -277,7 +277,6 @@ bool Ricoh::_connect(void) {
   subscribeCharacteristic(m_Power, "CameraPower");
   subscribeCharacteristic(m_OperationMode, "OperationMode");
 
-
   m_Progress = 100;
   ESP_LOGI(LOG_TAG, "Ricoh connected");
   return true;

@@ -161,9 +161,7 @@ class Camera: public NimBLEClientCallbacks {
    *
    * @return the IO capability to advertise during pairing.
    */
-  virtual SecurityMode securityMode() const {
-    return m_SecurityModeDefault;
-  }
+  virtual SecurityMode securityMode() const { return m_SecurityModeDefault; }
 
   const PairType m_PairType;
   NimBLEAddress m_Address = NimBLEAddress {};
