@@ -6,6 +6,7 @@ A Bluetooth wireless remote shutter release originally targeted at Fujifilm mirr
 cameras. furble now supports:
 - Fujifilm
 - Canon
+- Ricoh
 - Nikon
 - Sony
 
@@ -48,6 +49,8 @@ The following devices have been tested and confirmed to work:
    - Canon EOS R6 Mark II ([@hijae](https://github.com/hijae))
    - Canon EOS RP ([@wolcano](https://github.com/wolcano))
    - Canon PowerShot G9 X Mark II ([@Mich2e](https://github.com/Mich2e))
+- Ricoh
+   - Ricoh GR IV HDF ([@sky18Dragon](https://github.com/sky18Dragon))
 - Nikon
    - Nikon COOLPIX B600
    - Nikon Z6 III ([@herrfrei](https://github.com/herrfrei))
@@ -61,12 +64,14 @@ The following devices have been tested and confirmed to work:
 | Fujifilm X & GFX   | ✔️        | ✔️       | ✔️               | ✔️[^1]   | ✔️       |
 | Canon EOS (Remote) | ✔️        | ✔️       | ✔️               | ✔️       | :x:[^2] |
 | Canon EOS (Smart)  | ✔️        | ✔️       | ✔️               | :x:[^2] | ✔️       |
-| Nikon (Remote)     | ✔️        | ✔️       | ✔️               | :x:[^2] | :x:[^2] |
+| Ricoh              | ✔️        | ✔️       | ✔️[^3]           | ✔️       | ✔️       |
+| Nikon (Remote)     | ✔️        | ✔️       | ✔️[^3]           | :x:[^2] | :x:[^2] |
 | Nikon (Smart)      | ✔️        | :x:     | :x:             | :x:     | :x:     |
 | Sony ZV            | ✔️        | ✔️       | ✔️               | ✔️       | ✔️       |
 
 [^1]: see [#99](https://github.com/gkoh/furble/discussions/99)
 [^2]: Non-existent
+[^3]: Auto-shutter release only, no manual exposure control
 
 ## Supported Controllers
 
@@ -113,7 +118,7 @@ camera advertises a known, matching signature, it should appear in the list.
 You can then connect to the target camera, which, if successful, will save the
 entry and show the remote menu.
 
-`furble` will identify as `furble-xxxx` where `xxxx` is a consistent identifier enabling one to differentiate mutiple controllers.
+`furble` will identify as `furble-xxxx` where `xxxx` is a consistent identifier enabling one to differentiate multiple controllers.
 
 Upon subsequent use it should be enough to hit `Connect`, selecting the
 previously paired device and leading to the remote menu.
@@ -184,6 +189,12 @@ Canon cameras might work, but I suspect the shutter control protocol will be
 different.
 @wolcano kindly implemented initial support for the Canon EOS RP.
 @hijae kindly helped with better Canon EOS R support.
+
+#### Ricoh
+
+All Ricoh GR IV series cameras are theoretically supported. This support was
+graciously implemented by @sky18Dragon.
+The current implementation will _not_ work with GR III or GR II.
 
 #### Nikon
 
@@ -290,6 +301,8 @@ Inspiration, references and related information for this project came from the f
 - Fujifilm
   - https://github.com/hkr/fuji-cam-wifi-tool
   - https://github.com/petabyt/fudge
+- Ricoh
+  - https://github.com/dm-zharov/ricoh-gr-bluetooth-api
 - Sony
    - https://gethypoxic.com/blogs/technical/sony-camera-ble-control-protocol-di-remote-control
    - https://gregleeds.com/reverse-engineering-sony-camera-bluetooth
