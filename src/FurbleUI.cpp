@@ -444,11 +444,15 @@ void UI::setTheme(std::string name) {
   static lv_style_t style_bg;
   static lv_style_t style_button;
   static lv_style_t style_disable;
+  static lv_style_t style_no_shadow;
 
   lv_style_init(&style_img);
   lv_style_init(&style_bg);
   lv_style_init(&style_button);
   lv_style_init(&style_disable);
+  lv_style_init(&style_no_shadow);
+
+  lv_style_set_shadow_width(&style_no_shadow, 0);
 
   // fully recolor black pixels in images
   lv_style_set_image_recolor_opa(&style_img, LV_OPA_COVER);
@@ -492,6 +496,7 @@ void UI::setTheme(std::string name) {
       lv_obj_add_style(obj, &style_bg, LV_STATE_DEFAULT);
     }
 
+    lv_obj_add_style(obj, &style_no_shadow, LV_STATE_DEFAULT);
     lv_obj_add_style(obj, &style_img, LV_STATE_DEFAULT);
     lv_obj_add_style(obj, &style_button, LV_STATE_FOCUSED);
     lv_obj_add_style(obj, &style_disable, LV_STATE_DISABLED);
