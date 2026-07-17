@@ -215,6 +215,13 @@ Furble::Camera *CameraList::get(size_t n) {
 }
 
 bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
+  // Ensure we only match one instance of each camera by address.
+  const NimBLEAddress addr = pDevice->getAddress();
+  for (auto &c : m_ConnectList) {
+    if (c->getAddress() == addr)
+      return false;  // already matched
+  }
+
   if (FujifilmBasic::matches(pDevice)) {
     m_ConnectList.push_back(std::make_unique<Furble::FujifilmBasic>(pDevice));
     return true;
