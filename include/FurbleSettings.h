@@ -59,8 +59,8 @@ class Settings {
     const char *nvs_namespace;
   } setting_t;
 
-  static const uint32_t BAUD_9600 = 9600;
-  static const uint32_t BAUD_115200 = 115200;
+  static constexpr uint32_t BAUD_9600 = 9600;
+  static constexpr uint32_t BAUD_115200 = 115200;
 
   static void init(void);
 
@@ -73,6 +73,11 @@ class Settings {
   static void save(const type_t type, const T &value);
 
  private:
+  template <typename T>
+  static T loadValue(type_t type);
+  template <typename T>
+  static void saveValue(type_t type, const T &value);
+
   static const std::unordered_map<type_t, setting_t> m_Setting;
   static Preferences m_Prefs;
 };
