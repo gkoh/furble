@@ -8,8 +8,6 @@
 namespace Furble {
 Preferences Settings::m_Prefs;
 
-const uint32_t Settings::BAUD_9600;
-
 const std::unordered_map<Settings::type_t, Settings::setting_t> Settings::m_Setting = {
     {BRIGHTNESS,        {BRIGHTNESS, "Brightness", "brightness", "M5ez"}               },
     {INACTIVITY,        {INACTIVITY, "Inactivity", "inactivity", "M5ez"}               },
@@ -29,44 +27,41 @@ const Settings::setting_t &Settings::get(type_t type) {
   return m_Setting.at(type);
 }
 
-template <>
-bool Settings::load<bool>(type_t type) {
+template <typename T>
+T Settings::loadValue(type_t type) {
   const auto &setting = get(type);
   m_Prefs.begin(setting.nvs_namespace, true);
-  bool value = m_Prefs.get<bool>(setting.key);
+  T value = m_Prefs.get<T>(setting.key, T {});
   m_Prefs.end();
-
   return value;
+}
+
+template <typename T>
+void Settings::saveValue(type_t type, const T &value) {
+  const auto &setting = get(type);
+  m_Prefs.begin(setting.nvs_namespace, false);
+  m_Prefs.put<T>(setting.key, value);
+  m_Prefs.end();
+}
+
+template <>
+bool Settings::load<bool>(type_t type) {
+  return loadValue<bool>(type);
 }
 
 template <>
 uint8_t Settings::load<uint8_t>(type_t type) {
-  const auto &setting = get(type);
-  m_Prefs.begin(setting.nvs_namespace, true);
-  uint8_t value = m_Prefs.get<uint8_t>(setting.key);
-  m_Prefs.end();
-
-  return value;
+  return loadValue<uint8_t>(type);
 }
 
 template <>
 uint32_t Settings::load<uint32_t>(type_t type) {
-  const auto &setting = get(type);
-  m_Prefs.begin(setting.nvs_namespace, true);
-  uint32_t value = m_Prefs.get<uint32_t>(setting.key);
-  m_Prefs.end();
-
-  return value;
+  return loadValue<uint32_t>(type);
 }
 
 template <>
 std::string Settings::load<std::string>(type_t type) {
-  const auto &setting = get(type);
-  m_Prefs.begin(setting.nvs_namespace, true);
-  std::string value = m_Prefs.get(setting.key);
-  m_Prefs.end();
-
-  return value;
+  return loadValue<std::string>(type);
 }
 
 template <>
@@ -137,26 +132,17 @@ Settings::calibration_t Settings::load<Settings::calibration_t>(type_t type) {
 
 template <>
 void Settings::save<bool>(const type_t type, const bool &value) {
-  const auto &setting = get(type);
-  m_Prefs.begin(setting.nvs_namespace, false);
-  m_Prefs.put<bool>(setting.key, value);
-  m_Prefs.end();
+  saveValue<bool>(type, value);
 }
 
 template <>
 void Settings::save<uint8_t>(const type_t type, const uint8_t &value) {
-  const auto &setting = get(type);
-  m_Prefs.begin(setting.nvs_namespace, false);
-  m_Prefs.put<uint8_t>(setting.key, value);
-  m_Prefs.end();
+  saveValue<uint8_t>(type, value);
 }
 
 template <>
 void Settings::save<uint32_t>(const type_t type, const uint32_t &value) {
-  const auto &setting = get(type);
-  m_Prefs.begin(setting.nvs_namespace, false);
-  m_Prefs.put<uint32_t>(setting.key, value);
-  m_Prefs.end();
+  saveValue<uint32_t>(type, value);
 }
 
 template <>
@@ -169,10 +155,7 @@ void Settings::save<interval_t>(const type_t type, const interval_t &value) {
 
 template <>
 void Settings::save<std::string>(const type_t type, const std::string &value) {
-  const auto &setting = get(type);
-  m_Prefs.begin(setting.nvs_namespace, false);
-  m_Prefs.put(setting.key, value);
-  m_Prefs.end();
+  saveValue<std::string>(type, value);
 }
 
 template <>
@@ -195,8 +178,11 @@ void Settings::init(void) {
   // Set default values for all settings
   for (const auto &it : m_Setting) {
     auto &setting = it.second;
-    m_Prefs.begin(setting.nvs_namespace, false);
-    if (!m_Prefs.isKey(setting.key)) {
+    m_Prefs.begin(setting.nvs_namespace, true);
+    bool exists = m_Prefs.isKey(setting.key);
+    m_Prefs.end();
+
+    if (!exists) {
       switch (setting.type) {
         case BRIGHTNESS:
           save<uint8_t>(setting.type, 128);
@@ -240,7 +226,6 @@ void Settings::init(void) {
         } break;
       }
     }
-    m_Prefs.end();
   }
 }
 }  // namespace Furble

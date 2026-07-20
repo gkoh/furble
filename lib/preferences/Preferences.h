@@ -39,8 +39,6 @@ class Preferences {
 
   template <typename T>
   T get(const char *key, T defaultValue = 0);
-
-  std::string get(const char *key, std::string defaultValue = "");
   size_t get(const char *key, void *buf, size_t maxLen);
 
   bool isKey(const char *key);

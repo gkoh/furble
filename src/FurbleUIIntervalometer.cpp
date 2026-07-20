@@ -14,7 +14,7 @@ UI::Intervalometer::Intervalometer(const interval_t &interval)
 void UI::Intervalometer::save(void) {
   interval_t interval = {m_Count.m_SpinValue.toNVS(), m_Delay.m_SpinValue.toNVS(),
                          m_Shutter.m_SpinValue.toNVS(), m_Wait.m_SpinValue.toNVS()};
-  Settings::save<interval_t>(Settings::INTERVAL, interval);
+  Settings::save<Settings::INTERVAL>(interval);
 }
 
 void UI::Intervalometer::Spinner::update(void) {

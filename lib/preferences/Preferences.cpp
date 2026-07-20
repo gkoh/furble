@@ -283,23 +283,17 @@ uint32_t Preferences::get(const char *key, const uint32_t defaultValue) {
 
 template <>
 std::string Preferences::get(const char *key, const std::string defaultValue) {
-  return std::string();
-}
-
-std::string Preferences::get(const char *key, const std::string defaultValue) {
-  char *value = NULL;
-  size_t len = 0;
   if (!_started || !key) {
     return std::string(defaultValue);
   }
-  esp_err_t err = nvs_get_str(_handle, key, value, &len);
+  size_t len = 0;
+  esp_err_t err = nvs_get_str(_handle, key, NULL, &len);
   if (err) {
     ESP_LOGE(LOG_TAG, "nvs_get_str len fail: %s %s", key, nvs_error(err));
     return std::string(defaultValue);
   }
   char buf[len];
-  value = buf;
-  err = nvs_get_str(_handle, key, value, &len);
+  err = nvs_get_str(_handle, key, buf, &len);
   if (err) {
     ESP_LOGE(LOG_TAG, "nvs_get_str fail: %s %s", key, nvs_error(err));
     return std::string(defaultValue);
