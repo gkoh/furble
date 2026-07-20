@@ -12,7 +12,7 @@ extern "C" {
 
 static void vUITask(void *param) {
   using namespace Furble;
-  auto interval = Settings::load<interval_t>(Settings::INTERVAL);
+  auto interval = Settings::load<Settings::INTERVAL>();
   auto ui = UI(interval);
 
   ui.task();

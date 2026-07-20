@@ -87,9 +87,9 @@ UI::UI(const interval_t &interval)
   m_Height = M5.Display.height();
 
   // set display brightness
-  auto brightness = Settings::load<uint8_t>(Settings::BRIGHTNESS);
+  auto brightness = Settings::load<Settings::BRIGHTNESS>();
   M5.Display.setBrightness(brightness);
-  setInactivityTimeout(Settings::load<uint8_t>(Settings::INACTIVITY));
+  setInactivityTimeout(Settings::load<Settings::INACTIVITY>());
 
   // set minimum, ensure this is a multiple of m_BrightnessSteps so the slider steps work
   switch (M5.getBoard()) {
@@ -129,7 +129,7 @@ UI::UI(const interval_t &interval)
 
   initInputDevices();
 
-  setTheme(Settings::load<std::string>(Settings::THEME));
+  setTheme(Settings::load<Settings::THEME>());
 
   m_Screen = lv_screen_active();
 
@@ -226,8 +226,7 @@ UI::UI(const interval_t &interval)
 
   if (M5.Touch.isEnabled()) {
     // load calibration
-    Settings::calibration_t calibration =
-        Settings::load<Settings::calibration_t>(Settings::TOUCH_CALIBRATION);
+    Settings::calibration_t calibration = Settings::load<Settings::TOUCH_CALIBRATION>();
     if (calibration.calibrated) {
       M5.Display.setTouchCalibrate(calibration.points);
     }
@@ -919,7 +918,7 @@ void UI::addMainMenu(void) {
           // If enabled and connections exist, auto connect to first camera on first display of main
           // menu
           if ((saveCount > 0) && (ui->m_MainCount == 1)
-              && Settings::load<bool>(Settings::AUTOCONNECT)) {
+              && Settings::load<Settings::AUTOCONNECT>()) {
             CameraList::load();
             auto *camera = CameraList::get(0);
             camera->setActive(true);
@@ -931,7 +930,7 @@ void UI::addMainMenu(void) {
           lv_obj_clean(menu.page);
           CameraList::clear();
 
-          if (Settings::load<bool>(Settings::FAUXNY)) {
+          if (Settings::load<Settings::FAUXNY>()) {
             CameraList::addFauxNY();
             updateItems(menu);
           }
@@ -1241,7 +1240,7 @@ void UI::doConnect(lv_event_t *e) {
   lv_obj_add_event_cb(
       m_ConnectContext.cancel, [](lv_event_t *e) { doDisconnect(); }, LV_EVENT_CLICKED, NULL);
 
-  control.connectAll(Settings::load<bool>(Settings::RECONNECT));
+  control.connectAll(Settings::load<Settings::RECONNECT>());
   lv_timer_reset(m_ConnectTimer);
   lv_timer_resume(m_ConnectTimer);
 
@@ -1436,7 +1435,7 @@ void UI::addConnectMenu(void) {
       menu.button,
       [](lv_event_t *e) {
         auto &menu = m_Menu.at(m_ConnectStr);
-        bool multiconnect = Settings::load<bool>(Settings::MULTICONNECT);
+        bool multiconnect = Settings::load<Settings::MULTICONNECT>();
 
         lv_obj_clean(menu.page);
 
@@ -1527,7 +1526,7 @@ void UI::addGPSMenu(const menu_t &parent) {
   lv_obj_set_flex_grow(label, 1);
 
   lv_obj_t *baud_sw = lv_switch_create(m_Status.gpsBaud);
-  uint32_t baud = Settings::load<uint32_t>(Settings::GPS_BAUD);
+  uint32_t baud = Settings::load<Settings::GPS_BAUD>();
   lv_obj_add_state(baud_sw, baud == Settings::BAUD_115200 ? LV_STATE_CHECKED : LV_STATE_DEFAULT);
   lv_obj_add_event_cb(
       baud_sw,
@@ -1541,7 +1540,7 @@ void UI::addGPSMenu(const menu_t &parent) {
         } else {
           baud = Settings::BAUD_9600;
         }
-        Settings::save<uint32_t>(Settings::GPS_BAUD, baud);
+        Settings::save<Settings::GPS_BAUD>(baud);
         status->gps->reloadSetting();
       },
       LV_EVENT_VALUE_CHANGED, &m_Status);
@@ -1870,7 +1869,7 @@ void UI::addDisplayMenu(const menu_t &parent) {
   // limit maximum to m_BrightnessSteps * (16 - 1)
   lv_slider_set_range(slider, m_MinimumBrightness / m_BrightnessSteps, m_BrightnessSteps - 1);
 
-  uint8_t brightness = Settings::load<uint8_t>(Settings::BRIGHTNESS);
+  uint8_t brightness = Settings::load<Settings::BRIGHTNESS>();
   lv_slider_set_value(slider, brightness / m_BrightnessSteps, LV_ANIM_ON);
 
   lv_obj_add_event_cb(
@@ -1905,7 +1904,7 @@ void UI::addDisplayMenu(const menu_t &parent) {
       [](lv_event_t *e) {
         auto *slider = static_cast<lv_obj_t *>(lv_event_get_target(e));
         auto brightness = lv_slider_get_value(slider) * m_BrightnessSteps;
-        Settings::save<uint8_t>(Settings::BRIGHTNESS, brightness);
+        Settings::save<Settings::BRIGHTNESS>(brightness);
       },
       LV_EVENT_RELEASED, NULL);
 
@@ -1919,7 +1918,7 @@ void UI::addDisplayMenu(const menu_t &parent) {
   lv_obj_set_width(roller, LV_PCT(90));
   lv_roller_set_options(roller, "Never\n30 secs\n60 secs", LV_ROLLER_MODE_INFINITE);
   lv_roller_set_visible_row_count(roller, 2);
-  uint8_t inactivity = Settings::load<uint8_t>(Settings::INACTIVITY);
+  uint8_t inactivity = Settings::load<Settings::INACTIVITY>();
   lv_roller_set_selected(roller, inactivity, LV_ANIM_ON);
 
   lv_obj_add_event_cb(
@@ -1928,7 +1927,7 @@ void UI::addDisplayMenu(const menu_t &parent) {
         auto *ui = static_cast<UI *>(lv_event_get_user_data(e));
         auto *roller = static_cast<lv_obj_t *>(lv_event_get_target(e));
         auto inactivity = lv_roller_get_selected(roller);
-        Settings::save<uint8_t>(Settings::INACTIVITY, inactivity);
+        Settings::save<Settings::INACTIVITY>(inactivity);
         ui->setInactivityTimeout(inactivity);
       },
       LV_EVENT_VALUE_CHANGED, this);
@@ -1973,7 +1972,7 @@ void UI::addThemeMenu(const menu_t &parent) {
   lv_roller_set_options(roller, options.c_str(), LV_ROLLER_MODE_INFINITE);
   lv_roller_set_visible_row_count(roller, 2);
 
-  std::string current = Settings::load<std::string>(Settings::THEME);
+  std::string current = Settings::load<Settings::THEME>();
   uint32_t index =
       std::distance(themes.data(), std::find(std::begin(themes), std::end(themes), current));
   lv_roller_set_selected(roller, index, LV_ANIM_OFF);
@@ -1987,7 +1986,7 @@ void UI::addThemeMenu(const menu_t &parent) {
       [](lv_event_t *e) {
         auto *roller = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
         auto index = lv_roller_get_selected(roller);
-        Settings::save<std::string>(Settings::THEME, themes[index]);
+        Settings::save<Settings::THEME>(themes[index]);
         esp_restart();
       },
       LV_EVENT_CLICKED, roller);
@@ -2005,7 +2004,7 @@ void UI::addTransmitPowerMenu(const menu_t &parent) {
   lv_obj_set_width(slider, LV_PCT(80));
   lv_slider_set_range(slider, 0, 2);
 
-  uint8_t power = Settings::load<uint8_t>(Settings::TX_POWER);
+  uint8_t power = Settings::load<Settings::TX_POWER>();
   lv_slider_set_value(slider, power, LV_ANIM_ON);
 
   lv_obj_add_event_cb(
@@ -2020,7 +2019,7 @@ void UI::addTransmitPowerMenu(const menu_t &parent) {
           {
             auto power = lv_slider_get_value(slider);
             auto &control = Control::getInstance();
-            Settings::save<uint8_t>(Settings::TX_POWER, power);
+            Settings::save<Settings::TX_POWER>(power);
             control.setPower(Settings::load<esp_power_level_t>(Settings::TX_POWER));
             break;
           }
@@ -2104,7 +2103,7 @@ void UI::processInactivity(void) {
     } else {
       if (inactive) {
         // restore brightness
-        auto brightness = Settings::load<uint8_t>(Settings::BRIGHTNESS);
+        auto brightness = Settings::load<Settings::BRIGHTNESS>();
         M5.Display.setBrightness(brightness);
         inactive = false;
       }

@@ -24,7 +24,7 @@ GPS &GPS::getInstance() {
     const int8_t tx = M5.getPin(m5::port_a_pin2);
     const int8_t rx = M5.getPin(m5::port_a_pin1);
 
-    const int baud = Settings::load<uint32_t>(Settings::GPS_BAUD);
+    const int baud = Settings::load<Settings::GPS_BAUD>();
     const uart_config_t uart_config = {
         .baud_rate = (int)baud,
         .data_bits = UART_DATA_8_BITS,
@@ -109,7 +109,7 @@ void GPS::task(void) {
 }
 
 void GPS::enable(void) {
-  const uint32_t baud = Settings::load<uint32_t>(Settings::GPS_BAUD);
+  const uint32_t baud = Settings::load<Settings::GPS_BAUD>();
 
   uart_set_baudrate(m_UART, baud);
   reset();
@@ -134,7 +134,7 @@ void GPS::disable(void) {
 
 /** Refresh the setting from NVS. */
 void GPS::reloadSetting(void) {
-  m_Enabled = Settings::load<bool>(Settings::GPS);
+  m_Enabled = Settings::load<Settings::GPS>();
   if (m_Enabled) {
     enable();
   } else {

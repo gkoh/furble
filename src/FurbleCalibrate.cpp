@@ -11,7 +11,7 @@ CalibrationUI::CalibrationUI(int32_t width, int32_t height) : m_Width(width), m_
 void CalibrationUI::calibrate(void) {
   m_Screen = lv_obj_create(NULL);
 
-  Settings::calibration_t c = Settings::load<Settings::calibration_t>(Settings::TOUCH_CALIBRATION);
+  Settings::calibration_t c = Settings::load<Settings::TOUCH_CALIBRATION>();
   lv_subject_init_int(&m_Corners[0].subject_x, c.top_left.x);
   lv_subject_init_int(&m_Corners[0].subject_y, c.top_left.y);
   lv_subject_init_int(&m_Corners[1].subject_x, c.bottom_left.x);
@@ -112,7 +112,7 @@ void CalibrationUI::calibrate(void) {
           lv_subject_set_int(&corner.subject_y, 0);
         }
         Settings::calibration_t calibration = {};
-        Settings::save<Settings::calibration_t>(Settings::TOUCH_CALIBRATION, calibration);
+        Settings::save<Settings::TOUCH_CALIBRATION>(calibration);
       },
       LV_EVENT_CLICKED, this);
 
@@ -135,7 +135,7 @@ void CalibrationUI::calibrate(void) {
                            static_cast<uint16_t>(lv_subject_get_int(&calibrationUI->m_Corners[3].subject_y))},
             .calibrated = true,
         };
-        Settings::save<Settings::calibration_t>(Settings::TOUCH_CALIBRATION, calibration);
+        Settings::save<Settings::TOUCH_CALIBRATION>(calibration);
       },
       LV_EVENT_CLICKED, this);
 

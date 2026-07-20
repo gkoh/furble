@@ -66,6 +66,22 @@ class Settings {
 
   static const setting_t &get(type_t);
 
+  /** Bind each setting to its storage type for type-safe load/save. */
+  template <type_t S>
+  struct storage_type;
+
+  /** Load a setting — type deduced from the setting. */
+  template <type_t S>
+  static typename storage_type<S>::type load() {
+    return load<typename storage_type<S>::type>(S);
+  }
+
+  /** Save a setting — type deduced from the setting. */
+  template <type_t S>
+  static void save(const typename storage_type<S>::type &value) {
+    save<typename storage_type<S>::type>(S, value);
+  }
+
   template <typename T>
   static T load(type_t type);
 
@@ -81,6 +97,56 @@ class Settings {
   static const std::unordered_map<type_t, setting_t> m_Setting;
   static Preferences m_Prefs;
 };
+
+template <>
+struct Settings::storage_type<Settings::BRIGHTNESS> {
+  using type = uint8_t;
+};
+template <>
+struct Settings::storage_type<Settings::INACTIVITY> {
+  using type = uint8_t;
+};
+template <>
+struct Settings::storage_type<Settings::THEME> {
+  using type = std::string;
+};
+template <>
+struct Settings::storage_type<Settings::TX_POWER> {
+  using type = uint8_t;
+};
+template <>
+struct Settings::storage_type<Settings::GPS> {
+  using type = bool;
+};
+template <>
+struct Settings::storage_type<Settings::GPS_BAUD> {
+  using type = uint32_t;
+};
+template <>
+struct Settings::storage_type<Settings::INTERVAL> {
+  using type = interval_t;
+};
+template <>
+struct Settings::storage_type<Settings::MULTICONNECT> {
+  using type = bool;
+};
+template <>
+struct Settings::storage_type<Settings::RECONNECT> {
+  using type = bool;
+};
+template <>
+struct Settings::storage_type<Settings::FAUXNY> {
+  using type = bool;
+};
+template <>
+struct Settings::storage_type<Settings::TOUCH_CALIBRATION> {
+  using type = Settings::calibration_t;
+};
+template <>
+struct Settings::storage_type<Settings::AUTOCONNECT> {
+  using type = bool;
+};
+
 }  // namespace Furble
 
 #endif
