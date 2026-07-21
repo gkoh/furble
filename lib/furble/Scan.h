@@ -61,7 +61,6 @@ class Scan: public NimBLEScanCallbacks {
   static constexpr uint16_t HID_GENERIC_REMOTE = 0x180;
 
   NimBLEServer *m_Server = nullptr;
-  NimBLEAdvertising *m_Advertising = nullptr;
   NimBLEScan *m_Scan = nullptr;
   std::function<void(void *)> m_ScanResultCallback;
   void *m_ScanResultPrivateData = nullptr;
