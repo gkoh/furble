@@ -11,6 +11,21 @@ Camera::~Camera() {
   m_Client = nullptr;
 }
 
+time_t Camera::toUnixTime(const timesync_t &timesync) {
+  struct tm tm = {
+      .tm_sec = static_cast<int>(timesync.second),
+      .tm_min = static_cast<int>(timesync.minute),
+      .tm_hour = static_cast<int>(timesync.hour),
+      .tm_mday = static_cast<int>(timesync.day),
+      .tm_mon = static_cast<int>(timesync.month - 1),
+      .tm_year = static_cast<int>(timesync.year - 1900),
+      .tm_wday = 0,
+      .tm_yday = 0,
+      .tm_isdst = -1,
+  };
+  return mktime(&tm);
+}
+
 void Camera::onConnect(NimBLEClient *pClient) {
   ESP_LOGI(LOG_TAG, "Connected, adjusting transmit power to %d", m_Power);
   // Set BLE transmit power after connection is established.
