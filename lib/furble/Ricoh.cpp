@@ -56,12 +56,6 @@ double bswapd64(double x) {
   return val;
 }
 
-bool validTimesync(const Camera::timesync_t &timesync) {
-  return timesync.year >= 2000 && timesync.year <= 2099 && timesync.month >= 1
-         && timesync.month <= 12 && timesync.day >= 1 && timesync.day <= 31 && timesync.hour <= 23
-         && timesync.minute <= 59 && timesync.second <= 60 && timesync.centisecond <= 99;
-}
-
 const char *powerName(uint8_t value) {
   switch (value) {
     case 0:
@@ -384,15 +378,6 @@ void Ricoh::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
   }
   if (m_GpsInfo == nullptr || !m_GpsInfo->canWrite()) {
     ESP_LOGW(LOG_TAG, "Ricoh GPS characteristic unavailable");
-    return;
-  }
-  if (!std::isfinite(gps.latitude) || !std::isfinite(gps.longitude) || !std::isfinite(gps.altitude)
-      || !validTimesync(timesync)) {
-    ESP_LOGW(LOG_TAG,
-             "Ricoh GPS invalid: lat=%.7f lon=%.7f alt=%.1f "
-             "utc=%04u-%02u-%02u %02u:%02u:%02u.%02u",
-             gps.latitude, gps.longitude, gps.altitude, timesync.year, timesync.month, timesync.day,
-             timesync.hour, timesync.minute, timesync.second, timesync.centisecond);
     return;
   }
 

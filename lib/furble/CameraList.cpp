@@ -6,6 +6,7 @@
 #include "FauxNY.h"
 #include "FujifilmBasic.h"
 #include "FujifilmSecure.h"
+#include "Lumix.h"
 #include "Nikon.h"
 #include "Ricoh.h"
 #include "Sony.h"
@@ -185,6 +186,10 @@ void CameraList::load(void) {
         m_ConnectList.push_back(
             std::make_unique<Furble::FujifilmSecure>(static_cast<const void *>(dbuffer), dbytes));
         break;
+      case Camera::Type::PANASONIC_LUMIX:
+        m_ConnectList.push_back(
+            std::make_unique<Furble::Lumix>(static_cast<const void *>(dbuffer), dbytes));
+        break;
     }
   }
   m_Prefs.end();
@@ -242,6 +247,9 @@ bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
     return true;
   } else if (FujifilmSecure::matches(pDevice)) {
     m_ConnectList.push_back(std::make_unique<Furble::FujifilmSecure>(pDevice));
+    return true;
+  } else if (Lumix::matches(pDevice)) {
+    m_ConnectList.push_back(std::make_unique<Furble::Lumix>(pDevice));
     return true;
   }
 

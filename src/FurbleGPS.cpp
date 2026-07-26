@@ -1,6 +1,7 @@
 #include <M5Unified.h>
 #include <TinyGPS++.h>
 #include <lvgl.h>
+#include <cmath>
 
 #include "icons.h"
 
@@ -171,11 +172,19 @@ void GPS::update(void) {
     m_HasFix = false;
   }
 
-  if (m_HasFix) {
+  const double lat = m_GPS.location.lat();
+  const double lon = m_GPS.location.lng();
+  const double alt = m_GPS.altitude.meters();
+  const unsigned int year = m_GPS.date.year();
+  const bool sane = std::isfinite(lat) && std::isfinite(lon) && std::isfinite(alt)
+                    && std::fabs(lat) <= 90.0 && std::fabs(lon) <= 180.0 && year >= 2000
+                    && year <= 2099;
+
+  if (m_HasFix && sane) {
     Camera::gps_t dgps = {
-        m_GPS.location.lat(),
-        m_GPS.location.lng(),
-        m_GPS.altitude.meters(),
+        lat,
+        lon,
+        alt,
         m_GPS.satellites.value(),
     };
     Camera::timesync_t timesync = {
