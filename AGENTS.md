@@ -1,0 +1,4 @@
+- This is a minimal nimble-c++ glue layer over libfurble
+- do NOT modify anything but contents in glue/
+- do NOT author any commits or download anything without asking first
+- do NOT touch anything on my computer except for what's in this folder
