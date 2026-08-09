@@ -161,6 +161,11 @@ bool FujifilmSecure::_connect(void) {
     m_Progress += 5;
   }
 
+  ESP_LOGI(LOG_TAG, "Writing 0x01 to (optional) UNK0");
+  if (!m_Client->setValue(NOTX_SVC_UUID, UNK0_CHR_UUID, {0x01}, true)) {
+    ESP_LOGW(LOG_TAG, "Failed to write to (optional) UNK0");
+  }
+
   const std::array<sub_t, 6> subscription1 = {
       {
        {"notification 6", SVC_CONF_UUID, NOT6_CHR_UUID, true},
