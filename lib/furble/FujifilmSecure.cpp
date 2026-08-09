@@ -141,13 +141,12 @@ bool FujifilmSecure::_connect(void) {
   ESP_LOGI(LOG_TAG, "Identified!");
   m_Progress += 5;
 
-  const std::array<sub_t, 7> subscription0 = {
+  const std::array<sub_t, 6> subscription0 = {
       {
        {"indication 1", SVC_CONF_UUID, CHR_IND1_UUID, false},
        {"indication 2", SVC_CONF_UUID, CHR_IND2_UUID, false},
        {"notification 1", SVC_CONF_UUID, CHR_NOT1_UUID, true},
        {"notification 2", SVC_CONF_UUID, GEOTAG_UPDATE, true},
-       {"notification 3", NOT3_SVC_UUID, NOT3_CHR_UUID, true},
        {"notification 4", NOTX_SVC_UUID, NOT4_CHR_UUID, true},
        {"notification 5", NOTX_SVC_UUID, NOT5_CHR_UUID, true},
        }
