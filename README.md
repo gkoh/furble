@@ -79,6 +79,7 @@ Initially targeted at the M5StickC, the following controllers from [M5Stack](htt
 * M5StickC (EOL)
 * M5StickC Plus
 * M5StickC Plus2
+* M5StickC Plus SE
 * M5StickS3
 * M5Core Basic
 * M5Core2
