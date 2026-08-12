@@ -27,6 +27,9 @@
 class NimBLERemoteCharacteristic;
 class NimBLEClient;
 class NimBLEAttValue;
+struct PakBt;
+struct PakBtDevice;
+struct PakGattService;
 
 /**
  * @brief A model of a remote BLE service.
@@ -52,6 +55,7 @@ class NimBLERemoteService : public NimBLEAttribute {
     friend class NimBLEClient;
 
     NimBLERemoteService(NimBLEClient* pClient, const struct ble_gatt_svc* service);
+    NimBLERemoteService(NimBLEClient* pClient, struct PakBt* ctx, struct PakBtDevice* dev, struct PakGattService* svc);
     ~NimBLERemoteService();
     bool retrieveCharacteristics(const NimBLEUUID* uuidFilter = nullptr, NimBLERemoteCharacteristic** ppChar = nullptr) const;
     static int characteristicDiscCB(uint16_t                     conn_handle,
@@ -62,6 +66,10 @@ class NimBLERemoteService : public NimBLEAttribute {
     mutable std::vector<NimBLERemoteCharacteristic*> m_vChars{};
     NimBLEClient*                                    m_pClient{nullptr};
     uint16_t                                         m_endHandle{0};
+
+    struct PakBt*          m_ctx{nullptr};
+    struct PakBtDevice*    m_dev{nullptr};
+    struct PakGattService* m_svc{nullptr};
 }; // NimBLERemoteService
 
 #endif // CONFIG_BT_NIMBLE_ENABLED && MYNEWT_VAL(BLE_ROLE_CENTRAL)

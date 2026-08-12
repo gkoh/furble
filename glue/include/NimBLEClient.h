@@ -42,6 +42,8 @@ class NimBLEAdvertisedDevice;
 class NimBLEAttValue;
 class NimBLEClientCallbacks;
 class NimBLEConnInfo;
+struct PakBt;
+struct PakBtDevice;
 
 /**
  * @brief A model of a BLE client.
@@ -136,6 +138,7 @@ class NimBLEClient {
     enum ConnStatus : uint8_t { CONNECTED, DISCONNECTED, CONNECTING, DISCONNECTING };
 
     NimBLEClient(const NimBLEAddress& peerAddress);
+    NimBLEClient(const NimBLEAddress& peerAddress, struct PakBt* ctx, struct PakBtDevice* dev);
     ~NimBLEClient();
     NimBLEClient(const NimBLEClient&)            = delete;
     NimBLEClient& operator=(const NimBLEClient&) = delete;
@@ -166,6 +169,9 @@ class NimBLEClient {
     ble_npl_callout                   m_connectEstablishedTimer{};
     bool                              m_connectCallbackPending;
     uint8_t                           m_connectFailRetryCount;
+
+    struct PakBt*       m_ctx{nullptr};
+    struct PakBtDevice* m_dev{nullptr};
 
 # if MYNEWT_VAL(BLE_EXT_ADV)
     uint8_t m_phyMask;

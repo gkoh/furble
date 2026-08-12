@@ -29,6 +29,8 @@ class NimBLEUUID;
 class NimBLERemoteService;
 class NimBLERemoteDescriptor;
 struct NimBLEDescriptorFilter;
+struct PakBt;
+struct PakGattCharacteristic;
 
 /**
  * @brief A model of a remote BLE characteristic.
@@ -62,8 +64,10 @@ class NimBLERemoteCharacteristic : public NimBLERemoteValueAttribute {
   private:
     friend class NimBLEClient;
     friend class NimBLERemoteService;
+    friend class NimBLERemoteValueAttribute;
 
     NimBLERemoteCharacteristic(const NimBLERemoteService* pRemoteService, const ble_gatt_chr* chr);
+    NimBLERemoteCharacteristic(const NimBLERemoteService* pRemoteService, struct PakBt* ctx, struct PakGattCharacteristic* chr);
     ~NimBLERemoteCharacteristic();
 
     bool setNotify(uint16_t val, notify_callback notifyCallback = nullptr, bool response = true) const;
@@ -76,6 +80,9 @@ class NimBLERemoteCharacteristic : public NimBLERemoteValueAttribute {
     uint8_t                                      m_properties{0};
     mutable notify_callback                      m_notifyCallback{nullptr};
     mutable std::vector<NimBLERemoteDescriptor*> m_vDescriptors{};
+
+    struct PakBt*              m_ctx{nullptr};
+    struct PakGattCharacteristic* m_chr{nullptr};
 
 }; // NimBLERemoteCharacteristic
 

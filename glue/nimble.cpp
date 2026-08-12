@@ -1,15 +1,21 @@
 /*
  * Minimal NimBLE-cpp glue for furble/lib/furble only.
- * BLE ops: fprintf TODO + abort. Value types: libc implementations.
+ * BLE ops: fprintf TODO + abort. Value types and advertised-device getters
+ * backed by the pak runtime: libc implementations.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <inttypes.h>
+#include <ctime>
 #include <array>
 #include <string>
 #include <vector>
+extern "C" {
+#include <bluetooth.h>
+#include <runtime.h>
+}
 
 #include "NimBLEDevice.h"
 #include "NimBLEClient.h"
@@ -44,6 +50,11 @@ uint8_t                    NimBLEDevice::m_ownAddrType = BLE_OWN_ADDR_PUBLIC;
 std::vector<NimBLEAddress> NimBLEDevice::m_whiteList{};
 NimBLEDeviceCallbacks      NimBLEDevice::defaultDeviceCallbacks{};
 NimBLEDeviceCallbacks*     NimBLEDevice::m_pDeviceCallbacks = &NimBLEDevice::defaultDeviceCallbacks;
+int NimBLEDeviceCallbacks::onStoreStatus(struct ble_store_status_event* event, void* arg) {
+    (void)event;
+    (void)arg;
+    return 0;
+}
 
 #if MYNEWT_VAL(BLE_ROLE_OBSERVER)
 NimBLEScan* NimBLEDevice::m_pScan = nullptr;
@@ -221,6 +232,45 @@ NimBLEAddress::operator uint64_t() const {
 NimBLEUUID::NimBLEUUID(uint16_t uuid) {
     m_uuid.u16.u.type = BLE_UUID_TYPE_16;
     m_uuid.u16.value  = uuid;
+}
+
+static ble_uuid_any_t uuid_from_string(const char *str) {
+    ble_uuid_any_t u = {};
+    unsigned int   first, second, third, fourth_hi;
+    uint64_t       fourth_lo;
+    if (!str || sscanf(str, "%8x-%4x-%4x-%4x-%12" SCNx64,
+                       &first, &second, &third, &fourth_hi, &fourth_lo) != 5) {
+        u.u.type      = BLE_UUID_TYPE_16;
+        u.u16.value   = 0;
+        return u;
+    }
+    u.u.type    = BLE_UUID_TYPE_128;
+    uint8_t *p  = u.u128.value;
+    p[0]        = (uint8_t)((fourth_lo >> 0) & 0xff);
+    p[1]        = (uint8_t)((fourth_lo >> 8) & 0xff);
+    p[2]        = (uint8_t)((fourth_lo >> 16) & 0xff);
+    p[3]        = (uint8_t)((fourth_lo >> 24) & 0xff);
+    p[4]        = (uint8_t)((fourth_lo >> 32) & 0xff);
+    p[5]        = (uint8_t)((fourth_lo >> 40) & 0xff);
+    p[6]        = (uint8_t)((fourth_hi >> 0) & 0xff);
+    p[7]        = (uint8_t)((fourth_hi >> 8) & 0xff);
+    p[8]        = (uint8_t)((third >> 0) & 0xff);
+    p[9]        = (uint8_t)((third >> 8) & 0xff);
+    p[10]       = (uint8_t)((second >> 0) & 0xff);
+    p[11]       = (uint8_t)((second >> 8) & 0xff);
+    p[12]       = (uint8_t)((first >> 0) & 0xff);
+    p[13]       = (uint8_t)((first >> 8) & 0xff);
+    p[14]       = (uint8_t)((first >> 16) & 0xff);
+    p[15]       = (uint8_t)((first >> 24) & 0xff);
+    return u;
+}
+
+NimBLEUUID::NimBLEUUID(const ble_uuid_any_t& uuid) {
+    m_uuid = uuid;
+}
+
+NimBLEUUID::NimBLEUUID(const std::string& uuid) {
+    m_uuid = uuid_from_string(uuid.c_str());
 }
 
 NimBLEUUID::NimBLEUUID(uint32_t first, uint16_t second, uint16_t third, uint64_t fourth) {
@@ -467,26 +517,104 @@ void NimBLEClient::setConnectionParams(uint16_t minInterval,
     STUB();
 }
 
+NimBLEClient::NimBLEClient(const NimBLEAddress& peerAddress)
+    : m_peerAddress(peerAddress) {}
+
+NimBLEClient::NimBLEClient(const NimBLEAddress& peerAddress, struct PakBt *ctx, struct PakBtDevice *dev)
+    : m_peerAddress(peerAddress), m_ctx(ctx), m_dev(dev) {}
+
+NimBLEClient::~NimBLEClient() {
+    for (auto *svc : m_svcVec) {
+        delete svc;
+    }
+    m_svcVec.clear();
+}
+
 NimBLERemoteService* NimBLEClient::getService(const NimBLEUUID& uuid) {
-    (void)uuid;
-    STUB();
+    if (!m_ctx || !m_dev) {
+        return nullptr;
+    }
+    for (auto *svc : m_svcVec) {
+        if (svc->getUUID() == uuid) {
+            return svc;
+        }
+    }
+    for (int i = 0;; i++) {
+        struct PakGattService *svc = pak_bt_get_gatt_service(m_ctx, m_dev, i);
+        if (!svc) {
+            break;
+        }
+        if (NimBLEUUID(svc->uuid) == uuid) {
+            auto *ns = new NimBLERemoteService(this, m_ctx, m_dev, svc);
+            m_svcVec.push_back(ns);
+            return ns;
+        }
+        pak_bt_unref_gatt_service(m_ctx, svc);
+    }
+    return nullptr;
+}
+
+NimBLERemoteService* NimBLEClient::getService(const char* uuid) {
+    return getService(NimBLEUUID(uuid));
+}
+
+const std::vector<NimBLERemoteService*>& NimBLEClient::getServices(bool refresh) {
+    if (refresh) {
+        for (auto *svc : m_svcVec) {
+            delete svc;
+        }
+        m_svcVec.clear();
+    }
+    if (!m_ctx || !m_dev || !m_svcVec.empty()) {
+        return m_svcVec;
+    }
+    for (int i = 0;; i++) {
+        struct PakGattService *svc = pak_bt_get_gatt_service(m_ctx, m_dev, i);
+        if (!svc) {
+            break;
+        }
+        auto *ns = new NimBLERemoteService(this, m_ctx, m_dev, svc);
+        m_svcVec.push_back(ns);
+    }
+    return m_svcVec;
+}
+
+std::vector<NimBLERemoteService*>::iterator NimBLEClient::begin() {
+    return m_svcVec.begin();
+}
+
+std::vector<NimBLERemoteService*>::iterator NimBLEClient::end() {
+    return m_svcVec.end();
+}
+
+void NimBLEClient::deleteServices() {
+    for (auto *svc : m_svcVec) {
+        delete svc;
+    }
+    m_svcVec.clear();
 }
 
 NimBLEAttValue NimBLEClient::getValue(const NimBLEUUID& serviceUUID, const NimBLEUUID& characteristicUUID) {
-    (void)serviceUUID;
-    (void)characteristicUUID;
-    STUB();
+    NimBLERemoteService *svc = getService(serviceUUID);
+    if (!svc) {
+        return NimBLEAttValue();
+    }
+    return svc->getValue(characteristicUUID);
 }
 
 bool NimBLEClient::setValue(const NimBLEUUID&     serviceUUID,
                             const NimBLEUUID&     characteristicUUID,
                             const NimBLEAttValue& value,
                             bool                  response) {
-    (void)serviceUUID;
-    (void)characteristicUUID;
-    (void)value;
-    (void)response;
-    STUB();
+    NimBLERemoteService *svc = getService(serviceUUID);
+    if (!svc) {
+        return false;
+    }
+    NimBLERemoteCharacteristic *chr = svc->getCharacteristic(characteristicUUID);
+    if (!chr) {
+        return false;
+    }
+    return chr->writeValue(value.data(), value.size(), response);
 }
 
 /* Default callback bodies (vtable for Camera / Ricoh subclasses) */
@@ -624,39 +752,108 @@ bool NimBLEServer::start() {
 
 #if MYNEWT_VAL(BLE_ROLE_OBSERVER)
 
+NimBLEAdvertisedDevice::NimBLEAdvertisedDevice(struct PakBt *ctx, struct PakBtDevice *dev): m_dev(dev), m_ctx(ctx) {
+    if (dev) {
+        uint8_t mac[BLE_DEV_ADDR_LEN] = {};
+        unsigned int octets[BLE_DEV_ADDR_LEN];
+        int n = sscanf(dev->mac_address, "%2x:%2x:%2x:%2x:%2x:%2x",
+                       &octets[0], &octets[1], &octets[2], &octets[3], &octets[4], &octets[5]);
+        if (n != BLE_DEV_ADDR_LEN) {
+            n = sscanf(dev->mac_address, "%2x-%2x-%2x-%2x-%2x-%2x",
+                       &octets[0], &octets[1], &octets[2], &octets[3], &octets[4], &octets[5]);
+        }
+        if (n == BLE_DEV_ADDR_LEN) {
+            for (int i = 0; i < BLE_DEV_ADDR_LEN; i++) {
+                mac[i] = (uint8_t)octets[BLE_DEV_ADDR_LEN - 1 - i];
+            }
+            m_address = NimBLEAddress(mac, BLE_ADDR_PUBLIC);
+        }
+    }
+}
+
 const NimBLEAddress& NimBLEAdvertisedDevice::getAddress() const {
-    STUB();
+    return m_address;
 }
 
 std::string NimBLEAdvertisedDevice::getManufacturerData(uint8_t index) const {
-    (void)index;
-    STUB();
+    if (!m_dev || !m_ctx) {
+        return std::string();
+    }
+    uint8_t buf[512];
+    unsigned int len = pak_bt_get_manufacturer_data(m_ctx, m_dev, index, buf, sizeof(buf));
+    return std::string((const char *)buf, len);
+}
+
+uint8_t NimBLEAdvertisedDevice::getManufacturerDataCount() const {
+    if (!m_dev || !m_ctx) {
+        return 0;
+    }
+    uint8_t count = 0;
+    while (count < 0xff) {
+        uint8_t byte;
+        if (pak_bt_get_manufacturer_data(m_ctx, m_dev, count, &byte, 1) == 0) {
+            break;
+        }
+        count++;
+    }
+    return count;
 }
 
 std::string NimBLEAdvertisedDevice::getName() const {
-    STUB();
+    if (!m_dev) {
+        return std::string();
+    }
+    return std::string(m_dev->name, strnlen(m_dev->name, sizeof(m_dev->name)));
 }
 
 int8_t NimBLEAdvertisedDevice::getRSSI() const {
+    /* RSSI is not exposed by the pak runtime yet. */
     STUB();
 }
 
 NimBLEUUID NimBLEAdvertisedDevice::getServiceUUID(uint8_t index) const {
-    (void)index;
-    STUB();
+    if (!m_dev || !m_ctx) {
+        return NimBLEUUID();
+    }
+    struct PakGattService *svc = pak_bt_get_gatt_service(m_ctx, m_dev, index);
+    if (!svc) {
+        return NimBLEUUID();
+    }
+    NimBLEUUID uuid(svc->uuid);
+    pak_bt_unref_gatt_service(m_ctx, svc);
+    return uuid;
 }
 
 bool NimBLEAdvertisedDevice::isAdvertisingService(const NimBLEUUID& uuid) const {
-    (void)uuid;
-    STUB();
+    if (!m_dev || !m_ctx) {
+        return false;
+    }
+    struct PakGattService *svc = pak_bt_get_gatt_service_uuid(m_ctx, m_dev, uuid.toString().c_str());
+    if (svc) {
+        pak_bt_unref_gatt_service(m_ctx, svc);
+        return true;
+    }
+    return false;
 }
 
 bool NimBLEAdvertisedDevice::haveManufacturerData() const {
-    STUB();
+    if (!m_dev || !m_ctx) {
+        return false;
+    }
+    uint8_t byte;
+    return pak_bt_get_manufacturer_data(m_ctx, m_dev, 0, &byte, 1) > 0;
 }
 
 bool NimBLEAdvertisedDevice::haveServiceUUID() const {
-    STUB();
+    if (!m_dev || !m_ctx) {
+        return false;
+    }
+    struct PakGattService *svc = pak_bt_get_gatt_service(m_ctx, m_dev, 0);
+    if (svc) {
+        pak_bt_unref_gatt_service(m_ctx, svc);
+        return true;
+    }
+    return false;
 }
 
 #endif
@@ -667,59 +864,169 @@ bool NimBLEAdvertisedDevice::haveServiceUUID() const {
 
 #if MYNEWT_VAL(BLE_ROLE_CENTRAL)
 
+NimBLERemoteService::NimBLERemoteService(NimBLEClient* pClient,
+                                         struct PakBt *ctx,
+                                         struct PakBtDevice *dev,
+                                         struct PakGattService *svc)
+    : NimBLEAttribute(NimBLEUUID(svc->uuid), svc->handle),
+      m_pClient(pClient),
+      m_endHandle(svc->handle),
+      m_ctx(ctx),
+      m_dev(dev),
+      m_svc(svc) {}
+
+NimBLERemoteService::~NimBLERemoteService() {
+    for (auto *c : m_vChars) {
+        delete c;
+    }
+    m_vChars.clear();
+    if (m_svc) {
+        pak_bt_unref_gatt_service(m_ctx, m_svc);
+        m_svc = nullptr;
+    }
+}
+
 NimBLERemoteCharacteristic* NimBLERemoteService::getCharacteristic(const NimBLEUUID& uuid) const {
-    (void)uuid;
-    STUB();
+    if (!m_svc || !m_ctx) {
+        return nullptr;
+    }
+    for (auto *c : m_vChars) {
+        if (c->getUUID() == uuid) {
+            return c;
+        }
+    }
+    for (int i = 0;; i++) {
+        struct PakGattCharacteristic *chr = pak_bt_get_gatt_characteristic(m_ctx, m_svc, i);
+        if (!chr) {
+            break;
+        }
+        if (NimBLEUUID(chr->uuid) == uuid) {
+            auto *nc = new NimBLERemoteCharacteristic(this, m_ctx, chr);
+            m_vChars.push_back(nc);
+            return nc;
+        }
+        pak_bt_unref_gatt_characteristic(m_ctx, chr);
+    }
+    return nullptr;
+}
+
+NimBLERemoteCharacteristic* NimBLERemoteService::getCharacteristic(const char* uuid) const {
+    return getCharacteristic(NimBLEUUID(uuid));
+}
+
+NimBLEClient* NimBLERemoteService::getClient(void) const {
+    return m_pClient;
 }
 
 NimBLEAttValue NimBLERemoteService::getValue(const NimBLEUUID& characteristicUuid) const {
-    (void)characteristicUuid;
-    STUB();
+    NimBLERemoteCharacteristic *chr = getCharacteristic(characteristicUuid);
+    if (!chr) {
+        return NimBLEAttValue();
+    }
+    return chr->readValue();
 }
 
 bool NimBLERemoteService::setValue(const NimBLEUUID& characteristicUuid, const NimBLEAttValue& value) const {
-    (void)characteristicUuid;
-    (void)value;
-    STUB();
+    NimBLERemoteCharacteristic *chr = getCharacteristic(characteristicUuid);
+    if (!chr) {
+        return false;
+    }
+    return chr->writeValue(value.data(), value.size(), true);
+}
+
+NimBLERemoteCharacteristic::NimBLERemoteCharacteristic(const NimBLERemoteService* pRemoteService,
+                                                       struct PakBt *ctx,
+                                                       struct PakGattCharacteristic *chr)
+    : NimBLERemoteValueAttribute(uuid_from_string(chr->uuid), chr->handle),
+      m_pRemoteService(pRemoteService),
+      m_ctx(ctx),
+      m_chr(chr) {
+    m_properties = (uint8_t)chr->flags;
+}
+
+NimBLERemoteCharacteristic::~NimBLERemoteCharacteristic() {
+    if (m_chr) {
+        pak_bt_unref_gatt_characteristic(m_ctx, m_chr);
+        m_chr = nullptr;
+    }
+}
+
+NimBLEClient* NimBLERemoteCharacteristic::getClient() const {
+    return m_pRemoteService ? m_pRemoteService->getClient() : nullptr;
+}
+
+bool NimBLERemoteCharacteristic::canBroadcast() const {
+    return m_properties & BLE_GATT_CHR_F_BROADCAST;
 }
 
 bool NimBLERemoteCharacteristic::canRead() const {
-    STUB();
+    return m_properties & BLE_GATT_CHR_F_READ;
 }
 
 bool NimBLERemoteCharacteristic::canWriteNoResponse() const {
-    STUB();
+    return m_properties & BLE_GATT_CHR_F_WRITE_NO_RSP;
 }
 
 bool NimBLERemoteCharacteristic::canWrite() const {
-    STUB();
+    return m_properties & BLE_GATT_CHR_F_WRITE;
 }
 
 bool NimBLERemoteCharacteristic::canNotify() const {
-    STUB();
+    return m_properties & BLE_GATT_CHR_F_NOTIFY;
 }
 
 bool NimBLERemoteCharacteristic::canIndicate() const {
-    STUB();
+    return m_properties & BLE_GATT_CHR_F_INDICATE;
+}
+
+bool NimBLERemoteCharacteristic::canWriteSigned() const {
+    return m_properties & BLE_GATT_CHR_F_AUTH_SIGN_WRITE;
+}
+
+bool NimBLERemoteCharacteristic::hasExtendedProps() const {
+    return m_properties & BLE_GATT_CHR_F_EXTENDED;
 }
 
 bool NimBLERemoteCharacteristic::subscribe(bool notifications, const notify_callback notifyCallback, bool response) const {
-    (void)notifications;
-    (void)notifyCallback;
     (void)response;
-    STUB();
+    if (!m_chr || !m_ctx) {
+        return false;
+    }
+    m_notifyCallback = notifyCallback;
+    return pak_bt_set_cccd(m_ctx, m_chr, notifications ? 1 : 2) == 0;
+}
+
+bool NimBLERemoteCharacteristic::unsubscribe(bool response) const {
+    (void)response;
+    if (!m_chr || !m_ctx) {
+        return false;
+    }
+    return pak_bt_set_cccd(m_ctx, m_chr, 0) == 0;
 }
 
 NimBLEAttValue NimBLERemoteValueAttribute::readValue(time_t* timestamp) {
-    (void)timestamp;
-    STUB();
+    const auto *chr = dynamic_cast<const NimBLERemoteCharacteristic*>(this);
+    if (!chr || !chr->m_chr || !chr->m_ctx) {
+        return NimBLEAttValue();
+    }
+    if (timestamp) {
+        *timestamp = time(nullptr);
+    }
+    if (pak_bt_read_characteristic(chr->m_ctx, chr->m_chr, PAK_BT_BLOCK) != 0) {
+        return NimBLEAttValue();
+    }
+    uint8_t buf[512];
+    unsigned int len = pak_bt_read_characteristic_cached_value(chr->m_ctx, chr->m_chr, buf, sizeof(buf));
+    return NimBLEAttValue(buf, (uint16_t)len);
 }
 
 bool NimBLERemoteValueAttribute::writeValue(const uint8_t* data, size_t length, bool response) const {
-    (void)data;
-    (void)length;
-    (void)response;
-    STUB();
+    const auto *chr = dynamic_cast<const NimBLERemoteCharacteristic*>(this);
+    if (!chr || !chr->m_chr || !chr->m_ctx) {
+        return false;
+    }
+    return pak_bt_write_characteristic(chr->m_ctx, chr->m_chr, data, (unsigned int)length,
+                                       response ? PAK_BT_BLOCK : PAK_BT_NO_BLOCK) == 0;
 }
 
 #endif /* BLE_ROLE_CENTRAL */

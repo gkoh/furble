@@ -45,6 +45,7 @@ class NimBLEScan;
 class NimBLEAdvertisedDevice {
   public:
     NimBLEAdvertisedDevice() = default;
+    NimBLEAdvertisedDevice(struct PakBt *ctx, struct PakBtDevice *dev);
 
     uint8_t              getAdvType() const;
     uint8_t              getAdvFlags() const;
@@ -176,6 +177,9 @@ class NimBLEAdvertisedDevice {
 # endif
 
     std::vector<uint8_t> m_payload;
+
+    struct PakBt *m_ctx;
+    struct PakBtDevice *m_dev;
 };
 
 #endif /* CONFIG_BT_NIMBLE_ENABLED && MYNEWT_VAL(BLE_ROLE_OBSERVER) */
