@@ -1,7 +1,8 @@
 /*
  * Minimal NimBLE-cpp glue for furble/lib/furble only.
- * BLE ops: fprintf TODO + abort. Value types and advertised-device getters
- * backed by the pak runtime: libc implementations.
+ * BLE ops route through the pak runtime bluetooth.h calls; value types and
+ * advertised-device getters are backed by pak data. Scanning and the server
+ * role remain aborting stubs (web grants devices through the host picker).
  */
 
 #include <stdio.h>
@@ -41,6 +42,19 @@ extern "C" {
 /* NimBLEDevice — only symbols used by furble                                 */
 /* -------------------------------------------------------------------------- */
 
+/*
+ * Thread-local pak binding. module.cpp sets it around CameraList::match() and
+ * Camera::connect() so createClient() can hand the granted device to the
+ * NimBLEClient without touching NimBLEDevice::createClient scan paths.
+ */
+static thread_local struct PakBt *t_pakCtx   = nullptr;
+static thread_local struct PakBtDevice *t_pakDev = nullptr;
+
+void nimble_set_pak_device(struct PakBt *ctx, struct PakBtDevice *dev) {
+    t_pakCtx = ctx;
+    t_pakDev = dev;
+}
+
 /* Private statics referenced by the class layout / possible ODR from headers */
 bool                       NimBLEDevice::m_synced      = false;
 bool                       NimBLEDevice::m_initialized = false;
@@ -70,40 +84,37 @@ std::array<NimBLEClient*, MYNEWT_VAL(BLE_MAX_CONNECTIONS)> NimBLEDevice::m_pClie
 
 bool NimBLEDevice::init(const std::string& deviceName) {
     (void)deviceName;
-    STUB();
+    m_initialized = true;
+    return true;
 }
 
 bool NimBLEDevice::setOwnAddrType(uint8_t type) {
     (void)type;
-    STUB();
+    return true;
 }
 
 void NimBLEDevice::setSecurityAuth(bool bonding, bool mitm, bool sc) {
     (void)bonding;
     (void)mitm;
     (void)sc;
-    STUB();
 }
 
 void NimBLEDevice::setSecurityIOCap(uint8_t iocap) {
     (void)iocap;
-    STUB();
 }
 
 void NimBLEDevice::setSecurityInitKey(uint8_t initKey) {
     (void)initKey;
-    STUB();
 }
 
 void NimBLEDevice::setSecurityRespKey(uint8_t respKey) {
     (void)respKey;
-    STUB();
 }
 
 bool NimBLEDevice::setPower(int8_t dbm, NimBLETxPowerType type) {
     (void)dbm;
     (void)type;
-    STUB();
+    return true;
 }
 
 #if MYNEWT_VAL(BLE_ROLE_OBSERVER)
@@ -120,7 +131,10 @@ NimBLEServer* NimBLEDevice::createServer() {
 
 #if MYNEWT_VAL(BLE_ROLE_CENTRAL)
 NimBLEClient* NimBLEDevice::createClient() {
-    STUB();
+    if (!t_pakCtx || !t_pakDev) {
+        return nullptr;
+    }
+    return new NimBLEClient(NimBLEAddress(), t_pakCtx, t_pakDev);
 }
 #endif
 
@@ -141,12 +155,12 @@ bool NimBLEDevice::injectPassKey(const NimBLEConnInfo& peerInfo, uint32_t pin) {
 #if MYNEWT_VAL(BLE_ROLE_CENTRAL) || MYNEWT_VAL(BLE_ROLE_PERIPHERAL)
 bool NimBLEDevice::deleteBond(const NimBLEAddress& address) {
     (void)address;
-    STUB();
+    return true;
 }
 
 bool NimBLEDevice::isBonded(const NimBLEAddress& address) {
     (void)address;
-    STUB();
+    return false;
 }
 #endif
 
@@ -459,47 +473,110 @@ NimBLEAttValue& NimBLEAttValue::append(const uint8_t* value, uint16_t len) {
 
 #if MYNEWT_VAL(BLE_ROLE_CENTRAL)
 
+int NimBLEClient::onPakEvent(struct PakBt *ctx,
+                             enum PakBtEvent event,
+                             struct PakBtDevice *dev,
+                             struct PakGattCharacteristic *chr,
+                             void *arg) {
+    (void)dev;
+    auto *self = static_cast<NimBLEClient *>(arg);
+    if (!self) {
+        return 0;
+    }
+    if (event == PAK_BT_EVENT_DISCONNECTED) {
+        self->m_connStatus = DISCONNECTED;
+        if (self->m_pClientCallbacks) {
+            self->m_pClientCallbacks->onDisconnect(self, BLE_ERR_REM_USER_CONN_TERM);
+        }
+        return 0;
+    }
+    if (event != PAK_BT_EVENT_GATT_CHAR_CHANGED || !chr || !ctx) {
+        return 0;
+    }
+    NimBLEUUID uuid(chr->uuid);
+    for (auto *svc : self->m_svcVec) {
+        auto *c = svc->getCharacteristic(uuid);
+        if (!c || !c->m_notifyCallback) {
+            continue;
+        }
+        uint8_t buf[512];
+        unsigned int len = pak_bt_read_characteristic_cached_value(ctx, chr, buf, sizeof(buf));
+        if (len == 0) {
+            continue;
+        }
+        c->m_notifyCallback(c, buf, len, true);
+        return 0;
+    }
+    return 0;
+}
+
 bool NimBLEClient::connect(const NimBLEAddress& address, bool deleteAttributes, bool asyncConnect, bool exchangeMTU) {
     (void)address;
     (void)deleteAttributes;
     (void)asyncConnect;
     (void)exchangeMTU;
-    STUB();
+    if (!m_ctx || !m_dev || m_connStatus == CONNECTED) {
+        return false;
+    }
+    if (pak_bt_device_connect(m_ctx, m_dev) != 0) {
+        return false;
+    }
+    pak_bt_set_device_callback(m_ctx, m_dev, &NimBLEClient::onPakEvent, this);
+    m_connStatus = CONNECTED;
+    if (m_pClientCallbacks) {
+        m_pClientCallbacks->onConnect(this);
+    }
+    return true;
 }
 
 bool NimBLEClient::disconnect(uint8_t reason) {
     (void)reason;
-    STUB();
+    if (!m_ctx || !m_dev) {
+        return false;
+    }
+    pak_bt_device_disconnect(m_ctx, m_dev);
+    m_connStatus = DISCONNECTED;
+    return true;
 }
 
 void NimBLEClient::setSelfDelete(bool deleteOnDisconnect, bool deleteOnConnectFail) {
     (void)deleteOnDisconnect;
     (void)deleteOnConnectFail;
-    STUB();
 }
 
 bool NimBLEClient::isConnected() const {
-    STUB();
+    return m_connStatus == CONNECTED;
 }
 
 void NimBLEClient::setClientCallbacks(NimBLEClientCallbacks* pClientCallbacks, bool deleteCallbacks) {
-    (void)pClientCallbacks;
     (void)deleteCallbacks;
-    STUB();
+    m_pClientCallbacks = pClientCallbacks;
 }
 
 bool NimBLEClient::secureConnection(bool async) const {
     (void)async;
-    STUB();
+    return m_connStatus == CONNECTED;
 }
 
 void NimBLEClient::setConnectTimeout(uint32_t timeout) {
     (void)timeout;
-    STUB();
+}
+
+int NimBLEClient::getRssi() const {
+    return 0;
 }
 
 NimBLEConnInfo NimBLEClient::getConnInfo() const {
-    STUB();
+    /* Web Bluetooth pairing is implicit; report the link as secured so
+     * camera connect paths (Ricoh) accept it. */
+    ble_gap_conn_desc desc{};
+    desc.conn_handle = 1;
+    desc.role        = BLE_GAP_ROLE_MASTER;
+    desc.sec_state.encrypted     = 1;
+    desc.sec_state.authenticated = 1;
+    desc.sec_state.bonded        = 1;
+    desc.sec_state.key_size      = 16;
+    return NimBLEConnInfo(desc);
 }
 
 void NimBLEClient::setConnectionParams(uint16_t minInterval,
@@ -514,14 +591,19 @@ void NimBLEClient::setConnectionParams(uint16_t minInterval,
     (void)timeout;
     (void)scanInterval;
     (void)scanWindow;
-    STUB();
 }
 
 NimBLEClient::NimBLEClient(const NimBLEAddress& peerAddress)
-    : m_peerAddress(peerAddress) {}
+    : m_peerAddress(peerAddress) {
+    m_pClientCallbacks = nullptr;
+    m_connStatus       = DISCONNECTED;
+}
 
 NimBLEClient::NimBLEClient(const NimBLEAddress& peerAddress, struct PakBt *ctx, struct PakBtDevice *dev)
-    : m_peerAddress(peerAddress), m_ctx(ctx), m_dev(dev) {}
+    : m_peerAddress(peerAddress), m_ctx(ctx), m_dev(dev) {
+    m_pClientCallbacks = nullptr;
+    m_connStatus       = DISCONNECTED;
+}
 
 NimBLEClient::~NimBLEClient() {
     for (auto *svc : m_svcVec) {
@@ -808,7 +890,7 @@ std::string NimBLEAdvertisedDevice::getName() const {
 
 int8_t NimBLEAdvertisedDevice::getRSSI() const {
     /* RSSI is not exposed by the pak runtime yet. */
-    STUB();
+    return 0;
 }
 
 NimBLEUUID NimBLEAdvertisedDevice::getServiceUUID(uint8_t index) const {
@@ -992,7 +1074,16 @@ bool NimBLERemoteCharacteristic::subscribe(bool notifications, const notify_call
     if (!m_chr || !m_ctx) {
         return false;
     }
-    m_notifyCallback = notifyCallback;
+    if (notifyCallback) {
+        /* Pin the isNotify flag at subscribe time; the pak event callback
+         * carries no notify/indicate distinction. */
+        m_notifyCallback = [notifyCallback, notifications](NimBLERemoteCharacteristic *c,
+                                                           uint8_t *data,
+                                                           size_t length,
+                                                           bool) {
+            notifyCallback(c, data, length, notifications);
+        };
+    }
     return pak_bt_set_cccd(m_ctx, m_chr, notifications ? 1 : 2) == 0;
 }
 

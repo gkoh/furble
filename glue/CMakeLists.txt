@@ -19,13 +19,15 @@ if(PKG_CONFIG_FOUND AND NOT TARGET pakrt)
     endif()
 endif()
 
-add_library(libfurble SHARED
-  nimble.cpp
-  module.cpp
-  ${FURBLE_LIB_SOURCES}
-)
+set(FURBLE_LIB_SOURCES ${FURBLE_LIB_SOURCES} nimble.cpp module.cpp)
 
-target_include_directories(libfurble PUBLIC
+if(MAKE_EXECUTABLE OR CMAKE_SYSTEM_PROCESSOR STREQUAL "wasm32")
+  add_executable(furble ${FURBLE_LIB_SOURCES})
+else()
+  add_library(furble SHARED ${FURBLE_LIB_SOURCES})
+endif()
+
+target_include_directories(furble PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_SOURCE_DIR}/../lib/furble
   ${CMAKE_CURRENT_SOURCE_DIR}/../lib/blowfish
@@ -33,12 +35,14 @@ target_include_directories(libfurble PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 
-target_compile_definitions(libfurble PUBLIC
+target_compile_definitions(furble PUBLIC
   CONFIG_BT_NIMBLE_ENABLED=1
 )
 
-target_compile_options(libfurble PRIVATE
+target_compile_options(furble PRIVATE
   "-include${CMAKE_CURRENT_SOURCE_DIR}/include/furble_host_prefix.h"
+  $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-c++11-narrowing>
+  $<$<CXX_COMPILER_ID:GNU>:-Wno-narrowing>
 )
 
-target_link_libraries(libfurble PRIVATE pakrt)
+target_link_libraries(furble PRIVATE pakrt)

@@ -34,6 +34,10 @@
 # include <vector>
 # include <string>
 
+extern "C" {
+# include <bluetooth.h>
+}
+
 class NimBLEAddress;
 class NimBLEUUID;
 class NimBLERemoteService;
@@ -146,6 +150,11 @@ class NimBLEClient {
     bool        retrieveServices(const NimBLEUUID* uuidFilter = nullptr);
     int         startConnectionAttempt(const ble_addr_t* peerAddr);
     static int  handleGapEvent(struct ble_gap_event* event, void* arg);
+    static int  onPakEvent(struct PakBt* ctx,
+                           enum PakBtEvent event,
+                           struct PakBtDevice* dev,
+                           struct PakGattCharacteristic* chr,
+                           void* arg);
     static void connectEstablishedTimerCb(struct ble_npl_event* event);
     void        startConnectEstablishedTimer(uint16_t connInterval);
     bool        completeConnectEstablished();

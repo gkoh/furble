@@ -1,0 +1,117 @@
+{
+  "name": "furble",
+  "isDraft": true,
+  "description": "Bluetooth remote shutter for mirrorless cameras",
+  "website": "https://github.com/gkoh/furble",
+  "license": "MIT",
+  "author": "gkoh",
+  "version": 1,
+  "moduleType": "so",
+  "modulePath": "libfurble.so",
+  "targets": [
+    {
+      "deviceType": "professional-camera",
+      "company": "Fujifilm",
+      "summary": "Fujifilm X and GFX cameras",
+      "requiresFullMfgData": true,
+      "bluetoothFilter": [
+        {
+          "serviceUuids": ["117c4142-edd4-4c77-8696-dd18eebb770a"],
+          "mfgData": "0xd8,0x04",
+          "mfgDataMask": "0xff,0xff"
+        },
+        {
+          "serviceUuids": ["a9d2b304-e8d6-4902-8336-352b772d7597"],
+          "mfgData": "0xd8,0x04",
+          "mfgDataMask": "0xff,0xff",
+          "requiresBond": true
+        },
+        {
+          "serviceUuids": ["af854c2e-b214-458e-97e2-912c4ecf2cb8"],
+          "mfgData": "0xd8,0x04",
+          "mfgDataMask": "0xff,0xff"
+        }
+      ],
+      "usedGattServiceUuids": [
+        "91f1de68-dff6-466e-8b65-ff13b0f16fb8",
+        "4c0020fe-f3b6-40de-acc9-77d129067b14",
+        "6514eb81-4e8f-458d-aa2a-e691336cdfac",
+        "123d8f06-62a1-4935-9322-833c531ee225",
+        "804daa8e-ffeb-4ab3-8e75-6edd7303208d",
+        "4e941240-d01d-46b9-a5ea-67636806830b",
+        "731893f9-744e-4899-b7e3-174106ff2b82"
+      ],
+      "products": [
+        "GFX100 II",
+        "GFX100RF",
+        "GFX100S",
+        "GFX100S II",
+        "GFX50S II",
+        "X-E4",
+        "X-E5",
+        "X-H1",
+        "X-H2S",
+        "X-S10",
+        "X-S20",
+        "X-T200",
+        "X-T3",
+        "X-T30",
+        "X-T4",
+        "X-T5",
+        "X100V"
+      ]
+    },
+    {
+      "deviceType": "professional-camera",
+      "company": "Canon",
+      "summary": "Canon EOS cameras",
+      "bluetoothFilter": [
+        { "serviceUuids": ["00010000-0000-1000-0000-d8492fffa821"] },
+        { "serviceUuids": ["00050000-0000-1000-0000-d8492fffa821"] }
+      ],
+      "usedGattServiceUuids": ["00030000-0000-1000-0000-d8492fffa821"],
+      "products": [
+        "EOS M6",
+        "EOS R6 Mark II",
+        "EOS RP",
+        "PowerShot G9 X Mark II"
+      ]
+    },
+    {
+      "deviceType": "professional-camera",
+      "company": "Nikon",
+      "summary": "Nikon cameras",
+      "bluetoothFilter": [
+        { "serviceUuids": ["0000de00-3dd4-4255-8d62-6dc7b9bd5561"] }
+      ],
+      "products": ["COOLPIX B600", "Z6 III"]
+    },
+    {
+      "deviceType": "professional-camera",
+      "company": "Sony",
+      "summary": "Sony cameras",
+      "requiresFullMfgData": true,
+      "bluetoothFilter": [
+        {
+          "mfgData": "0x2d,0x01,0x03,0x00",
+          "mfgDataMask": "0xff,0xff,0xff,0xff"
+        }
+      ],
+      "usedGattServiceUuids": ["8000ff00-ff00-ffff-ffff-ffffffffffff"],
+      "products": ["ZV-1F"]
+    },
+    {
+      "deviceType": "professional-camera",
+      "company": "Ricoh",
+      "summary": "Ricoh cameras",
+      "bluetoothFilter": [
+        { "serviceUuids": ["9a5ed1c5-74cc-4c50-b5b6-66a48e7ccff1"] },
+        { "serviceUuids": ["4b445988-caa0-4dd3-941d-37b4f52aca86"] },
+        { "serviceUuids": ["9f00f387-8345-4bbc-8b92-b87b52e3091a"] },
+        { "serviceUuids": ["0f291746-0c80-4726-87a7-3c501fd3b4b6"] },
+        { "namePattern": "GR*" }
+      ],
+      "products": ["GR IV HDF"]
+    }
+  ]
+}

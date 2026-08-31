@@ -1,0 +1,130 @@
+diff --git a/lib/furble/CameraList.cpp b/lib/furble/CameraList.cpp
+index 606fd16..58e3a22 100644
+--- a/lib/furble/CameraList.cpp
++++ b/lib/furble/CameraList.cpp
+@@ -49,11 +49,12 @@ std::vector<CameraList::index_entry_t> CameraList::load_index(void) {
+   if (m_Prefs.isKey(FURBLE_PREF_INDEX)) {
+     size_t bytes = m_Prefs.getBytesLength(FURBLE_PREF_INDEX);
+     if (bytes > 0 && (bytes % sizeof(index_entry_t) == 0)) {
+-      uint8_t buffer[bytes] = {0};
++      auto buffer = std::make_unique<uint8_t[]>(bytes);
++      //uint8_t buffer[bytes] = {0};
+       size_t count = bytes / sizeof(index_entry_t);
+       ESP_LOGI(LOG_TAG, "Index entries: %d", count);
+-      m_Prefs.get(FURBLE_PREF_INDEX, buffer, bytes);
+-      index_entry_t *entry = (index_entry_t *)buffer;
++      m_Prefs.get(FURBLE_PREF_INDEX, buffer.get(), bytes);
++      index_entry_t *entry = (index_entry_t *)buffer.get();
+ 
+       for (int i = 0; i < count; i++) {
+         ESP_LOGI(LOG_TAG, "Loading index entry: %s", entry[i].name);
+@@ -93,10 +94,11 @@ void CameraList::save(const Furble::Camera *camera) {
+   add_index(index, entry);
+ 
+   size_t dbytes = camera->getSerialisedBytes();
+-  uint8_t dbuffer[dbytes] = {0};
+-  if (camera->serialise(dbuffer, dbytes)) {
++  //uint8_t dbuffer[dbytes] = {0};
++  auto dbuffer = std::make_unique<uint8_t[]>(dbytes);
++  if (camera->serialise(dbuffer.get(), dbytes)) {
+     // Store the entry and the index if serialisation succeeds
+-    m_Prefs.put(entry.name, dbuffer, dbytes);
++    m_Prefs.put(entry.name, dbuffer.get(), dbytes);
+     ESP_LOGI(LOG_TAG, "Saved %s", entry.name);
+     save_index(index);
+     ESP_LOGI(LOG_TAG, "Index entries: %d", index.size());
+@@ -146,44 +148,45 @@ void CameraList::load(void) {
+     if (dbytes == 0) {
+       continue;
+     }
+-    uint8_t dbuffer[dbytes] = {0};
+-    m_Prefs.get(i.name, dbuffer, dbytes);
++    auto dbuffer = std::make_unique<uint8_t[]>(dbytes);
++    //uint8_t dbuffer[dbytes] = {0};
++    m_Prefs.get(i.name, dbuffer.get(), dbytes);
+ 
+     switch (i.type) {
+       case Camera::Type::FUJIFILM_BASIC:
+         m_ConnectList.push_back(
+-            std::make_unique<Furble::FujifilmBasic>(static_cast<const void *>(dbuffer), dbytes));
++            std::make_unique<Furble::FujifilmBasic>(static_cast<const void *>(dbuffer.get()), dbytes));
+         break;
+       case Camera::Type::CANON_EOS_SMART:
+         m_ConnectList.push_back(
+-            std::make_unique<Furble::CanonEOSSmart>(static_cast<const void *>(dbuffer), dbytes));
++            std::make_unique<Furble::CanonEOSSmart>(static_cast<const void *>(dbuffer.get()), dbytes));
+         break;
+       case Camera::Type::CANON_EOS_REMOTE:
+         m_ConnectList.push_back(
+-            std::make_unique<Furble::CanonEOSRemote>(static_cast<const void *>(dbuffer), dbytes));
++            std::make_unique<Furble::CanonEOSRemote>(static_cast<const void *>(dbuffer.get()), dbytes));
+         break;
+       case Camera::Type::MOBILE_DEVICE:
+         ESP_LOGW(FURBLE_STR, "MobileDevice support has been removed.");
+         break;
+       case Camera::Type::FAUXNY:
+         m_ConnectList.push_back(
+-            std::make_unique<Furble::FauxNY>(static_cast<const void *>(dbuffer), dbytes));
++            std::make_unique<Furble::FauxNY>(static_cast<const void *>(dbuffer.get()), dbytes));
+         break;
+       case Camera::Type::NIKON:
+         m_ConnectList.push_back(
+-            std::make_unique<Furble::Nikon>(static_cast<const void *>(dbuffer), dbytes));
++            std::make_unique<Furble::Nikon>(static_cast<const void *>(dbuffer.get()), dbytes));
+         break;
+       case Camera::Type::SONY:
+         m_ConnectList.push_back(
+-            std::make_unique<Furble::Sony>(static_cast<const void *>(dbuffer), dbytes));
++            std::make_unique<Furble::Sony>(static_cast<const void *>(dbuffer.get()), dbytes));
+         break;
+       case Camera::Type::RICOH:
+         m_ConnectList.push_back(
+-            std::make_unique<Furble::Ricoh>(static_cast<const void *>(dbuffer), dbytes));
++            std::make_unique<Furble::Ricoh>(static_cast<const void *>(dbuffer.get()), dbytes));
+         break;
+       case Camera::Type::FUJIFILM_SECURE:
+         m_ConnectList.push_back(
+-            std::make_unique<Furble::FujifilmSecure>(static_cast<const void *>(dbuffer), dbytes));
++            std::make_unique<Furble::FujifilmSecure>(static_cast<const void *>(dbuffer.get()), dbytes));
+         break;
+     }
+   }
+diff --git a/lib/furble/CanonEOS.cpp b/lib/furble/CanonEOS.cpp
+index 9939adc..1132722 100644
+--- a/lib/furble/CanonEOS.cpp
++++ b/lib/furble/CanonEOS.cpp
+@@ -36,7 +36,8 @@ bool CanonEOS::writePrefix(const NimBLEUUID &serviceUUID,
+                            const uint8_t prefix,
+                            const void *data,
+                            uint16_t length) {
+-  uint8_t buffer[length + 1] = {0};
++  auto buffer = std::make_unique<uint8_t[]>(length + 1);
++  //uint8_t buffer[length + 1] = {0};
+   buffer[0] = prefix;
+   memcpy(&buffer[1], data, length);
+   return m_Client->setValue(serviceUUID, characteristicUUID, {&buffer[0], (uint16_t)(length + 1)});
+diff --git a/lib/furble/Device.cpp b/lib/furble/Device.cpp
+index 918ca0b..812a2e7 100644
+--- a/lib/furble/Device.cpp
++++ b/lib/furble/Device.cpp
+@@ -56,4 +56,8 @@ const std::string Device::getStringID(void) {
+   return m_ID;
+ }
+ 
++const void Device::setStringID(std::string str) {
++  m_ID = str;
++}
++
+ }  // namespace Furble
+diff --git a/lib/furble/Device.h b/lib/furble/Device.h
+index 1882adf..3645946 100644
+--- a/lib/furble/Device.h
++++ b/lib/furble/Device.h
+@@ -35,6 +35,7 @@ class Device {
+    * Return pseudo-unique identifier string of this device.
+    */
+   static const std::string getStringID(void);
++  static const void setStringID(std::string);
+ 
+  private:
+   static constexpr size_t DEVICE_ID_STR_MAX = 16;
