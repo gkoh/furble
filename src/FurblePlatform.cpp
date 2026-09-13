@@ -1,9 +1,11 @@
+#include <esp_log.h>
 #include <esp_pm.h>
 
 #include <M5PM1.h>
 #include <M5Unified.h>
 
 #include "FurblePlatform.h"
+#include "FurbleTypes.h"
 
 namespace Furble {
 
@@ -32,10 +34,15 @@ Platform &Platform::getInstance(void) {
     }
 
 #if defined(FURBLE_M5STICKS3)
-    instance.m_M5PM1.begin(&M5.In_I2C);
+    if (instance.m_M5PM1.begin(&M5.In_I2C) != M5PM1_OK) {
+      ESP_LOGE(LOG_TAG, "M5PM1 init failed");
+      abort();
+    }
     instance.m_M5PM1.setSingleResetDisable(true);  // disable BtnPWR single-click reset
     instance.m_M5PM1.setDoubleOffDisable(true);    // disable BtnPWR double-click power off
     instance.m_M5PM1.setDownloadLock(true);        // disable BtnPWR long-press enter download mode
+
+    instance.m_M5PM1.wdtSet(M5PM1_WDT_TIMEOUT_SEC);
 #endif
 
     instance.m_Init = true;
@@ -86,6 +93,8 @@ void Platform::update(void) {
   if (m_M5PM1.btnGetState(&b) == M5PM1_OK) {
     M5.BtnPWR.setRawState(tick(), b);
   }
+
+  m_M5PM1.wdtFeed();
 #else
   if (m_PMICHack && M5.BtnPWR.wasClicked()) {
     // fake PMIC button as actual button, record the click streak
