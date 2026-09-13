@@ -49,6 +49,9 @@ class Platform {
   // Power button click streak threshold
   const uint8_t PWR_CLICK_THRESHOLD_MS = 20;
 
+  // StickS3 M5PM1 PMIC watchdog
+  static constexpr uint8_t M5PM1_WDT_TIMEOUT_SEC = UINT8_MAX;
+
   M5PM1 m_M5PM1;
 
   bool m_Init = false;
