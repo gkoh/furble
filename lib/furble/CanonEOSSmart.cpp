@@ -193,19 +193,6 @@ void CanonEOSSmart::focusRelease(void) {
 
 void CanonEOSSmart::updateGeoData(const gps_t &gps, const timesync_t &timesync) {
   if (m_GeoEnabled) {
-    struct tm time_str = {
-        .tm_sec = static_cast<int>(timesync.second),
-        .tm_min = static_cast<int>(timesync.minute),
-        .tm_hour = static_cast<int>(timesync.hour),
-        .tm_mday = static_cast<int>(timesync.day),
-        .tm_mon = static_cast<int>(timesync.month - 1),
-        .tm_year = static_cast<int>(timesync.year - 1900),
-        .tm_wday = 0,
-        .tm_yday = 0,
-        .tm_isdst = -1,
-    };
-
-    time_t timestamp = mktime(&time_str);
     canon_geo_t geo = {
         .header = 0x04,
         .latitude_direction = gps.latitude < 0.0 ? 'S' : 'N',
@@ -214,7 +201,7 @@ void CanonEOSSmart::updateGeoData(const gps_t &gps, const timesync_t &timesync) 
         .longitude = static_cast<float>(std::abs(gps.longitude)),
         .elevation_sign = gps.altitude < 0.0 ? '-' : '+',
         .elevation = static_cast<float>(std::abs(gps.altitude)),
-        .timestamp = static_cast<uint32_t>(timestamp),
+        .timestamp = static_cast<uint32_t>(toUnixTime(timesync)),
     };
     if ((m_Geo != nullptr) && m_Geo->canWrite()) {
       m_Geo->writeValue(reinterpret_cast<const uint8_t *>(&geo), sizeof(geo), true);

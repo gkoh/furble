@@ -1,6 +1,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include <time.h>
 #include <atomic>
 #include <mutex>
 
@@ -32,6 +33,7 @@ class Camera: public NimBLEClientCallbacks {
     SONY = 7,
     FUJIFILM_SECURE = 8,
     RICOH = 9,
+    PANASONIC_LUMIX = 10,
   };
 
   enum class PairType : uint8_t {
@@ -66,6 +68,11 @@ class Camera: public NimBLEClientCallbacks {
     unsigned int second;
     unsigned int centisecond;
   } timesync_t;
+
+  /**
+   * Convert a time sync structure to Unix epoch seconds.
+   */
+  static time_t toUnixTime(const timesync_t &timesync);
 
   Camera();
   ~Camera();
