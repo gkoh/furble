@@ -2083,6 +2083,8 @@ void UI::addSettingsMenu(void) {
 
 void UI::updateItems(const menu_t &menu) {
   auto *camera = CameraList::last();
+  if (camera == nullptr)
+    return;
 
   addCameraItem(camera, menu, MODE_SCAN);
 }

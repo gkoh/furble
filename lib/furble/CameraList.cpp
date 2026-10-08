@@ -1,5 +1,6 @@
 #include <NimBLEAdvertisedDevice.h>
 #include <Preferences.h>
+#include <algorithm>
 
 #include "CanonEOSRemote.h"
 #include "CanonEOSSmart.h"
@@ -18,6 +19,7 @@ namespace Furble {
 
 std::vector<std::unique_ptr<Furble::Camera>> CameraList::m_ConnectList;
 Preferences CameraList::m_Prefs;
+std::recursive_mutex CameraList::m_Mutex;
 
 /**
  * Non-volatile storage index entry.
@@ -84,6 +86,7 @@ void CameraList::add_index(std::vector<CameraList::index_entry_t> &index, index_
 }
 
 void CameraList::save(const Furble::Camera *camera) {
+  const std::lock_guard<std::recursive_mutex> lock(m_Mutex);
   m_Prefs.begin(FURBLE_STR, false);
   std::vector<index_entry_t> index = load_index();
 
@@ -106,6 +109,7 @@ void CameraList::save(const Furble::Camera *camera) {
 }
 
 void CameraList::remove(Furble::Camera *camera) {
+  const std::lock_guard<std::recursive_mutex> lock(m_Mutex);
   m_Prefs.begin(FURBLE_STR, false);
   std::vector<index_entry_t> index = load_index();
 
@@ -138,6 +142,7 @@ void CameraList::remove(Furble::Camera *camera) {
  * index with a known name and storing target devices in separate entries.
  */
 void CameraList::load(void) {
+  const std::lock_guard<std::recursive_mutex> lock(m_Mutex);
   m_Prefs.begin(FURBLE_STR, true);
   m_ConnectList.clear();
   std::vector<index_entry_t> index = load_index();
@@ -191,6 +196,7 @@ void CameraList::load(void) {
 }
 
 size_t CameraList::getSaveCount(void) {
+  const std::lock_guard<std::recursive_mutex> lock(m_Mutex);
   m_Prefs.begin(FURBLE_STR, false);
   auto index = load_index();
   m_Prefs.end();
@@ -199,22 +205,44 @@ size_t CameraList::getSaveCount(void) {
 }
 
 size_t CameraList::size(void) {
+  const std::lock_guard<std::recursive_mutex> lock(m_Mutex);
   return m_ConnectList.size();
 }
 
 void CameraList::clear(void) {
+  const std::lock_guard<std::recursive_mutex> lock(m_Mutex);
   m_ConnectList.clear();
 }
 
 Furble::Camera *CameraList::last(void) {
-  return m_ConnectList.back().get();
+  const std::lock_guard<std::recursive_mutex> lock(m_Mutex);
+  return m_ConnectList.empty() ? nullptr : m_ConnectList.back().get();
 }
 
 Furble::Camera *CameraList::get(size_t n) {
-  return m_ConnectList[n].get();
+  const std::lock_guard<std::recursive_mutex> lock(m_Mutex);
+  return n < m_ConnectList.size() ? m_ConnectList[n].get() : nullptr;
+}
+
+std::vector<std::string> CameraList::snapshotNames(size_t maxCount) {
+  const std::lock_guard<std::recursive_mutex> lock(m_Mutex);
+  std::vector<std::string> names;
+  names.reserve(std::min(maxCount, m_ConnectList.size()));
+  for (const auto &camera : m_ConnectList) {
+    if (names.size() == maxCount)
+      break;
+    names.push_back(camera->getName());
+  }
+  return names;
 }
 
 bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
+  const std::lock_guard<std::recursive_mutex> lock(m_Mutex);
+#ifdef FURBLE_XTEINK_X3
+  // The X3 has no PSRAM. Keep discovery bounded even in a busy BLE area.
+  if (m_ConnectList.size() >= 16)
+    return false;
+#endif
   // Ensure we only match one instance of each camera by address.
   const NimBLEAddress addr = pDevice->getAddress();
   for (auto &c : m_ConnectList) {
@@ -249,6 +277,7 @@ bool CameraList::match(const NimBLEAdvertisedDevice *pDevice) {
 }
 
 void CameraList::addFauxNY(void) {
+  const std::lock_guard<std::recursive_mutex> lock(m_Mutex);
   m_ConnectList.push_back(std::make_unique<Furble::FauxNY>());
 }
 

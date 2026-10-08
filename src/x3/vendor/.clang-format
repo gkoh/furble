@@ -1,0 +1,3 @@
+# Keep imported waveform tables and font data comparable with upstream.
+DisableFormat: true
+SortIncludes: Never

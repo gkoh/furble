@@ -1,6 +1,7 @@
 #ifndef FURBLE_CONTROL_H
 #define FURBLE_CONTROL_H
 
+#include <atomic>
 #include <memory>
 #include <mutex>
 
@@ -40,26 +41,37 @@ class Control {
     friend class Control;
 
    public:
-    Target(Camera *camera);
+    Target(Camera *camera, const std::atomic<uint32_t> *generation = nullptr);
     ~Target();
 
     Camera *getCamera(void) const;
     cmd_t getCommand(void);
-    void sendCommand(cmd_t cmd);
+    BaseType_t sendCommand(cmd_t cmd);
     void updateGPS(const Camera::gps_t &gps, const Camera::timesync_t &timesync);
 
     void task(void);
 
    protected:
-    volatile bool m_Stopped = false;
+    std::atomic<bool> m_Stopped {false};
 
    private:
+    BaseType_t sendCommand(cmd_t cmd, uint32_t generation);
+    struct QueuedCommand {
+      cmd_t command;
+      uint32_t generation;
+    };
     static constexpr UBaseType_t m_QueueLength = 8;
 
     QueueHandle_t m_Queue = NULL;
     Furble::Camera *m_Camera = NULL;
-    Camera::gps_t m_GPS;
-    Camera::timesync_t m_Timesync;
+    Camera::gps_t m_GPS {};
+    Camera::timesync_t m_Timesync {};
+    std::mutex m_GPSMutex;
+    std::atomic<bool> m_StopRequested {false};
+    std::atomic<uint8_t> m_ReleaseRequested {0};
+    const std::atomic<uint32_t> *m_Generation = nullptr;
+    uint32_t m_SeenGeneration = 0;
+    uint32_t m_CommandGeneration = 0;
   };
 
   static Control &getInstance();
@@ -111,7 +123,7 @@ class Control {
   /**
    * Add specified camera to active target list.
    */
-  void addActive(Camera *camera);
+  bool addActive(Camera *camera);
 
   /**
    * Get current camera connection attempt.
@@ -123,11 +135,26 @@ class Control {
   /** Retrieve current control state. */
   state_t getState(void) const;
 
+  struct ConnectionStatus {
+    state_t state;
+    std::string connectingName;
+    uint8_t progress;
+    bool commandFailed;
+  };
+  ConnectionStatus getConnectionStatus(void) const;
+
   /** Set transmit power. */
   void setPower(esp_power_level_t power);
 
  private:
-  Control() {};
+  Control();
+
+  struct QueuedCommand {
+    cmd_t command;
+    uint32_t generation;
+  };
+
+  bool allConnectedLocked(void);
 
   /** Iterate over cameras and attempt connection. */
   state_t connectAll(void);
@@ -138,12 +165,17 @@ class Control {
   std::mutex m_Mutex;
   std::vector<std::unique_ptr<Control::Target>> m_Targets;
 
-  bool m_InfiniteReconnect = false;
-  state_t m_State = STATE_IDLE;
+  std::atomic<bool> m_InfiniteReconnect {false};
+  std::atomic<state_t> m_State {STATE_IDLE};
+  std::atomic<uint32_t> m_Generation {0};
+  std::atomic<uint8_t> m_PendingReleases {0};
+  std::atomic<bool> m_CommandFailed {false};
+  mutable std::mutex m_StatusMutex;
+  uint32_t m_FailCount = 0;
 
   // Camera connects are serialised, the following tracks the last attempt
-  Camera *m_ConnectCamera = nullptr;
-  esp_power_level_t m_Power = ESP_PWR_LVL_P3;
+  std::atomic<Camera *> m_ConnectCamera {nullptr};
+  std::atomic<esp_power_level_t> m_Power {ESP_PWR_LVL_P3};
 };
 
 };  // namespace Furble

@@ -18,6 +18,7 @@ jobs:
           - m5stick-c
           - m5stick-c-plus
           - m5stick-s3
+          - xteink-x3
 
     runs-on: ubuntu-latest
     permissions:

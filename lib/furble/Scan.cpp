@@ -18,6 +18,10 @@ Scan &Scan::getInstance(void) {
     instance.m_Scan->setActiveScan(true);
     instance.m_Scan->setInterval(6553);
     instance.m_Scan->setWindow(6553);
+#ifdef FURBLE_XTEINK_X3
+    // Callbacks copy the matching camera data; retain no advertiser history.
+    instance.m_Scan->setMaxResults(0);
+#endif
   }
 
   return instance;
@@ -27,20 +31,32 @@ Scan &Scan::getInstance(void) {
  * BLE Advertisement callback.
  */
 void Scan::onResult(const NimBLEAdvertisedDevice *pDevice) {
-  if (CameraList::match(pDevice)) {
+  std::function<void(void *)> callback;
+  void *privateData = nullptr;
+  {
+    const std::lock_guard<std::mutex> lock(m_ResultMutex);
+    if (!m_AcceptingResults || !CameraList::match(pDevice))
+      return;
     ESP_LOGI(LOG_TAG, "RSSI(%s) = %d", pDevice->getName().c_str(), pDevice->getRSSI());
-    if (m_ScanResultCallback != nullptr) {
-      (m_ScanResultCallback)(m_ScanResultPrivateData);
-    }
+    callback = m_ScanResultCallback;
+    privateData = m_ScanResultPrivateData;
   }
+  // Legacy UI callbacks acquire their own display mutex. Invoking here while
+  // holding m_ResultMutex would deadlock a UI thread calling stop().
+  if (callback)
+    callback(privateData);
 };
 
 void Scan::start(std::function<void(void *)> scanCallback, void *scanPrivateData) {
   m_Server->start();
   m_Scan->setScanCallbacks(this);
 
-  m_ScanResultCallback = scanCallback;
-  m_ScanResultPrivateData = scanPrivateData;
+  {
+    const std::lock_guard<std::mutex> lock(m_ResultMutex);
+    m_ScanResultCallback = scanCallback;
+    m_ScanResultPrivateData = scanPrivateData;
+    m_AcceptingResults = true;
+  }
   m_Scan->start(0, false);
 }
 
@@ -50,9 +66,15 @@ void Scan::start(NimBLEScanCallbacks *pScanCallbacks, uint32_t duration) {
 }
 
 void Scan::stop(void) {
+  {
+    // Drain list mutation before cancellation. A copied notification callback
+    // may still finish after stop; it must not own transient UI storage.
+    const std::lock_guard<std::mutex> lock(m_ResultMutex);
+    m_AcceptingResults = false;
+    m_ScanResultPrivateData = nullptr;
+    m_ScanResultCallback = nullptr;
+  }
   m_Scan->stop();
-  m_ScanResultPrivateData = nullptr;
-  m_ScanResultCallback = nullptr;
 }
 
 bool Scan::isActive(void) const {

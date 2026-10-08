@@ -2,7 +2,9 @@
 #define CAMERALIST_H
 
 #include <Preferences.h>
+#include <limits>
 #include <memory>
+#include <mutex>
 
 #include "Camera.h"
 
@@ -49,6 +51,10 @@ class CameraList {
    */
   static size_t size(void);
 
+  /** Copy display names without exposing vector storage or camera lifetime. */
+  static std::vector<std::string> snapshotNames(
+      size_t maxCount = std::numeric_limits<size_t>::max());
+
   /**
    * Clear connectable devices.
    */
@@ -81,6 +87,7 @@ class CameraList {
   static std::vector<std::unique_ptr<Furble::Camera>> m_ConnectList;
 
   static Preferences m_Prefs;
+  static std::recursive_mutex m_Mutex;
 };
 }  // namespace Furble
 

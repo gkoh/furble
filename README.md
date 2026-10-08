@@ -84,6 +84,10 @@ Initially targeted at the M5StickC, the following controllers from [M5Stack](htt
 * M5Core Basic
 * M5Core2
 
+The **Xteink X3** is supported experimentally with a portrait e-ink interface.
+This replaces the ebook reader firmware. Tested on an Xteink X3 with a UC8253
+panel and a Fujifilm X-T4. Battery and sleep still need validation.
+
 ## Installation
 
 ### Easy Install
@@ -102,6 +106,11 @@ In most cases it should be:
     - `platformio run -e m5stick-c-plus -t upload`
 - OR plug in the M5Stack Core2
     - `platformio run -e m5stack-core2 -t upload`
+- OR plug in the Xteink X3
+    - `platformio run -e xteink-x3 -t upload`
+
+For the Xteink X3, back up the stock firmware first; installing furble replaces
+the ebook reader firmware. Use a checkout path without spaces.
 
 More details are on the wiki: [PlatformIO](https://github.com/gkoh/furble/wiki/Linux-Command-Line-(For-Developers))
 

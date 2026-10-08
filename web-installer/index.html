@@ -14,7 +14,7 @@
       <p>A bluetooth wireless remote shutter release/button for Fujifilm X/GFX,
       Canon EOS, Nikon and Sony cameras.<p>
       <hr>
-      <p>Flash furble firmware to a supported M5Stack device.</p>
+      <p>Flash furble firmware to a supported device.</p>
       <p>Select your device:</p>
       <ul class="radios">
         <li>
@@ -32,7 +32,15 @@
         <li>
           <label><input type="radio" name="type" value="m5stack-core"/>M5Stack Core</label>
         </li>
+        <li>
+          <label><input type="radio" name="type" value="xteink-x3"/>Xteink X3 (experimental)</label>
+        </li>
       </ul>
+      <p id="x3-warning" hidden><strong>Xteink X3: experimental dedicated firmware.</strong>
+        Installing furble replaces the e-reader firmware and may erase device data.
+        Make and verify a full flash backup before installation. Read the
+        <a href="https://github.com/gkoh/furble#platformio">X3 installation instructions</a>
+        before continuing.</p>
       <p class="button-row" align="left">
         <esp-web-install-button class="invisible"></esp-web-install-button>
       </p>
@@ -46,6 +54,7 @@
       document.querySelectorAll('input[name="type"]').forEach(radio =>
         radio.addEventListener("change", () => {
           const button = document.querySelector('esp-web-install-button');
+          document.querySelector('#x3-warning').hidden = radio.value !== 'xteink-x3';
           button.manifest = `./manifest_${radio.value}.json`;
           button.classList.remove('invisible');
         }
