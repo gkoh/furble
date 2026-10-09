@@ -1229,18 +1229,29 @@ void UI::intervalometer(lv_timer_t *timer) {
 void UI::doConnect(lv_event_t *e) {
   auto &control = Control::getInstance();
 
+  if (control.getState() != Control::STATE_IDLE)
+    return;
+
   // activate selected cameras
   for (auto n = 0; n < CameraList::size(); n++) {
     auto *camera = CameraList::get(n);
     if (camera->isActive()) {
-      control.addActive(camera);
+      if (!control.addActive(camera)) {
+        ESP_LOGE("ui", "Could not prepare camera connection.");
+        doDisconnect();
+        return;
+      }
     }
   }
 
   lv_obj_add_event_cb(
       m_ConnectContext.cancel, [](lv_event_t *e) { doDisconnect(); }, LV_EVENT_CLICKED, NULL);
 
-  control.connectAll(Settings::load<Settings::RECONNECT>());
+  if (!control.connectAll(Settings::load<Settings::RECONNECT>())) {
+    ESP_LOGE("ui", "Could not start camera connection.");
+    doDisconnect();
+    return;
+  }
   lv_timer_reset(m_ConnectTimer);
   lv_timer_resume(m_ConnectTimer);
 
@@ -2083,6 +2094,8 @@ void UI::addSettingsMenu(void) {
 
 void UI::updateItems(const menu_t &menu) {
   auto *camera = CameraList::last();
+  if (camera == nullptr)
+    return;
 
   addCameraItem(camera, menu, MODE_SCAN);
 }

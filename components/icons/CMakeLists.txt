@@ -1,3 +1,8 @@
+if(IDF_TARGET STREQUAL "esp32c3")
+    idf_component_register()
+    return()
+endif()
+
 set(COMPONENT_SRCS
     icon_add_a_photo.c
     icon_add_a_photo_24.c

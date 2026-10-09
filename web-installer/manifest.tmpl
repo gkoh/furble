@@ -5,17 +5,9 @@
   "new_install_improv_wait_time": 0,
   "builds": [
     {
-      "chipFamily": "ESP32",
+      "chipFamily": "$CHIP_FAMILY",
       "parts": [
-        { "path": "firmware/furble-bootloader-$PLATFORM-$VERSION.bin", "offset": 4096 },
-        { "path": "firmware/furble-partitions-$PLATFORM-$VERSION.bin", "offset": 32768 },
-        { "path": "firmware/furble-$PLATFORM-$VERSION.bin", "offset": 65536 }
-      ]
-    },
-    {
-      "chipFamily": "ESP32-S3",
-      "parts": [
-        { "path": "firmware/furble-bootloader-$PLATFORM-$VERSION.bin", "offset": 0 },
+        { "path": "firmware/furble-bootloader-$PLATFORM-$VERSION.bin", "offset": $BOOT_OFFSET },
         { "path": "firmware/furble-partitions-$PLATFORM-$VERSION.bin", "offset": 32768 },
         { "path": "firmware/furble-$PLATFORM-$VERSION.bin", "offset": 65536 }
       ]

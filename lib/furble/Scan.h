@@ -1,6 +1,7 @@
 #ifndef SCAN_H
 #define SCAN_H
 
+#include <mutex>
 #include <vector>
 
 #include <NimBLEScan.h>
@@ -64,6 +65,8 @@ class Scan: public NimBLEScanCallbacks {
   NimBLEScan *m_Scan = nullptr;
   std::function<void(void *)> m_ScanResultCallback;
   void *m_ScanResultPrivateData = nullptr;
+  std::mutex m_ResultMutex;
+  bool m_AcceptingResults = false;
 };
 
 }  // namespace Furble
