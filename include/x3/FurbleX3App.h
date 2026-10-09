@@ -7,7 +7,7 @@
 #include <freertos/queue.h>
 
 #include "FurbleControl.h"
-#include "FurbleIntervalometer.h"
+#include "FurbleIntervalTimer.h"
 #include "FurbleSettings.h"
 #include "x3/FurbleX3View.h"
 
@@ -76,7 +76,7 @@ class X3App {
     uint16_t total = 0;
     bool scan = false;
     bool busy = false;
-    bool commandFailed = false;
+    uint32_t commandFailures = 0;
     bool connectFailed = false;
     uint32_t cancelEpoch = 0;
     bool powerFailed = false;
@@ -89,7 +89,7 @@ class X3App {
   Config m_Config;
   Config m_InitialConfig;
   Snapshot m_Snapshot;
-  Intervalometer m_Timer;
+  IntervalTimer m_Timer;
   QueueHandle_t m_Work = nullptr;
   QueueHandle_t m_Results = nullptr;
   QueueHandle_t m_Display = nullptr;
@@ -99,7 +99,6 @@ class X3App {
   std::atomic<uint32_t> m_CancelEpoch {0};
   uint32_t m_RequestId = 0;
   uint32_t m_ListPending = 0;
-  bool m_CommandFailed = false;
   uint8_t m_ActionCamera = 0;
   Page m_Page = Page::MAIN;
   uint8_t m_Cursor = 0;
@@ -111,6 +110,8 @@ class X3App {
   bool m_ShutterHeld = false;
   bool m_Bulb = false;
   bool m_SelectHeld = false;
+  bool m_ShutterReleasePending = false;
+  bool m_FocusReleasePending = false;
   bool m_PowerRequested = false;
   char m_Message[80] = {};
 
@@ -122,8 +123,9 @@ class X3App {
   void navigate(Page page);
   bool request(Operation operation, uint16_t selection = 0);
   bool command(Control::cmd_t command);
-  void action(Intervalometer::Action action);
+  void action(IntervalTimer::Action action);
   void releaseControls(void);
+  void serviceReleases(void);
   void save(void);
   void edit(int change);
   uint8_t rows(void) const;

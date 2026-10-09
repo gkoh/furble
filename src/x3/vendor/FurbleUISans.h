@@ -1,5 +1,9 @@
 // Furble UI Sans: renamed printable-ASCII subset of Liberation Sans, SIL OFL 1.1.
 // Copyright Google 2010 / Red Hat 2012; see FurbleUISans-LICENSE.txt.
+// Source: LVGL v9.4.0 src/libs/freetype/LiberationSans-Regular.ttf.
+// SHA-256: 3e81ba4717a115f8d125cd2327d4a1246be2997b9ffd7291a45b6f84ed1a27d1
+// Rasterized with Pillow 11.3.0 / FreeType 2.13.3 at 18, 24 and 32 px;
+// coverage >= 100, rounded advances, row-major bits packed MSB first.
 #pragma once
 #include <cstdint>
 namespace Furble {

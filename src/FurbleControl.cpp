@@ -1,8 +1,24 @@
 #include "FurbleControl.h"
+#include "FurbleFatal.h"
+
+#include <cstdlib>
 
 namespace Furble {
-Control::Target::Target(Camera *camera, const std::atomic<uint32_t> *generation)
-    : m_Generation(generation), m_SeenGeneration(generation ? generation->load() : 0) {
+[[noreturn]] __attribute__((weak)) void fatal() {
+  std::abort();
+}
+}  // namespace Furble
+
+namespace Furble {
+Control::Target::Target(Camera *camera,
+                        const std::atomic<uint32_t> *generation,
+                        const std::atomic<uint32_t> *shutterReleaseRequests,
+                        const std::atomic<uint32_t> *focusReleaseRequests)
+    : m_Generation(generation),
+      m_ShutterReleaseRequests(shutterReleaseRequests),
+      m_FocusReleaseRequests(focusReleaseRequests),
+      m_SeenShutterRelease(shutterReleaseRequests ? shutterReleaseRequests->load() : 0),
+      m_SeenFocusRelease(focusReleaseRequests ? focusReleaseRequests->load() : 0) {
   m_Camera = camera;
   m_Queue = xQueueCreate(m_QueueLength, sizeof(QueuedCommand));
 }
@@ -29,16 +45,27 @@ BaseType_t Control::Target::sendCommand(cmd_t cmd, uint32_t generation) {
     m_StopRequested.store(true);
     return pdTRUE;
   }
+  // Drain the finite backlog before a fallback release. Coalesce additional
+  // releases and reject new traffic so GPS/presses cannot starve recovery.
+  if (m_ReleaseRequested.load() != 0) {
+    const uint8_t release = cmd == CMD_SHUTTER_RELEASE ? 1 : cmd == CMD_FOCUS_RELEASE ? 2 : 0;
+    if (release != 0)
+      m_ReleaseRequested.fetch_or(release);
+    return release != 0 ? pdTRUE : pdFALSE;
+  }
   QueuedCommand queued {cmd, generation};
   BaseType_t ret = xQueueSend(m_Queue, &queued, 0);
   if (ret != pdTRUE) {
-    if (cmd == CMD_SHUTTER_PRESS || cmd == CMD_SHUTTER_RELEASE || cmd == CMD_FOCUS_PRESS
-        || cmd == CMD_FOCUS_RELEASE) {
-      // A saturated queue must not leave a bulb exposure or focus held.
-      xQueueReset(m_Queue);
-      m_ReleaseRequested.fetch_or(3);
+    if (cmd == CMD_SHUTTER_RELEASE) {
+      m_ReleaseRequested.fetch_or(1);
+      ret = pdTRUE;
     }
-    ESP_LOGE(LOG_TAG, "Failed to send command to target.");
+    if (cmd == CMD_FOCUS_RELEASE) {
+      m_ReleaseRequested.fetch_or(2);
+      ret = pdTRUE;
+    }
+    if (ret != pdTRUE)
+      ESP_LOGE(LOG_TAG, "Failed to send command to target.");
   }
   return ret;
 }
@@ -66,11 +93,13 @@ void Control::Target::task(void) {
 
   auto release = [&](uint8_t buttons) {
     if ((buttons & 1) && shutterHeld) {
-      m_Camera->shutterRelease();
+      if (m_Camera->isConnected())
+        m_Camera->shutterRelease();
       shutterHeld = false;
     }
     if ((buttons & 2) && focusHeld) {
-      m_Camera->focusRelease();
+      if (m_Camera->isConnected())
+        m_Camera->focusRelease();
       focusHeld = false;
     }
   };
@@ -83,21 +112,33 @@ void Control::Target::task(void) {
       break;
     }
     const uint32_t generation = m_Generation ? m_Generation->load() : 0;
-    if (m_SeenGeneration != generation) {
-      // Abort locally even when the control worker is still busy. A top-level
-      // overflow or reconnect invalidates every target's pending sequence.
-      m_SeenGeneration = generation;
+    if (!m_Camera->isConnected()) {
+      shutterHeld = false;
+      focusHeld = false;
       m_ReleaseRequested.exchange(0);
-      release(3);
+      continue;
     }
+    uint8_t requested = 0;
+    if (m_ShutterReleaseRequests) {
+      uint32_t current = m_ShutterReleaseRequests->load();
+      if (current != m_SeenShutterRelease) {
+        m_SeenShutterRelease = current;
+        requested |= 1;
+      }
+    }
+    if (m_FocusReleaseRequests) {
+      uint32_t current = m_FocusReleaseRequests->load();
+      if (current != m_SeenFocusRelease) {
+        m_SeenFocusRelease = current;
+        requested |= 2;
+      }
+    }
+    release(requested);
     if (cmd != CMD_ERROR && m_CommandGeneration != generation)
       continue;
-    uint8_t pending = m_ReleaseRequested.exchange(0);
-    if (pending != 0) {
-      release(pending);
-      // The received command may predate the queue reset.
-      continue;
-    }
+    // Drain older commands before applying a release that could not be queued.
+    if (cmd == CMD_ERROR)
+      release(m_ReleaseRequested.exchange(0));
     switch (cmd) {
       case CMD_SHUTTER_PRESS:
         ESP_LOGI(LOG_TAG, "shutterPress(%s)", name);
@@ -157,7 +198,7 @@ Control::Control() {
   m_Queue = xQueueCreate(m_QueueLength, sizeof(QueuedCommand));
   if (m_Queue == NULL) {
     ESP_LOGE(LOG_TAG, "Failed to create control queue.");
-    abort();
+    fatal();
   }
 }
 
@@ -223,6 +264,7 @@ void Control::task(void) {
       case STATE_IDLE:
       {
         const std::lock_guard<std::mutex> lock(m_Mutex);
+        // disconnect() may have advanced the generation while we waited.
         if (queued.generation != m_Generation.load())
           break;
         if (ret == pdTRUE) {
@@ -259,22 +301,31 @@ void Control::task(void) {
         }
         if (!allConnectedLocked()) {
           // Commands from the lost connection must not replay after reconnect.
+          state_t expected = STATE_ACTIVE;
+          if (!m_State.compare_exchange_strong(expected, STATE_CONNECT))
+            break;
           m_Generation.fetch_add(1);
           xQueueReset(m_Queue);
           for (const auto &target : m_Targets) {
             xQueueReset(target->m_Queue);
-            target->m_ReleaseRequested.fetch_or(3);
           }
-          state_t expected = STATE_ACTIVE;
-          m_State.compare_exchange_strong(expected, STATE_CONNECT);
+          // A release accepted before the drop may have been in either queue.
+          // The latest accepted button intent decides which releases survive.
+          if (m_LastShutterWasRelease.load())
+            m_ShutterReleaseRequests.fetch_add(1);
+          if (m_LastFocusWasRelease.load())
+            m_FocusReleaseRequests.fetch_add(1);
           continue;
         }
 
-        uint8_t releases = m_PendingReleases.exchange(0);
-        for (const auto &target : m_Targets) {
-          if (releases != 0) {
-            xQueueReset(target->m_Queue);
-            target->m_ReleaseRequested.fetch_or(releases);
+        // Fallback releases must follow all commands already accepted.
+        if (ret != pdTRUE) {
+          uint8_t releases = m_PendingReleases.exchange(0);
+          for (const auto &target : m_Targets) {
+            if (releases & 1)
+              target->sendCommand(CMD_SHUTTER_RELEASE);
+            if (releases & 2)
+              target->sendCommand(CMD_FOCUS_RELEASE);
           }
         }
         if (queued.generation != m_Generation.load()) {
@@ -290,23 +341,13 @@ void Control::task(void) {
               case CMD_GPS_UPDATE:
                 if (target->sendCommand(cmd, queued.generation) != pdTRUE
                     && cmd != CMD_GPS_UPDATE) {
-                  m_CommandFailed = true;
-                  m_Generation.fetch_add(1);
-                  xQueueReset(m_Queue);
-                  // Abort every camera's queued sequence together.
-                  for (const auto &active : m_Targets) {
-                    xQueueReset(active->m_Queue);
-                    active->m_ReleaseRequested.fetch_or(3);
-                  }
-                  ret = pdFALSE;
+                  m_CommandFailures.fetch_add(1);
                 }
                 break;
               default:
                 ESP_LOGE(LOG_TAG, "Invalid control command %d.", cmd);
                 break;
             }
-            if (ret != pdTRUE)
-              break;
           }
         }
         break;
@@ -323,30 +364,66 @@ BaseType_t Control::sendCommand(cmd_t cmd) {
   if (cmd == CMD_CONNECT && m_State.load() != STATE_IDLE)
     return pdFALSE;
   if (cmd != CMD_CONNECT && m_State.load() != STATE_ACTIVE) {
+    if (cmd == CMD_SHUTTER_RELEASE) {
+      m_ShutterReleaseRequests.fetch_add(1);
+      return pdTRUE;
+    }
+    if (cmd == CMD_FOCUS_RELEASE) {
+      m_FocusReleaseRequests.fetch_add(1);
+      return pdTRUE;
+    }
+    if (cmd == CMD_SHUTTER_PRESS || cmd == CMD_FOCUS_PRESS)
+      m_CommandFailures.fetch_add(1);
     return pdFALSE;
   }
-  if (m_CommandFailed.load() && (cmd == CMD_SHUTTER_PRESS || cmd == CMD_FOCUS_PRESS)) {
-    return pdFALSE;
+  BaseType_t ret = pdFALSE;
+  if (m_PendingReleases.load() != 0) {
+    const uint8_t release = cmd == CMD_SHUTTER_RELEASE ? 1 : cmd == CMD_FOCUS_RELEASE ? 2 : 0;
+    if (release != 0)
+      m_PendingReleases.fetch_or(release);
+    if (release == 0 && (cmd == CMD_SHUTTER_PRESS || cmd == CMD_FOCUS_PRESS))
+      m_CommandFailures.fetch_add(1);
+    ret = release != 0 ? pdTRUE : pdFALSE;
+  } else {
+    ret = xQueueSend(m_Queue, &queued, 0);
+    if (ret != pdTRUE) {
+      if (cmd == CMD_SHUTTER_PRESS || cmd == CMD_FOCUS_PRESS)
+        m_CommandFailures.fetch_add(1);
+      if (cmd == CMD_SHUTTER_RELEASE) {
+        m_PendingReleases.fetch_or(1);
+        ret = pdTRUE;
+      }
+      if (cmd == CMD_FOCUS_RELEASE) {
+        m_PendingReleases.fetch_or(2);
+        ret = pdTRUE;
+      }
+    }
   }
-  BaseType_t ret = xQueueSend(m_Queue, &queued, 0);
-  if (ret != pdTRUE
-      && (cmd == CMD_SHUTTER_PRESS || cmd == CMD_SHUTTER_RELEASE || cmd == CMD_FOCUS_PRESS
-          || cmd == CMD_FOCUS_RELEASE)) {
-    // Preserve release safety without blocking the input/timing task. Report
-    // overflow so that callers can cancel the interval sequence.
-    m_Generation.fetch_add(1);
-    xQueueReset(m_Queue);
-    m_CommandFailed = true;
-    m_PendingReleases.fetch_or(3);
+  if (ret == pdTRUE) {
+    if (cmd == CMD_SHUTTER_PRESS)
+      m_LastShutterWasRelease.store(false);
+    if (cmd == CMD_FOCUS_PRESS)
+      m_LastFocusWasRelease.store(false);
+    if (cmd == CMD_SHUTTER_RELEASE) {
+      m_LastShutterWasRelease.store(true);
+      if (m_State.load() != STATE_ACTIVE || m_Generation.load() != queued.generation)
+        m_ShutterReleaseRequests.fetch_add(1);
+    }
+    if (cmd == CMD_FOCUS_RELEASE) {
+      m_LastFocusWasRelease.store(true);
+      if (m_State.load() != STATE_ACTIVE || m_Generation.load() != queued.generation)
+        m_FocusReleaseRequests.fetch_add(1);
+    }
   }
   return ret;
 }
 
 BaseType_t Control::updateGPS(const Camera::gps_t &gps, const Camera::timesync_t &timesync) {
-  const std::lock_guard<std::mutex> lock(m_Mutex);
-  if (m_State.load() != STATE_ACTIVE) {
+  // GPS runs on the UI task. Never wait behind a connect, retry delay or
+  // disconnect; the next GPS update will supply fresh data.
+  std::unique_lock<std::mutex> lock(m_Mutex, std::try_to_lock);
+  if (!lock.owns_lock() || m_State.load() != STATE_ACTIVE)
     return pdFALSE;
-  }
   for (const auto &target : m_Targets) {
     target->updateGPS(gps, timesync);
   }
@@ -375,18 +452,19 @@ const std::vector<std::unique_ptr<Control::Target>> &Control::getTargets(void) {
   return m_Targets;
 }
 
-void Control::connectAll(bool infiniteReconnect) {
+bool Control::connectAll(bool infiniteReconnect) {
   const std::lock_guard<std::mutex> lock(m_Mutex);
   if (m_State.load() != STATE_IDLE)
-    return;
+    return false;
   m_InfiniteReconnect = infiniteReconnect;
-  m_CommandFailed = false;
   m_FailCount = 0;
 
   if (this->sendCommand(CMD_CONNECT) != pdTRUE) {
     state_t expected = STATE_IDLE;
     m_State.compare_exchange_strong(expected, STATE_CONNECT_FAILED);
+    return false;
   }
+  return true;
 }
 
 void Control::disconnect(void) {
@@ -417,6 +495,8 @@ void Control::disconnect(void) {
   m_Targets.clear();
   xQueueReset(m_Queue);
   m_PendingReleases = 0;
+  m_LastShutterWasRelease = false;
+  m_LastFocusWasRelease = false;
   m_State = STATE_IDLE;
 }
 
@@ -425,7 +505,8 @@ bool Control::addActive(Camera *camera) {
   if (camera == nullptr || m_State.load() != STATE_IDLE)
     return false;
 
-  auto target = std::make_unique<Control::Target>(camera, &m_Generation);
+  auto target = std::make_unique<Control::Target>(camera, &m_Generation, &m_ShutterReleaseRequests,
+                                                  &m_FocusReleaseRequests);
   if (target->m_Queue == NULL) {
     ESP_LOGE(LOG_TAG, "Failed to create queue for '%s'.", camera->getName().c_str());
     return false;
@@ -457,7 +538,7 @@ Control::state_t Control::getState(void) const {
 
 Control::ConnectionStatus Control::getConnectionStatus(void) const {
   const std::lock_guard<std::mutex> lock(m_StatusMutex);
-  ConnectionStatus status {m_State.load(), {}, 0, m_CommandFailed.load()};
+  ConnectionStatus status {m_State.load(), {}, 0, m_CommandFailures.load()};
   Camera *camera = m_ConnectCamera.load();
   if (camera != nullptr) {
     status.connectingName = camera->getName();

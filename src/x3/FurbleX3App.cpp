@@ -7,6 +7,7 @@
 #include <freertos/task.h>
 
 #include "CameraList.h"
+#include "FurbleFatal.h"
 #include "Scan.h"
 #include "x3/FurbleX3App.h"
 
@@ -33,15 +34,15 @@ const char *units(SpinValue::unit_t unit) {
   }
 }
 
-const char *phase(Intervalometer::State state) {
+const char *phase(IntervalTimer::State state) {
   switch (state) {
-    case Intervalometer::State::WAIT:
+    case IntervalTimer::State::WAIT:
       return "Initial wait";
-    case Intervalometer::State::SHUTTER_OPEN:
+    case IntervalTimer::State::SHUTTER_OPEN:
       return "Shutter open";
-    case Intervalometer::State::DELAY:
+    case IntervalTimer::State::DELAY:
       return "Between captures";
-    case Intervalometer::State::FINISHED:
+    case IntervalTimer::State::FINISHED:
       return "Finished";
     default:
       return "Stopped";
@@ -63,7 +64,7 @@ X3App::X3App(Hooks hooks) : m_Hooks(hooks) {
   m_Display = xQueueCreate(1, sizeof(X3View));
   if (!m_Work || !m_Results || !m_Display) {
     ESP_LOGE(LOG_TAG, "X3 application queue allocation failed");
-    abort();
+    fatal();
   }
 }
 
@@ -75,7 +76,7 @@ void X3App::task(void) {
                      this, 1, nullptr)
              != pdPASS) {
     ESP_LOGE(LOG_TAG, "X3 application task allocation failed");
-    abort();
+    fatal();
   }
   m_LastInput = m_Hooks.tick();
   X3View previous {};
@@ -86,6 +87,7 @@ void X3App::task(void) {
     if (xQueueReceive(m_Results, &snapshot, 0) == pdTRUE) {
       applySnapshot(snapshot);
     }
+    serviceReleases();
 
     KeyEvent event;
     for (uint8_t n = 0; n < 16 && m_Hooks.poll(event); ++n) {
@@ -112,6 +114,7 @@ void X3App::task(void) {
 
 void X3App::applySnapshot(const Snapshot &snapshot) {
   const auto previousState = m_Snapshot.state;
+  const bool newCommandFailure = snapshot.commandFailures != m_Snapshot.commandFailures;
   if (snapshot.revision != m_Snapshot.revision) {
     m_Selection = 0;
     m_Cursor = 0;
@@ -128,16 +131,11 @@ void X3App::applySnapshot(const Snapshot &snapshot) {
   }
   if (snapshot.cancelEpoch != m_CancelEpoch.load())
     return;
-  if (snapshot.commandFailed && !m_CommandFailed) {
-    m_CommandFailed = true;
+  if (newCommandFailure) {
     action(m_Timer.cancel());
-    releaseControls();
-    copy(m_Message, "Camera command failed; reconnect to continue");
-    request(Operation::DISCONNECT);
-    navigate(Page::MAIN);
+    copy(m_Message, "Camera command dropped; try again");
   }
   if (snapshot.state == Control::STATE_ACTIVE && m_Page == Page::CONNECTING) {
-    m_CommandFailed = false;
     navigate(Page::REMOTE);
     m_Message[0] = '\0';
   } else if ((snapshot.state == Control::STATE_CONNECT_FAILED || snapshot.connectFailed)
@@ -200,43 +198,48 @@ bool X3App::request(Operation operation, uint16_t selection) {
 }
 
 bool X3App::command(Control::cmd_t command) {
-  const bool press = command == Control::CMD_SHUTTER_PRESS || command == Control::CMD_FOCUS_PRESS;
-  if (press && m_CommandFailed)
-    return false;
   if (Control::getInstance().sendCommand(command) == pdTRUE)
     return true;
-  // Control preserves pending releases on overflow; priority cancellation also
-  // tears down targets, whose disconnect path releases focus and shutter.
-  if (Control::getInstance().getState() == Control::STATE_ACTIVE) {
-    m_CommandFailed = true;
-    copy(m_Message, "Camera command queue full; disconnecting");
-    request(Operation::DISCONNECT);
-  }
+  if (Control::getInstance().getState() == Control::STATE_ACTIVE)
+    copy(m_Message, "Camera command queue full; try again");
   return false;
 }
 
-void X3App::action(Intervalometer::Action action) {
-  if (action == Intervalometer::Action::SHUTTER_PRESS) {
-    if (!command(Control::CMD_SHUTTER_PRESS)) {
-      if (m_Timer.cancel() == Intervalometer::Action::SHUTTER_RELEASE) {
-        command(Control::CMD_SHUTTER_RELEASE);
+void X3App::action(IntervalTimer::Action action) {
+  if (action == IntervalTimer::Action::SHUTTER_PRESS) {
+    serviceReleases();
+    if (m_ShutterReleasePending || !command(Control::CMD_SHUTTER_PRESS)) {
+      if (m_Timer.cancel() == IntervalTimer::Action::SHUTTER_RELEASE) {
+        m_ShutterReleasePending = true;
+        serviceReleases();
       }
     }
-  } else if (action == Intervalometer::Action::SHUTTER_RELEASE) {
-    command(Control::CMD_SHUTTER_RELEASE);
+  } else if (action == IntervalTimer::Action::SHUTTER_RELEASE) {
+    m_ShutterReleasePending = true;
+    serviceReleases();
   }
 }
 
 void X3App::releaseControls(void) {
-  if (m_ShutterHeld || m_Bulb) {
-    command(Control::CMD_SHUTTER_RELEASE);
-  }
-  if (m_FocusHeld) {
-    command(Control::CMD_FOCUS_RELEASE);
-  }
+  m_ShutterReleasePending |= m_ShutterHeld || m_Bulb;
+  m_FocusReleasePending |= m_FocusHeld;
   m_ShutterHeld = false;
   m_FocusHeld = false;
   m_Bulb = false;
+  serviceReleases();
+}
+
+void X3App::serviceReleases(void) {
+  auto &control = Control::getInstance();
+  if (control.getState() == Control::STATE_IDLE) {
+    m_ShutterReleasePending = false;
+    m_FocusReleasePending = false;
+    return;
+  }
+  if (m_ShutterReleasePending && command(Control::CMD_SHUTTER_RELEASE))
+    m_ShutterReleasePending = false;
+  if (m_FocusReleasePending && command(Control::CMD_FOCUS_RELEASE))
+    m_FocusReleasePending = false;
 }
 
 void X3App::navigate(Page page) {
@@ -295,20 +298,25 @@ void X3App::input(const KeyEvent &event) {
   // Releases are processed even after navigation or shutdown begins.
   if (event.key == RIGHT_SIDE_KEY && !event.pressed && m_ShutterHeld) {
     m_ShutterHeld = false;
-    if (!m_Bulb)
-      command(Control::CMD_SHUTTER_RELEASE);
+    if (!m_Bulb) {
+      m_ShutterReleasePending = true;
+      serviceReleases();
+    }
     return;
   }
   if (m_Page == Page::REMOTE && event.key == RIGHT_SIDE_KEY && event.pressed && !m_PowerRequested) {
-    if (!m_ShutterHeld && Control::getInstance().getState() == Control::STATE_ACTIVE)
+    serviceReleases();
+    if (!m_ShutterHeld && !m_ShutterReleasePending
+        && Control::getInstance().getState() == Control::STATE_ACTIVE)
       m_ShutterHeld = m_Bulb || command(Control::CMD_SHUTTER_PRESS);
     return;
   }
   if (event.key == Key::SELECT && !event.pressed) {
     m_SelectHeld = false;
     if (m_FocusHeld) {
-      command(Control::CMD_FOCUS_RELEASE);
       m_FocusHeld = false;
+      m_FocusReleasePending = true;
+      serviceReleases();
     }
     return;
   }
@@ -449,14 +457,20 @@ void X3App::input(const KeyEvent &event) {
         return;
       }
       if (m_Cursor == 1) {
-        m_FocusHeld = command(Control::CMD_FOCUS_PRESS);
+        serviceReleases();
+        if (!m_FocusReleasePending)
+          m_FocusHeld = command(Control::CMD_FOCUS_PRESS);
       } else if (m_Cursor == 2) {
         if (m_Bulb) {
-          if (!m_ShutterHeld)
-            command(Control::CMD_SHUTTER_RELEASE);
+          if (!m_ShutterHeld) {
+            m_ShutterReleasePending = true;
+            serviceReleases();
+          }
           m_Bulb = false;
         } else {
-          m_Bulb = m_ShutterHeld || command(Control::CMD_SHUTTER_PRESS);
+          serviceReleases();
+          if (!m_ShutterReleasePending)
+            m_Bulb = m_ShutterHeld || command(Control::CMD_SHUTTER_PRESS);
         }
       } else if (m_Cursor == 3) {
         releaseControls();
@@ -517,7 +531,6 @@ void X3App::worker(void) {
     activeCount = 0;
     savePairing = false;
     snapshot.state = Control::STATE_IDLE;
-    snapshot.commandFailed = false;
     snapshot.cancelEpoch = m_CancelEpoch.load();
   };
   auto connect = [&](uint16_t selection) {
@@ -540,7 +553,12 @@ void X3App::worker(void) {
     }
     if (activeCount != 0) {
       savePairing = snapshot.scan;
-      control.connectAll(config.reconnect);
+      if (!control.connectAll(config.reconnect)) {
+        snapshot.connectFailed = true;
+        copy(snapshot.message, "Could not start camera connection");
+        disconnect();
+        return;
+      }
       snapshot.state = Control::STATE_CONNECT;
     } else {
       snapshot.connectFailed = true;
@@ -627,9 +645,6 @@ void X3App::worker(void) {
             refresh();
           }
           break;
-        case Operation::DISCONNECT:
-          disconnect();
-          break;
         case Operation::SAVE:
           config = request.config;
           Settings::save<Settings::INTERVAL>(config.interval);
@@ -641,10 +656,8 @@ void X3App::worker(void) {
           Settings::save<Settings::INACTIVITY>(config.inactivity);
           control.setPower(Settings::load<esp_power_level_t>(Settings::TX_POWER));
           break;
-        case Operation::POWER_OFF:
-          disconnect();
-          m_Hooks.powerOff();
-          copy(snapshot.message, "Power-off failed");
+        default:
+          // DISCONNECT and POWER_OFF use priority flags, never this queue.
           break;
       }
       snapshot.completedRequest = request.id;
@@ -652,7 +665,7 @@ void X3App::worker(void) {
     }
     const auto status = control.getConnectionStatus();
     snapshot.state = status.state;
-    snapshot.commandFailed = status.commandFailed;
+    snapshot.commandFailures = status.commandFailures;
     snapshot.progress = status.progress;
     copy(snapshot.connecting, status.connectingName.c_str());
     if (savePairing && snapshot.state == Control::STATE_ACTIVE) {
@@ -694,7 +707,7 @@ X3View X3App::view(uint32_t now) const {
   }
   switch (m_Page) {
     case Page::MAIN:
-      copy(result.title, "furble - Xteink X3");
+      copy(result.title, "Camera remote");
       result.lineCount = 5;
       copy(result.lines[0], "Scan for cameras");
       copy(result.lines[1], "Saved cameras");
@@ -746,8 +759,12 @@ X3View X3App::view(uint32_t now) const {
       result.kind = X3View::Kind::REMOTE;
       copy(result.title, "Remote control");
       result.lineCount = 5;
-      copy(result.lines[0], (m_ShutterHeld || m_Bulb) ? "Shutter pressed" : "Shutter");
-      copy(result.lines[1], (m_FocusHeld) ? "Focus pressed" : "Hold Confirm: focus");
+      copy(result.lines[0], m_ShutterReleasePending     ? "Shutter release pending"
+                            : (m_ShutterHeld || m_Bulb) ? "Shutter pressed"
+                                                        : "Shutter");
+      copy(result.lines[1], m_FocusReleasePending ? "Focus release pending"
+                            : m_FocusHeld         ? "Focus pressed"
+                                                  : "Hold Confirm: focus");
       copy(result.lines[2], m_Bulb ? "Bulb lock: ON (OK releases)" : "Bulb lock: off");
       copy(result.lines[3], "Intervalometer");
       copy(result.lines[4], "Disconnect");

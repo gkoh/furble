@@ -4,6 +4,7 @@
 
 A Bluetooth wireless remote shutter release originally targeted at Fujifilm mirrorless
 cameras. furble now supports:
+
 - Fujifilm
 - Canon
 - Ricoh
@@ -26,48 +27,53 @@ furble is developed on ESP32 devices as a PlatformIO project.
 ## Supported Cameras
 
 The following devices have been tested and confirmed to work:
+
 - Fujifilm
-   - Fujifilm GFX100 II ([@matthudsonau](https://github.com/matthudsonau))
-   - Fujifilm GFX100RF ([@GFXUser101](https://github.com/GFXUser101))
-   - Fujifilm GFX100S ([@adrianuseless](https://github.com/adrianuseless))
-   - Fujifilm GFX100S II ([@GFXUser101](https://github.com/GFXUser101))
-   - Fujifilm GFX50S II ([@TomaszLojewski](https://github.com/TomaszLojewski))
-   - Fujifilm X-E4 ([@Rediwed](https://github.com/Rediwed))
-   - Fujifilm X-E5 ([@daniel-ch73](https://github.com/daniel-ch73))
-   - Fujifilm X-H1
-   - Fujifilm X-H2S ([@val123456](https://github.com/val123456))
-   - Fujifilm X-S10 ([@dimitrij2k](https://github.com/dimitrij2k))
-   - Fujifilm X-S20 ([@kelvincabaldo07](https://github.com/kelvincabaldo07))
-   - Fujifilm X-T200 ([@Cronkan](https://github.com/Cronkan))
-   - Fujifilm X-T3 ([@ubuntuproductions](https://github.com/ubuntuproductions))
-   - Fujifilm X-T30
-   - Fujifilm X-T4 ([@TomaszLojewski](https://github.com/TomaszLojewski))
-   - Fujifilm X-T5 ([@stulevine](https://github.com/stulevine))
-   - Fujifilm X100V
+  - Fujifilm GFX100 II ([@matthudsonau](https://github.com/matthudsonau))
+  - Fujifilm GFX100RF ([@GFXUser101](https://github.com/GFXUser101))
+  - Fujifilm GFX100S ([@adrianuseless](https://github.com/adrianuseless))
+  - Fujifilm GFX100S II ([@GFXUser101](https://github.com/GFXUser101))
+  - Fujifilm GFX50S II ([@TomaszLojewski](https://github.com/TomaszLojewski))
+  - Fujifilm X-E4 ([@Rediwed](https://github.com/Rediwed))
+  - Fujifilm X-E5 ([@daniel-ch73](https://github.com/daniel-ch73))
+  - Fujifilm X-H1
+  - Fujifilm X-H2S ([@val123456](https://github.com/val123456))
+  - Fujifilm X-S10 ([@dimitrij2k](https://github.com/dimitrij2k))
+  - Fujifilm X-S20 ([@kelvincabaldo07](https://github.com/kelvincabaldo07))
+  - Fujifilm X-T200 ([@Cronkan](https://github.com/Cronkan))
+  - Fujifilm X-T3 ([@ubuntuproductions](https://github.com/ubuntuproductions))
+  - Fujifilm X-T30
+  - Fujifilm X-T4 ([@TomaszLojewski](https://github.com/TomaszLojewski))
+  - Fujifilm X-T5 ([@stulevine](https://github.com/stulevine))
+  - Fujifilm X100V
 - Canon
-   - Canon EOS M6 ([@tardisx](https://github.com/tardisx))
-   - Canon EOS R6 Mark II ([@hijae](https://github.com/hijae))
-   - Canon EOS RP ([@wolcano](https://github.com/wolcano))
-   - Canon PowerShot G9 X Mark II ([@Mich2e](https://github.com/Mich2e))
+  - Canon EOS M6 ([@tardisx](https://github.com/tardisx))
+  - Canon EOS R6 Mark II ([@hijae](https://github.com/hijae))
+  - Canon EOS RP ([@wolcano](https://github.com/wolcano))
+  - Canon PowerShot G9 X Mark II ([@Mich2e](https://github.com/Mich2e))
 - Ricoh
-   - Ricoh GR IV HDF ([@sky18Dragon](https://github.com/sky18Dragon))
+  - Ricoh GR IV HDF ([@sky18Dragon](https://github.com/sky18Dragon))
 - Nikon
-   - Nikon COOLPIX B600
-   - Nikon Z6 III ([@herrfrei](https://github.com/herrfrei))
+  - Nikon COOLPIX B600
+  - Nikon Z6 III ([@herrfrei](https://github.com/herrfrei))
 - Sony
-   - Sony ZV-1F
+  - Sony ZV-1F
+
+
 
 ## Table of Features
 
+
 | Camera             | Scanning | Pairing | Shutter Release | Focus   | GPS     |
-| :---:              | :---:    | :---:   | :---:           | :---:   | :---:   |
-| Fujifilm X & GFX   | ✔️        | ✔️       | ✔️               | ✔️[^1]   | ✔️       |
-| Canon EOS (Remote) | ✔️        | ✔️       | ✔️               | ✔️       | :x:[^2] |
-| Canon EOS (Smart)  | ✔️        | ✔️       | ✔️               | :x:[^2] | ✔️       |
-| Ricoh              | ✔️        | ✔️       | ✔️[^3]           | ✔️       | ✔️       |
-| Nikon (Remote)     | ✔️        | ✔️       | ✔️[^3]           | :x:[^2] | :x:[^2] |
-| Nikon (Smart)      | ✔️        | :x:     | :x:             | :x:     | :x:     |
-| Sony ZV            | ✔️        | ✔️       | ✔️               | ✔️       | ✔️       |
+| ------------------ | -------- | ------- | --------------- | ------- | ------- |
+| Fujifilm X & GFX   | ✔️       | ✔️      | ✔️              | ✔️[^1]  | ✔️      |
+| Canon EOS (Remote) | ✔️       | ✔️      | ✔️              | ✔️      | :x:[^2] |
+| Canon EOS (Smart)  | ✔️       | ✔️      | ✔️              | :x:[^2] | ✔️      |
+| Ricoh              | ✔️       | ✔️      | ✔️[^3]          | ✔️      | ✔️      |
+| Nikon (Remote)     | ✔️       | ✔️      | ✔️[^3]          | :x:[^2] | :x:[^2] |
+| Nikon (Smart)      | ✔️       | :x:     | :x:             | :x:     | :x:     |
+| Sony ZV            | ✔️       | ✔️      | ✔️              | ✔️      | ✔️      |
+
 
 [^1]: see [#99](https://github.com/gkoh/furble/discussions/99)
 [^2]: Non-existent
@@ -76,19 +82,20 @@ The following devices have been tested and confirmed to work:
 ## Supported Controllers
 
 Initially targeted at the M5StickC, the following controllers from [M5Stack](https://m5stack.com/) are supported:
-* M5StickC (EOL)
-* M5StickC Plus
-* M5StickC Plus2
-* M5StickC Plus SE
-* M5StickS3
-* M5Core Basic
-* M5Core2
 
-The **Xteink X3** is supported experimentally with a portrait e-ink interface.
-This replaces the ebook reader firmware. Tested on an Xteink X3 with a UC8253
-panel and a Fujifilm X-T4. Battery and sleep still need validation.
+- M5StickC (EOL)
+- M5StickC Plus
+- M5StickC Plus2
+- M5StickC Plus SE
+- M5StickS3
+- M5Core Basic
+- M5Core2
+
+The **Xteink X3** is supported experimentally with a portrait e-ink interface. Tested on an Xteink X3 with a UC8253 panel and a Fujifilm X-T4.
 
 ## Installation
+
+
 
 ### Easy Install
 
@@ -99,24 +106,23 @@ Follow the instructions on the wiki: [Easy Web Install](https://github.com/gkoh/
 
 PlatformIO does everything assuming things are installed and connected properly.
 In most cases it should be:
+
 - clone the repository
 - plug in the M5StickC
-    - `platformio run -e m5stick-c -t upload`
+  - `platformio run -e m5stick-c -t upload`
 - OR plug in M5StickC Plus/Plus2
-    - `platformio run -e m5stick-c-plus -t upload`
+  - `platformio run -e m5stick-c-plus -t upload`
 - OR plug in the M5Stack Core2
-    - `platformio run -e m5stack-core2 -t upload`
+  - `platformio run -e m5stack-core2 -t upload`
 - OR plug in the Xteink X3
-    - `platformio run -e xteink-x3 -t upload`
-
-For the Xteink X3, back up the stock firmware first; installing furble replaces
-the ebook reader firmware. Use a checkout path without spaces.
+  - `platformio run -e xteink-x3 -t upload`
 
 More details are on the wiki: [PlatformIO](https://github.com/gkoh/furble/wiki/Linux-Command-Line-(For-Developers))
 
 ## Usage
 
 The top level menu has the following entries:
+
 - `Connect`
 - `Scan`
 - `Delete`
@@ -140,9 +146,11 @@ More details are on the wiki: [Usage Guide](https://github.com/gkoh/furble/wiki/
 ### GPS Location Tagging
 
 For Fujifilm & Sony cameras, location tagging is supported with the M5Stack GPS unit:
+
 - [GPS/BDS Unit v1.1 (AT6668)](https://shop.m5stack.com/products/gps-bds-unit-v1-1-at6668)
 
 The previous unit is now EOL:
+
 - [Mini GPS/BDS Unit](https://shop.m5stack.com/products/mini-gps-bds-unit)
 
 GPS support can be enabled in `furble` in `Settings->GPS`, the camera must also be configured to request location data.
@@ -154,6 +162,7 @@ The new v1.1 unit runs at a higher baud rate and must be configured under
 ### Intervalometer/Timer
 
 The intervalometer can be configured via three settings in `Settings->Timer`:
+
 - Count (number of images to take)
 - Delay (time between images)
 - Shutter (time to keep shutter open)
@@ -170,9 +179,12 @@ When in `Shutter` remote control, holding focus (button B) then release (button 
 ### Themes
 
 A few basic themes are included, to change:
-* `Settings->Themes-><desired theme>`
-   * hit 'Restart' to save and restart for the theme to take effect
-   * better dynamic theme change support is improving in upstream LVGL
+
+- `Settings->Themes-><desired theme>`
+  - hit 'Restart' to save and restart for the theme to take effect
+  - better dynamic theme change support is improving in upstream LVGL
+
+
 
 ## Motivation
 
@@ -185,6 +197,8 @@ BR-E1](https://www.eos-magazine.com/articles/remotes/br-e1-canon-bluetooth-remot
 but for my camera.
 
 ### Possibly Supported Cameras
+
+
 
 #### Fujifilm
 
@@ -204,7 +218,7 @@ different.
 
 All Ricoh GR IV series cameras are theoretically supported. This support was
 graciously implemented by @sky18Dragon.
-The current implementation will _not_ work with GR III or GR II.
+The current implementation will *not* work with GR III or GR II.
 
 #### Nikon
 
@@ -224,12 +238,15 @@ on Sony ZV-1F.
 
 To pair with a Sony camera (some models may have different menu options, the
 following matches the ZV-1F):
+
 - set 'Bluetooth Rmt Ctrl' to 'On'
 - set 'Bluetooth Function' 'On'
 - under Bluetooth, start 'Pairing'
 - start 'Scan' with `furble'
-   - due to an oddity with the Bluetooth library, if `furble` 'Scan' is started
-     first, the Sony camera may not appear
+  - due to an oddity with the Bluetooth library, if `furble` 'Scan' is started
+  first, the Sony camera may not appear
+
+
 
 #### Protocol Reverse Engineering
 
@@ -237,6 +254,7 @@ Android supports snooping bluetooth traffic so it was trivial to grab a HCI log
 to see what the manufacturer supplied camera app was doing.
 
 For all supported cameras, a snoop log of:
+
 - scanning
 - pairing
 - re-pairing
@@ -254,11 +272,16 @@ log with Wireshark, implement, then test against the actual device.
 
 ## Background Story
 
+
+
 ### Requirements
+
+
 
 #### Hardware
 
 I wanted a complete solution out of the box to have:
+
 - bluetooth low energy
 - physical button
 - visual indicator (LED or display)
@@ -279,41 +302,49 @@ The M5StickC Plus(2) sells for US$19.95.
 
 The project is built with [PlatformIO](https://platformio.org) and depends on
 the following libraries:
+
 - [esp-nimble-cpp](https://github.com/h2zero/esp-nimble-cpp)
 - [LVGL](https://github.com/lvgl/lvgl)
 - [M5Unified](https://github.com/m5stack/M5Unified)
 - [TinyGPSPlus](https://github.com/mikalhart/TinyGPSPlus)
 
+
+
 # Known Issues
 
 - depending on your perspective, battery life is anywhere from reasonable to bad
-   - with an active BLE connection and power management, the ESP32 consumes around 30mA
-      - an M5StickC Plus2 would last around 6 hours
-      - an M5StickC Plus would last around 4 hours
-      - an old M5StickC would last around 3 hours
-   - if battery life is crucial, and form factor is not, consider an M5Stack Core with the 1500mAh module
-      - this might last 50 hours
+  - with an active BLE connection and power management, the ESP32 consumes around 30mA
+    - an M5StickC Plus2 would last around 6 hours
+    - an M5StickC Plus would last around 4 hours
+    - an old M5StickC would last around 3 hours
+  - if battery life is crucial, and form factor is not, consider an M5Stack Core with the 1500mAh module
+    - this might last 50 hours
+
+
 
 # Things To Do
 
 - Support more camera makes and models
-   - Get access to and support the following:
-     - Nikon Z
-     - Others?
+  - Get access to and support the following:
+    - Nikon Z
+    - Others?
+
+
 
 # Links
 
 Inspiration, references and related information for this project came from the following projects/posts:
+
 - Canon
-   - https://iandouglasscott.com/2017/09/04/reverse-engineering-the-canon-t7i-s-bluetooth-work-in-progress/
-   - https://github.com/ArthurFDLR/BR-M5
-   - https://github.com/RReverser/eos-remote-web
+  - [https://iandouglasscott.com/2017/09/04/reverse-engineering-the-canon-t7i-s-bluetooth-work-in-progress/](https://iandouglasscott.com/2017/09/04/reverse-engineering-the-canon-t7i-s-bluetooth-work-in-progress/)
+  - [https://github.com/ArthurFDLR/BR-M5](https://github.com/ArthurFDLR/BR-M5)
+  - [https://github.com/RReverser/eos-remote-web](https://github.com/RReverser/eos-remote-web)
 - Fujifilm
-  - https://github.com/hkr/fuji-cam-wifi-tool
-  - https://github.com/petabyt/fudge
+  - [https://github.com/hkr/fuji-cam-wifi-tool](https://github.com/hkr/fuji-cam-wifi-tool)
+  - [https://github.com/petabyt/fudge](https://github.com/petabyt/fudge)
 - Ricoh
-  - https://github.com/dm-zharov/ricoh-gr-bluetooth-api
+  - [https://github.com/dm-zharov/ricoh-gr-bluetooth-api](https://github.com/dm-zharov/ricoh-gr-bluetooth-api)
 - Sony
-   - https://gethypoxic.com/blogs/technical/sony-camera-ble-control-protocol-di-remote-control
-   - https://gregleeds.com/reverse-engineering-sony-camera-bluetooth
-   - https://github.com/Staacks/alpharemote
+  - [https://gethypoxic.com/blogs/technical/sony-camera-ble-control-protocol-di-remote-control](https://gethypoxic.com/blogs/technical/sony-camera-ble-control-protocol-di-remote-control)
+  - [https://gregleeds.com/reverse-engineering-sony-camera-bluetooth](https://gregleeds.com/reverse-engineering-sony-camera-bluetooth)
+  - [https://github.com/Staacks/alpharemote](https://github.com/Staacks/alpharemote)

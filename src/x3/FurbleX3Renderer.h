@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FURBLE_X3_RENDERER_H
+#define FURBLE_X3_RENDERER_H
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -35,10 +36,7 @@ class X3Renderer {
     camera(28, 29, true);
     text(70, 28, "FURBLE", x3Font18);
     battery(view.batteryPercent);
-    const bool main =
-        strstr(view.title, "Xteink X3") != nullptr || strcmp(view.title, "Furble") == 0;
-    const char *title = main ? "Camera remote" : view.title;
-    wrapped(28, 72, title, x3Font32, 472, 2, 38);
+    wrapped(28, 72, view.title, x3Font32, 472, 2, 38);
     rectangle(28, 157, 472, 2, true);
     wrapped(28, 172, view.status[0] ? view.status : "Bluetooth camera control", x3Font18, 472, 2,
             24);
@@ -217,3 +215,5 @@ class X3Renderer {
   }
 };
 }  // namespace Furble
+
+#endif

@@ -1,5 +1,5 @@
-#ifndef FURBLE_INTERVALOMETER_H
-#define FURBLE_INTERVALOMETER_H
+#ifndef FURBLE_INTERVAL_TIMER_H
+#define FURBLE_INTERVAL_TIMER_H
 
 #include <cstdint>
 
@@ -16,7 +16,7 @@ namespace Furble {
  * Times are monotonic milliseconds modulo UINT32_MAX + 1; updates must not be
  * separated by a full clock period. Zero-duration phases need another update.
  */
-class Intervalometer {
+class IntervalTimer {
  public:
   enum class Action { NONE, SHUTTER_PRESS, SHUTTER_RELEASE };
   enum class State { IDLE, WAIT, SHUTTER_OPEN, DELAY, FINISHED };

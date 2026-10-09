@@ -41,7 +41,10 @@ class Control {
     friend class Control;
 
    public:
-    Target(Camera *camera, const std::atomic<uint32_t> *generation = nullptr);
+    Target(Camera *camera,
+           const std::atomic<uint32_t> *generation = nullptr,
+           const std::atomic<uint32_t> *shutterReleaseRequests = nullptr,
+           const std::atomic<uint32_t> *focusReleaseRequests = nullptr);
     ~Target();
 
     Camera *getCamera(void) const;
@@ -70,7 +73,10 @@ class Control {
     std::atomic<bool> m_StopRequested {false};
     std::atomic<uint8_t> m_ReleaseRequested {0};
     const std::atomic<uint32_t> *m_Generation = nullptr;
-    uint32_t m_SeenGeneration = 0;
+    const std::atomic<uint32_t> *m_ShutterReleaseRequests = nullptr;
+    const std::atomic<uint32_t> *m_FocusReleaseRequests = nullptr;
+    uint32_t m_SeenShutterRelease = 0;
+    uint32_t m_SeenFocusRelease = 0;
     uint32_t m_CommandGeneration = 0;
   };
 
@@ -91,7 +97,10 @@ class Control {
   void task(void);
 
   /**
-   * Send control command to active connections.
+   * Send a command to active connections. pdTRUE means the command was
+   * accepted or its release was recorded for retry, not acknowledged by BLE.
+   * Releases are also accepted while reconnecting so a still-connected camera
+   * can drop a held shutter or focus button.
    */
   BaseType_t sendCommand(cmd_t cmd);
 
@@ -113,7 +122,7 @@ class Control {
   /**
    * Connect to all active cameras.
    */
-  void connectAll(bool infiniteReconnect);
+  bool connectAll(bool infiniteReconnect);
 
   /**
    * Disconnect all connected cameras.
@@ -139,8 +148,9 @@ class Control {
     state_t state;
     std::string connectingName;
     uint8_t progress;
-    bool commandFailed;
+    uint32_t commandFailures;
   };
+  /** Snapshot status and the cumulative number of rejected press commands. */
   ConnectionStatus getConnectionStatus(void) const;
 
   /** Set transmit power. */
@@ -169,7 +179,11 @@ class Control {
   std::atomic<state_t> m_State {STATE_IDLE};
   std::atomic<uint32_t> m_Generation {0};
   std::atomic<uint8_t> m_PendingReleases {0};
-  std::atomic<bool> m_CommandFailed {false};
+  std::atomic<uint32_t> m_ShutterReleaseRequests {0};
+  std::atomic<uint32_t> m_FocusReleaseRequests {0};
+  std::atomic<bool> m_LastShutterWasRelease {false};
+  std::atomic<bool> m_LastFocusWasRelease {false};
+  std::atomic<uint32_t> m_CommandFailures {0};
   mutable std::mutex m_StatusMutex;
   uint32_t m_FailCount = 0;
 

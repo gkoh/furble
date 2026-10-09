@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <cstring>
 #include <initializer_list>
+#include "FurbleFatal.h"
 #include "FurbleX3Renderer.h"
 #include "vendor/Uc8253X3Luts.h"
 #include "vendor/Uc8279X3Luts.h"
@@ -52,6 +53,24 @@ void output(gpio_num_t pin, int value) {
   config.intr_type = GPIO_INTR_DISABLE;
   ESP_ERROR_CHECK(gpio_config(&config));
   gpio_set_level(pin, value);
+}
+bool failureOutput(gpio_num_t pin, int value) {
+  gpio_config_t config = {};
+  config.pin_bit_mask = 1ULL << pin;
+  config.mode = GPIO_MODE_OUTPUT;
+  config.intr_type = GPIO_INTR_DISABLE;
+  const esp_err_t configured = gpio_config(&config);
+  if (configured != ESP_OK) {
+    ESP_LOGE(TAG, "Startup shutdown GPIO %d configuration failed: %s", pin,
+             esp_err_to_name(configured));
+    return false;
+  }
+  const esp_err_t set = gpio_set_level(pin, value);
+  if (set != ESP_OK) {
+    ESP_LOGE(TAG, "Startup shutdown GPIO %d level failed: %s", pin, esp_err_to_name(set));
+    return false;
+  }
+  return true;
 }
 void reset() {
   gpio_set_level(RESET, 1);
@@ -362,6 +381,47 @@ void powerOff() {
   esp_deep_sleep_start();
 }
 }  // namespace
+
+// Initialization can fail before SPI, framebuffer or displayLock exists.
+// Do not run normal panel shutdown or reboot into the same failure.
+[[noreturn]] void X3Platform::startupFailure() {
+  ESP_LOGE(TAG, "Startup failed; entering deep sleep");
+  const bool sdOff = failureOutput(GPIO_NUM_13, 0);
+  const bool panelReset = failureOutput(RESET, 1);
+  if (panelReset)
+    gpio_hold_en(RESET);
+  if (sdOff)
+    gpio_hold_en(GPIO_NUM_13);
+  gpio_deep_sleep_hold_en();
+  gpio_config_t powerInput = {};
+  powerInput.pin_bit_mask = 1ULL << POWER;
+  powerInput.mode = GPIO_MODE_INPUT;
+  powerInput.intr_type = GPIO_INTR_DISABLE;
+  const esp_err_t powerConfigured = gpio_config(&powerInput);
+  if (powerConfigured != ESP_OK) {
+    ESP_LOGE(TAG, "Power button configuration failed: %s", esp_err_to_name(powerConfigured));
+  } else {
+    const esp_err_t pullConfigured = gpio_set_pull_mode(POWER, GPIO_PULLUP_ONLY);
+    if (pullConfigured != ESP_OK) {
+      ESP_LOGE(TAG, "Power button pull-up failed: %s", esp_err_to_name(pullConfigured));
+    } else {
+      while (!gpio_get_level(POWER))
+        delayMs(10);
+      delayMs(30);
+      const esp_err_t wake =
+          esp_deep_sleep_enable_gpio_wakeup(1ULL << POWER, ESP_GPIO_WAKEUP_GPIO_LOW);
+      if (wake != ESP_OK)
+        ESP_LOGE(TAG, "Power button wake configuration failed: %s", esp_err_to_name(wake));
+    }
+  }
+  esp_deep_sleep_start();
+  for (;;)
+    delayMs(1000);
+}
+
+[[noreturn]] void fatal() {
+  X3Platform::startupFailure();
+}
 
 esp_err_t X3Platform::init() {
   gpio_hold_dis(RESET);

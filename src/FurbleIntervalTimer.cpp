@@ -1,8 +1,8 @@
-#include "FurbleIntervalometer.h"
+#include "FurbleIntervalTimer.h"
 
 namespace Furble {
 
-bool Intervalometer::duration(const SpinValue::nvs_t &value, uint32_t &milliseconds) {
+bool IntervalTimer::duration(const SpinValue::nvs_t &value, uint32_t &milliseconds) {
   uint32_t multiplier;
   switch (value.unit) {
     case SpinValue::UNIT_MS:
@@ -21,7 +21,7 @@ bool Intervalometer::duration(const SpinValue::nvs_t &value, uint32_t &milliseco
   return true;
 }
 
-bool Intervalometer::start(const interval_t &interval, uint32_t now) {
+bool IntervalTimer::start(const interval_t &interval, uint32_t now) {
   uint32_t wait, shutter, delay;
   if (isRunning() || !duration(interval.wait, wait) || !duration(interval.shutter, shutter)
       || !duration(interval.delay, delay)) {
@@ -41,13 +41,13 @@ bool Intervalometer::start(const interval_t &interval, uint32_t now) {
   return true;
 }
 
-void Intervalometer::enter(State state, uint32_t now, uint32_t duration) {
+void IntervalTimer::enter(State state, uint32_t now, uint32_t duration) {
   m_State = state;
   m_PhaseStart = now;
   m_PhaseDuration = duration;
 }
 
-Intervalometer::Action Intervalometer::update(uint32_t now, bool connected) {
+IntervalTimer::Action IntervalTimer::update(uint32_t now, bool connected) {
   if (!connected) {
     return cancel();
   }
@@ -79,26 +79,26 @@ Intervalometer::Action Intervalometer::update(uint32_t now, bool connected) {
   return Action::NONE;
 }
 
-Intervalometer::Action Intervalometer::cancel(void) {
+IntervalTimer::Action IntervalTimer::cancel(void) {
   const bool held = m_State == State::SHUTTER_OPEN;
   m_State = State::IDLE;
   m_PhaseDuration = 0;
   return held ? Action::SHUTTER_RELEASE : Action::NONE;
 }
 
-Intervalometer::State Intervalometer::getState(void) const {
+IntervalTimer::State IntervalTimer::getState(void) const {
   return m_State;
 }
 
-bool Intervalometer::isRunning(void) const {
+bool IntervalTimer::isRunning(void) const {
   return m_State == State::WAIT || m_State == State::SHUTTER_OPEN || m_State == State::DELAY;
 }
 
-uint32_t Intervalometer::getCompletedCount(void) const {
+uint32_t IntervalTimer::getCompletedCount(void) const {
   return m_Completed;
 }
 
-uint32_t Intervalometer::remaining(uint32_t now) const {
+uint32_t IntervalTimer::remaining(uint32_t now) const {
   if (!isRunning()) {
     return 0;
   }

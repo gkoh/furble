@@ -3,7 +3,7 @@ if(IDF_TARGET STREQUAL "esp32c3")
         FurbleControl.cpp
         FurbleSettings.cpp
         FurbleSpinValue.cpp
-        FurbleIntervalometer.cpp
+        FurbleIntervalTimer.cpp
         x3/FurbleX3App.cpp
         x3/FurbleX3Platform.cpp
         x3/main.cpp)

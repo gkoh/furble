@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FURBLE_X3_KEYS_H
+#define FURBLE_X3_KEYS_H
 #include <cstdint>
 
 namespace Furble {
@@ -67,3 +68,5 @@ class X3KeyReadGuard {
   uint8_t m_Failures = 0;
 };
 }  // namespace Furble
+
+#endif
